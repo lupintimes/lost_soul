@@ -4,7 +4,11 @@ export default class Controls {
             left: 'A',
             right: 'D',
             jump: 'W',
-            attack: 'SPACE'
+            attack: 'SPACE',
+            highJump: 'Q',
+            dash: 'SHIFT',
+            spell: 'R',
+            taunt: 'X'
         });
 
         Object.assign(this, this.keys);
