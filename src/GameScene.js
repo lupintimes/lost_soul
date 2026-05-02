@@ -134,6 +134,20 @@ export default class GameScene extends Phaser.Scene {
                 y: 3339,
                 w: 544,
                 h: 70
+            },
+
+            {
+                x: 916,
+                y: 3131,
+                w: 582,
+                h: 22
+            },
+
+            {
+                x: 1167,
+                y: 3048,
+                w: 281,
+                h: 17
             }
         ];
 

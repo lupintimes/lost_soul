@@ -11,8 +11,8 @@ export default class Player {
 
         this.sprite.setScale(0.4);
 
-        this.sprite.body.setSize(120, 200);
-        this.sprite.body.setOffset(200, 180);
+        this.sprite.body.setSize(160, 380);
+        this.sprite.body.setOffset(180, 30);
 
         this.controls = new Controls(scene);
         this.combat = new CombatSystem(scene, this);
@@ -32,87 +32,87 @@ export default class Player {
     }
 
     update() {
-    const speed = 250;
-    const jumpForce = -650;
-    const highJumpForce = -1000;
+        const speed = 250;
+        const jumpForce = -650;
+        const highJumpForce = -1000;
 
-    // =====================
-    // 🏃 MOVEMENT (ALWAYS ALLOWED)
-    // =====================
-    if (this.controls.left.isDown) {
-        this.sprite.setVelocityX(-speed);
-        this.sprite.setFlipX(true);
+        // =====================
+        // 🏃 MOVEMENT (ALWAYS ALLOWED)
+        // =====================
+        if (this.controls.left.isDown) {
+            this.sprite.setVelocityX(-speed);
+            this.sprite.setFlipX(true);
 
-        if (this.state !== 'attack')
-            this.sprite.anims.play('walk_anim', true);
-    } 
-    else if (this.controls.right.isDown) {
-        this.sprite.setVelocityX(speed);
-        this.sprite.setFlipX(false);
-
-        if (this.state !== 'attack')
-            this.sprite.anims.play('walk_anim', true);
-    } 
-    else {
-        this.sprite.setVelocityX(0);
-
-        if (this.state !== 'attack')
-            this.sprite.anims.play('idle_anim', true);
-    }
-
-    // =====================
-    // 🦘 JUMP (ALWAYS ALLOWED)
-    // =====================
-    if (this.sprite.body.blocked.down) {
-
-        if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
-            this.sprite.setVelocityY(highJumpForce);
+            if (this.state !== 'attack')
+                this.sprite.anims.play('walk_anim', true);
         }
-        else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
-            this.sprite.setVelocityY(jumpForce);
+        else if (this.controls.right.isDown) {
+            this.sprite.setVelocityX(speed);
+            this.sprite.setFlipX(false);
+
+            if (this.state !== 'attack')
+                this.sprite.anims.play('walk_anim', true);
+        }
+        else {
+            this.sprite.setVelocityX(0);
+
+            if (this.state !== 'attack')
+                this.sprite.anims.play('idle_anim', true);
+        }
+
+        // =====================
+        // 🦘 JUMP (ALWAYS ALLOWED)
+        // =====================
+        if (this.sprite.body.blocked.down) {
+
+            if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
+                this.sprite.setVelocityY(highJumpForce);
+            }
+            else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
+                this.sprite.setVelocityY(jumpForce);
+            }
+        }
+
+        // =====================
+        // ⚔️ ATTACK (CONTROLLED)
+        // =====================
+        if (
+            Phaser.Input.Keyboard.JustDown(this.controls.attack) &&
+            this.state !== 'attack'
+        ) {
+            this.attack();
+        }
+
+        // =====================
+        // ⚡ DASH
+        // =====================
+        if (
+            Phaser.Input.Keyboard.JustDown(this.controls.dash) &&
+            this.state !== 'dash'
+        ) {
+            this.dash();
+        }
+
+        // =====================
+        // 🔮 SPELL
+        // =====================
+        if (
+            Phaser.Input.Keyboard.JustDown(this.controls.spell) &&
+            this.state !== 'spell'
+        ) {
+            this.castSpell();
+        }
+
+        // =====================
+        // 😤 TAUNT
+        // =====================
+        if (
+            Phaser.Input.Keyboard.JustDown(this.controls.taunt) &&
+            this.state !== 'taunt'
+        ) {
+            this.taunt();
         }
     }
-
-    // =====================
-    // ⚔️ ATTACK (CONTROLLED)
-    // =====================
-    if (
-        Phaser.Input.Keyboard.JustDown(this.controls.attack) &&
-        this.state !== 'attack'
-    ) {
-        this.attack();
-    }
-
-    // =====================
-    // ⚡ DASH
-    // =====================
-    if (
-        Phaser.Input.Keyboard.JustDown(this.controls.dash) &&
-        this.state !== 'dash'
-    ) {
-        this.dash();
-    }
-
-    // =====================
-    // 🔮 SPELL
-    // =====================
-    if (
-        Phaser.Input.Keyboard.JustDown(this.controls.spell) &&
-        this.state !== 'spell'
-    ) {
-        this.castSpell();
-    }
-
-    // =====================
-    // 😤 TAUNT
-    // =====================
-    if (
-        Phaser.Input.Keyboard.JustDown(this.controls.taunt) &&
-        this.state !== 'taunt'
-    ) {
-        this.taunt();
-    }
-}
 
     // ⚔️ BASIC ATTACK
     attack() {
