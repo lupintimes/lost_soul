@@ -12,7 +12,11 @@ const config = {
             debug: true // turn off later
         }
     },
-    scene: [MenuScene,GameScene]
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    scene: [MenuScene, GameScene]
 };
 
 new Phaser.Game(config);

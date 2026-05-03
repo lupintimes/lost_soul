@@ -13,7 +13,6 @@ export default class Player {
         this.sprite.setCollideWorldBounds(true);
 
         this.sprite.setScale(0.4);
-
         this.sprite.body.setSize(160, 380);
         this.sprite.body.setOffset(180, 30);
 
@@ -22,10 +21,9 @@ export default class Player {
         this.health = new HealthSystem(scene, this);
 
         this.state = 'idle';
-        this.canControl = true;
         this.isInvincible = false;
 
-        // attack trigger (combo)
+        // ⚔️ attack trigger
         this.sprite.on('animationupdate', (anim, frame) => {
             if (
                 (anim.key === 'attack_1' ||
@@ -39,16 +37,20 @@ export default class Player {
     }
 
     update() {
-        // =====================
+
+
+        // 🔥 CRASH FIX
+        if (!this.sprite || !this.sprite.body) return;
+        if (this.state === 'dead') return;
+
         // 🤖 ENEMY MODE
-        // =====================
         if (this.isEnemy) {
             this.enemyAI();
             this.health.updateBar();
             return;
         }
 
-        // 🔥 DASH LOCK (IMPORTANT FIX)
+        // ⚡ DASH LOCK
         if (this.state === 'dash') {
             this.health.updateBar();
             return;
@@ -60,9 +62,7 @@ export default class Player {
 
         this.health.updateBar();
 
-        // =====================
-        // 🏃 MOVEMENT
-        // =====================
+        // 🏃 MOVE
         if (this.controls.left.isDown) {
             this.sprite.setVelocityX(-speed);
             this.sprite.setFlipX(true);
@@ -81,9 +81,7 @@ export default class Player {
                 this.sprite.anims.play('idle_anim', true);
         }
 
-        // =====================
         // 🦘 JUMP
-        // =====================
         if (this.sprite.body.blocked.down) {
             if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
                 this.sprite.setVelocityY(highJumpForce);
@@ -93,50 +91,33 @@ export default class Player {
             }
         }
 
-        // =====================
         // ⚔️ ATTACK
-        // =====================
-        if (
-            Phaser.Input.Keyboard.JustDown(this.controls.attack) &&
-            this.state !== 'attack'
-        ) {
+        if (Phaser.Input.Keyboard.JustDown(this.controls.attack)) {
             this.attack();
         }
 
-        // =====================
-        // ⚡ DASH (FIXED)
-        // =====================
-        if (
-            Phaser.Input.Keyboard.JustDown(this.controls.dash)
-        ) {
+        // ⚡ DASH
+        if (Phaser.Input.Keyboard.JustDown(this.controls.dash)) {
             this.dash();
         }
 
-        // =====================
         // 🔮 SPELL
-        // =====================
-        if (
-            Phaser.Input.Keyboard.JustDown(this.controls.spell)
-        ) {
+        if (Phaser.Input.Keyboard.JustDown(this.controls.spell)) {
             this.castSpell();
         }
 
-        // =====================
         // 😤 TAUNT
-        // =====================
-        if (
-            Phaser.Input.Keyboard.JustDown(this.controls.taunt)
-        ) {
+        if (Phaser.Input.Keyboard.JustDown(this.controls.taunt)) {
             this.taunt();
         }
     }
 
     // =====================
-    // 🤖 ENEMY AI (FIXED)
+    // 🤖 ENEMY AI
     // =====================
     enemyAI() {
-        const player = this.scene.players[0];
-        if (!player) return;
+        const player = this.scene.players.find(p => p && p.state !== 'dead');
+        if (!player || !player.sprite) return;
 
         const dist = Phaser.Math.Distance.Between(
             this.sprite.x,
@@ -170,9 +151,6 @@ export default class Player {
                 this.sprite.setFlipX(this.patrolDir < 0);
                 this.sprite.anims.play('walk_anim', true);
 
-                if (Math.random() < 0.005) {
-                    this.patrolDir *= -1;
-                }
                 break;
 
             case 'chase':
@@ -202,24 +180,16 @@ export default class Player {
                     });
                 }
 
-                if (dist < 90) {
-                    this.sprite.setVelocityX(-dir * this.speed);
-                }
-
                 if (dist > ATTACK_RANGE) {
                     this.aiState = 'chase';
                 }
                 break;
         }
-
-        if (this.sprite.body.blocked.down && Math.random() < 0.002) {
-            this.sprite.setVelocityY(this.jumpForce);
-        }
     }
 
-    // ⚔️ COMBO ATTACK
+    // ⚔️ ATTACK
     attack() {
-        if (this.state === 'attack') return;
+        if (this.state === 'attack' || this.state === 'dead') return;
 
         this.state = 'attack';
 
@@ -228,18 +198,18 @@ export default class Player {
 
         this.sprite.anims.play(`attack_${this.comboStep}`);
 
-        if (this.comboTimer) this.comboTimer.remove();
-
-        this.comboTimer = this.scene.time.delayedCall(600, () => {
+        this.scene.time.delayedCall(600, () => {
             this.comboStep = 0;
         });
 
         this.sprite.once('animationcomplete', () => {
-            this.state = 'idle';
+            if (this.state !== 'dead') {
+                this.state = 'idle';
+            }
         });
     }
 
-    // ⚡ DASH (FIXED)
+    // ⚡ DASH (REAL FIX)
     dash() {
         if (this.state === 'dash') return;
 
@@ -248,15 +218,13 @@ export default class Player {
         const dir = this.sprite.flipX ? -1 : 1;
 
         this.sprite.setVelocityX(dir * 900);
-        this.sprite.setTint(0x00ffff);
 
         this.scene.time.delayedCall(200, () => {
-            this.sprite.clearTint();
             this.state = 'idle';
         });
     }
 
-    // 🔮 SPELL
+    // 🔮 SPELL (FIXED DAMAGE)
     castSpell() {
         const dir = this.sprite.flipX ? -1 : 1;
 
@@ -271,7 +239,6 @@ export default class Player {
         spell.body.allowGravity = false;
         spell.body.setVelocityX(dir * 400);
 
-        // 🔥 ADD DAMAGE DETECTION
         const targets = this.isEnemy
             ? this.scene.players
             : this.scene.enemies;
@@ -281,26 +248,36 @@ export default class Player {
 
             this.scene.physics.add.overlap(spell, target.sprite, () => {
                 target.takeDamage(15);
-                spell.destroy(); // destroy on hit
+                spell.destroy();
             });
         });
 
-        // auto destroy
         this.scene.time.delayedCall(1000, () => {
             if (spell.active) spell.destroy();
         });
     }
 
-    // 😤 TAUNT
     taunt() {
         this.sprite.anims.play('taunt_anim');
     }
 
     // 💥 DAMAGE
     takeDamage(amount) {
-        if (this.isInvincible || this.state === 'dead') return;
+        if (this.state === 'dead') return;
 
-        this.health.takeDamage(amount);
+        this.health.current -= amount;
+
+        console.log("HP:", this.health.current);
+
+        // 🔥 INSTANT DEATH CHECK (FIRST)
+        if (this.health.current <= 0) {
+            this.health.current = 0;
+            this.die();
+            return; // 🔥 STOP EVERYTHING ELSE
+        }
+
+        // normal hurt
+        if (this.isInvincible) return;
 
         this.state = 'hurt';
         this.isInvincible = true;
@@ -308,23 +285,18 @@ export default class Player {
         this.sprite.setTint(0xff0000);
         this.sprite.anims.play('hurt_anim');
 
-        const dir = this.sprite.flipX ? 1 : -1;
-        this.sprite.setVelocityX(dir * 300);
-
         this.scene.time.delayedCall(300, () => {
-            this.sprite.clearTint();
-            this.state = 'idle';
+            if (this.state !== 'dead') {
+                this.sprite.clearTint();
+                this.state = 'idle';
+            }
         });
 
         this.scene.time.delayedCall(1000, () => {
             this.isInvincible = false;
         });
-
-        if (this.health.current <= 0) {
-            this.die();
-        }
     }
-
+    // ☠️ DEATH (FULL FIX)
     die() {
         if (this.state === 'dead') return;
 
@@ -335,26 +307,20 @@ export default class Player {
 
         this.sprite.once('animationcomplete', () => {
 
-            // 🧍 PLAYER
-            if (!this.isEnemy) {
+            if (this.isEnemy) {
+                const index = this.scene.enemies.indexOf(this);
+                if (index !== -1) this.scene.enemies.splice(index, 1);
 
+                this.sprite.destroy();
+                this.health.bar.destroy();
+            }
+            else {
                 this.sprite.destroy();
                 this.health.bar.destroy();
 
                 this.scene.time.delayedCall(1500, () => {
-                    this.scene.respawnPlayer(this);
+                    this.scene.respawnPlayer();
                 });
-            }
-
-            // 🤖 ENEMY
-            else {
-                const index = this.scene.enemies.indexOf(this);
-                if (index !== -1) {
-                    this.scene.enemies.splice(index, 1);
-                }
-
-                this.sprite.destroy();
-                this.health.bar.destroy();
             }
         });
     }
