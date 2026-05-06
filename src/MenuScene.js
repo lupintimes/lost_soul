@@ -29,11 +29,11 @@ export default class MenuScene extends Phaser.Scene {
 
         // 🎮 Buttons
         this.createButton(width / 2, height * 0.4, 'SOLO', () => {
-            this.scene.start('GameScene');
+            this.scene.start('GameScene', { mode: 'solo' });
         });
 
-        this.createButton(width / 2, height * 0.5, 'MULTIPLAYER', () => {
-            console.log('Multiplayer coming soon...');
+         this.createButton(width / 2, height * 0.5, 'MULTIPLAYER', () => {
+            this.scene.start('LobbyScene');
         });
 
         this.createButton(width / 2, height * 0.6, 'ABOUT US', () => {
@@ -50,8 +50,8 @@ export default class MenuScene extends Phaser.Scene {
             backgroundColor: '#222',
             padding: { x: 15, y: 10 }
         })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
         btn.on('pointerover', () => {
             btn.setStyle({ backgroundColor: '#555' });
@@ -99,8 +99,8 @@ export default class MenuScene extends Phaser.Scene {
                 color: '#ff4444'
             }
         )
-        .setOrigin(0.5)
-        .setDepth(12);
+            .setOrigin(0.5)
+            .setDepth(12);
         elements.push(closeText);
 
         // 🟦 BIG clickable hitbox (🔥 fix)
@@ -112,8 +112,8 @@ export default class MenuScene extends Phaser.Scene {
             0x000000,
             0
         )
-        .setInteractive({ useHandCursor: true })
-        .setDepth(12);
+            .setInteractive({ useHandCursor: true })
+            .setDepth(12);
         elements.push(closeHitbox);
 
         // hover effect
@@ -140,8 +140,8 @@ export default class MenuScene extends Phaser.Scene {
                 wordWrap: { width: width * 0.4 }
             }
         )
-        .setOrigin(0.5)
-        .setDepth(12);
+            .setOrigin(0.5)
+            .setDepth(12);
         elements.push(aboutText);
 
         // 💬 Discord
