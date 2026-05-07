@@ -67,8 +67,17 @@ export default class Player {
         const attackW = 100;
         const attackH = 80;
 
-        const damages = { 1: 15, 2: 20, 3: 30 };
-        const damage = damages[this.comboStep] || 15;
+        // ✅ Get damage from the CURRENT animation, not comboStep
+        const currentAnim = this.sprite.anims.currentAnim;
+        let damage = 15; // default
+
+        if (currentAnim) {
+            if (currentAnim.key === 'attack_1') damage = 15;
+            if (currentAnim.key === 'attack_2') damage = 20;
+            if (currentAnim.key === 'attack_3') damage = 30;
+        }
+
+        console.log(`⚔️ Checking hit: anim=${currentAnim?.key} damage=${damage}`);
 
         this.scene.checkAttackHits(
             attackX - attackW / 2,
