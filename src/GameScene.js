@@ -1,10 +1,10 @@
 import Player from './player/Player.js';
+import SocketManager from './SocketManager.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
 
-        // Solo mode
         this.isSpawningEnemies = false;
         this.killCount = 0;
         this.maxEnemies = 3;
@@ -15,7 +15,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.mode = 'solo';
 
-        // Multiplayer specific
         this.socket = null;
         this.roomId = null;
         this.localPlayer = null;
@@ -35,13 +34,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        // ─── Read scene data ──────────────────────────────
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
         this.roomId = data.roomId || null;
-        this.socket = data.socket || null;
 
-        // ─── Reset everything ─────────────────────────────
+        this.socket = SocketManager.get();
+
+        // Reset everything
         this.players = [];
         this.enemies = [];
         this.platforms = [];
@@ -52,7 +51,6 @@ export default class GameScene extends Phaser.Scene {
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
 
-        // ─── Physics group for remote players ─────────────
         this.otherPlayers = this.physics.add.group();
 
         // 🌍 Background
@@ -86,32 +84,43 @@ export default class GameScene extends Phaser.Scene {
         // 🎥 Camera bounds
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
-        // ─── Spawn Points (must match server!) ────────────
+        // ─── Spawn Points — MUST MATCH SERVER ─────────────
+        const SPAWN_OFFSET = 60;
+
+        // ─── Spawn Points — EXACT for 152px player height ────
         this.spawnPoints = [
-            // On the ground (y: 3747 surface)
-            { x: 300, y: 3700 },
-            { x: 600, y: 3700 },
-            { x: 900, y: 3700 },
-            { x: 1200, y: 3700 },
-            { x: 1500, y: 3700 },
+            // On the ground (surface y = 3747)
+            { x: 300, y: 3669 },
+            { x: 600, y: 3669 },
+            { x: 900, y: 3669 },
+            { x: 1200, y: 3669 },
+            { x: 1500, y: 3669 },
 
-            // On platform (y: 3341 surface)
-            { x: 550, y: 3290 },
-            { x: 800, y: 3290 },
-            { x: 1050, y: 3290 },
+            // On platform A (surface y = 3341, x: 414-1228)
+            { x: 550, y: 3263 },
+            { x: 800, y: 3263 },
 
-            // On platform (y: 3339 surface)
-            { x: 1350, y: 3290 },
-            { x: 1550, y: 3290 }
+            // On platform B (surface y = 3339, x: 1216-1760)
+            { x: 1350, y: 3261 },
+            { x: 1550, y: 3261 },
+
+            // On platform C (surface y = 3131, x: 916-1498)
+            { x: 1050, y: 3053 },
         ];
 
-        // ─── Mode-specific setup ─────────────────────────
+        // ─── Mode Setup ──────────────────────────────────
         if (this.mode === 'solo') {
             this.spawnPlayer();
             this.spawnEnemyWave();
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
+
         } else if (this.mode === 'multiplayer') {
-            // Show "Waiting..." until server sends currentPlayers
+            if (!this.socket || !this.socket.connected) {
+                console.error('❌ No socket! Going back to lobby.');
+                this.scene.start('LobbyScene');
+                return;
+            }
+
             this.waitingText = this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
@@ -122,14 +131,14 @@ export default class GameScene extends Phaser.Scene {
                     color: '#ffff00'
                 }
             )
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(999);
+                .setOrigin(0.5)
+                .setScrollFactor(0)
+                .setDepth(999);
 
             this.setupMultiplayer();
         }
 
-        // ─── Draw Tool (debug) ───────────────────────────
+        // ─── Draw Tool ───────────────────────────────────
         this.preview = this.add.graphics();
         this.isDrawing = false;
         this.startPoint = null;
@@ -139,7 +148,6 @@ export default class GameScene extends Phaser.Scene {
                 this.removePlatform(pointer);
                 return;
             }
-
             const world = pointer.positionToCamera(this.cameras.main);
             this.startPoint = world;
             this.isDrawing = true;
@@ -147,10 +155,8 @@ export default class GameScene extends Phaser.Scene {
 
         this.input.on('pointermove', (pointer) => {
             if (!this.isDrawing) return;
-
             const world = pointer.positionToCamera(this.cameras.main);
             const rect = this.getRect(this.startPoint, world);
-
             this.preview.clear();
             this.preview.lineStyle(2, 0xffff00, 1);
             this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
@@ -158,12 +164,9 @@ export default class GameScene extends Phaser.Scene {
 
         this.input.on('pointerup', (pointer) => {
             if (!this.isDrawing) return;
-
             const world = pointer.positionToCamera(this.cameras.main);
             const rect = this.getRect(this.startPoint, world);
-
             this.createPlatform(rect);
-
             this.preview.clear();
             this.isDrawing = false;
         });
@@ -178,7 +181,6 @@ export default class GameScene extends Phaser.Scene {
             console.log("COLLIDERS:\n", JSON.stringify(data, null, 2));
         });
 
-        // ─── ESC to leave ────────────────────────────────
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.mode === 'multiplayer') {
                 this.leaveMultiplayer();
@@ -193,74 +195,104 @@ export default class GameScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     setupMultiplayer() {
+        this.socket = SocketManager.get();
+
         if (!this.socket) {
-            this.socket = io('http://localhost:8081');
+            console.error('❌ Socket is null!');
+            return;
         }
 
-        // Remove any old listeners to prevent duplicates
-        this.socket.removeAllListeners();
+        // ✅ Remove ONLY game-specific listeners (not all)
+        this.socket.off('currentPlayers');
+        this.socket.off('newPlayer');
+        this.socket.off('disconnectUser');
+        this.socket.off('playerMoved');
+        this.socket.off('playerDamaged');
+        this.socket.off('playerKilled');
+        this.socket.off('playerRespawned');
+        this.socket.off('scoreboard');
+        this.socket.off('serverList');
+        this.socket.off('serverCreated');
+        this.socket.off('joinedServer');
+        this.socket.off('lobbyError');
 
-        // ── 1. Receive ALL current players in the room ────
+        // 1. Current players
         this.socket.on('currentPlayers', (players) => {
-            console.log('📋 currentPlayers received:', Object.keys(players));
+            if (this.multiplayerReady) return;
+
+            console.log('📋 currentPlayers received:', players);
+
+            if (!players || typeof players !== 'object' || Array.isArray(players)) {
+                console.error('❌ Invalid players data!', players);
+                return;
+            }
 
             Object.keys(players).forEach((id) => {
+                const playerData = players[id];
+                if (!playerData || !playerData.playerId) return;
+
                 if (id === this.socket.id) {
-                    this.spawnLocalPlayer(players[id]);
+                    this.spawnLocalPlayer(playerData);
                 } else {
-                    this.addRemotePlayer(players[id]);
+                    this.addRemotePlayer(playerData);
                 }
             });
 
-            // Hide waiting text
             if (this.waitingText) {
                 this.waitingText.destroy();
                 this.waitingText = null;
             }
 
             this.multiplayerReady = true;
-
-            // Request initial scoreboard
             this.socket.emit('getScoreboard');
         });
 
-        // ── 2. A new player joined ──────────────────────
+        // 2. New player
         this.socket.on('newPlayer', (playerInfo) => {
             console.log('👤 newPlayer:', playerInfo.playerId);
             this.addRemotePlayer(playerInfo);
-
-            // Show join message
             this.showKillMessage('PLAYER JOINED!', '#4488ff');
-
             this.socket.emit('getScoreboard');
         });
 
-        // ── 3. A player left ────────────────────────────
+        // 3. Player left
         this.socket.on('disconnectUser', (playerId) => {
             console.log('👤 disconnectUser:', playerId);
             this.removeRemotePlayer(playerId);
             this.showKillMessage('PLAYER LEFT', '#888888');
         });
 
-        // ── 4. A player moved ───────────────────────────
+        // 4. Player moved — ✅ THIS IS THE CRITICAL ONE
         this.socket.on('playerMoved', (playerInfo) => {
+            
+
             const remote = this.otherPlayerMap[playerInfo.playerId];
-            if (!remote) return;
+            if (!remote) {
+                console.log('❌ Remote player not found in map!'); // 🔍 DEBUG
+                return;
+            }
+            if (!remote || !remote.sprite || !remote.sprite.active) return;
 
             remote.targetX = playerInfo.x;
             remote.targetY = playerInfo.y;
             remote.sprite.flipX = playerInfo.flipX;
 
-            if (playerInfo.anim && remote.sprite.anims) {
-                remote.sprite.anims.play(playerInfo.anim, true);
+            if (playerInfo.anim) {
+                const currentAnim = remote.sprite.anims.currentAnim;
+                if (!currentAnim || currentAnim.key !== playerInfo.anim) {
+                    remote.sprite.anims.play(playerInfo.anim, true);
+                }
             }
         });
 
-        // ── 5. A player took damage ─────────────────────
+        // 5. Player damaged
         this.socket.on('playerDamaged', (data) => {
             // If WE got hit
             if (data.targetId === this.socket.id && this.localPlayer) {
-                this.localPlayer.health = data.remainingHealth;
+                // ✅ Update HealthSystem, not a raw number
+                if (this.localPlayer.health && typeof this.localPlayer.health === 'object') {
+                    this.localPlayer.health.current = data.remainingHealth;
+                }
 
                 if (this.localPlayer.sprite && this.localPlayer.sprite.active) {
                     this.localPlayer.sprite.anims.play('hurt_anim', true);
@@ -276,7 +308,11 @@ export default class GameScene extends Phaser.Scene {
             // If a REMOTE player got hit
             const remote = this.otherPlayerMap[data.targetId];
             if (remote && remote.sprite && remote.sprite.active) {
-                remote.health = data.remainingHealth;
+                // ✅ Update HealthSystem
+                if (remote.health && typeof remote.health === 'object') {
+                    remote.health.current = data.remainingHealth;
+                }
+
                 remote.sprite.anims.play('hurt_anim', true);
                 remote.sprite.setTint(0xff0000);
                 this.time.delayedCall(200, () => {
@@ -287,22 +323,28 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        // ── 6. A player was killed ──────────────────────
+        // 6. Player killed
         this.socket.on('playerKilled', (data) => {
             console.log(`💀 ${data.victimId} killed by ${data.killerId}`);
 
+            // If WE died
             if (data.victimId === this.socket.id && this.localPlayer) {
+                this.localPlayer.state = 'dead';
                 this.localPlayer.sprite.anims.play('death_anim', true);
                 this.localPlayer.isControlled = false;
+                this.localPlayer.sprite.setVelocity(0, 0);
                 this.showKillMessage('YOU DIED!', '#ff4444');
             }
 
+            // If a REMOTE player died
             const remote = this.otherPlayerMap[data.victimId];
             if (remote && remote.sprite && remote.sprite.active) {
+                remote.state = 'dead';
                 remote.sprite.anims.play('death_anim', true);
                 remote.sprite.setTint(0x444444);
             }
 
+            // If WE got the kill
             if (data.killerId === this.socket.id) {
                 this.showKillMessage('KILL!', '#44ff44');
             }
@@ -310,35 +352,52 @@ export default class GameScene extends Phaser.Scene {
             this.socket.emit('getScoreboard');
         });
 
-        // ── 7. A player respawned ───────────────────────
+        // 7. Player respawned
         this.socket.on('playerRespawned', (data) => {
+            // If WE respawned
             if (data.playerId === this.socket.id && this.localPlayer) {
                 this.localPlayer.sprite.setPosition(data.x, data.y);
                 this.localPlayer.sprite.setVelocity(0, 0);
-                this.localPlayer.health = data.health;
+                this.localPlayer.state = 'idle';
                 this.localPlayer.isControlled = true;
+
+                // ✅ Reset health on HealthSystem
+                if (this.localPlayer.health && typeof this.localPlayer.health === 'object') {
+                    this.localPlayer.health.current = data.health;
+                }
+
                 this.localPlayer.sprite.anims.play('idle_anim', true);
                 this.applySpawnProtection(this.localPlayer);
                 this.cameras.main.startFollow(this.localPlayer.sprite, true, 0.1, 0.1);
             }
 
+            // If a REMOTE player respawned
             const remote = this.otherPlayerMap[data.playerId];
             if (remote && remote.sprite) {
                 remote.sprite.setPosition(data.x, data.y);
-                remote.sprite.setVelocity(0, 0);
                 remote.targetX = data.x;
                 remote.targetY = data.y;
-                remote.health = data.health;
+                remote.state = 'idle';
+
+                // ✅ Reset health on HealthSystem
+                if (remote.health && typeof remote.health === 'object') {
+                    remote.health.current = data.health;
+                }
+
                 remote.sprite.setTint(0xff6666);
                 remote.sprite.anims.play('idle_anim', true);
                 remote.sprite.setActive(true).setVisible(true);
             }
         });
 
-        // ── 8. Scoreboard ───────────────────────────────
+        // 8. Scoreboard
         this.socket.on('scoreboard', (scores) => {
             this.updateScoreboard(scores);
         });
+
+        // ✅ Request players after all listeners are ready
+        console.log('🔄 Requesting players from server...');
+        this.socket.emit('requestPlayers');
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -346,19 +405,23 @@ export default class GameScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     spawnLocalPlayer(playerInfo) {
-        // Prevent double-spawn
         if (this.localPlayer) {
-            console.warn('⚠️ Local player already exists, skipping spawn');
+            console.warn('⚠️ Local player already exists');
             return;
         }
 
-        console.log(`🟢 Spawning LOCAL player at (${playerInfo.x}, ${playerInfo.y})`);
+        console.log(`🟢 Spawning LOCAL at (${playerInfo.x}, ${playerInfo.y})`);
 
         const player = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, true);
-        player.health = playerInfo.health || 100;
+        if (player.health && typeof player.health.setHealth === 'function') {
+            player.health.setHealth(playerInfo.health || 100);
+        } else {
+            player.hp = playerInfo.health || 100;
+        }
 
-        // Disable gravity briefly to let collider register, then re-enable
-        player.sprite.body.setAllowGravity(true);
+        // ✅ Disable physics body briefly so sprite doesn't collide on spawn
+        player.sprite.body.enable = false;
+        player.sprite.body.setVelocity(0, 0);
 
         this.localPlayer = player;
         this.players.push(player);
@@ -366,21 +429,27 @@ export default class GameScene extends Phaser.Scene {
         this.physics.add.collider(player.sprite, this.platformGroup);
         this.cameras.main.startFollow(player.sprite, true, 0.1, 0.1);
 
+        // ✅ Re-enable physics after a short delay (lets position settle)
+        this.time.delayedCall(100, () => {
+            if (player.sprite && player.sprite.body) {
+                player.sprite.body.enable = true;
+                player.sprite.body.setVelocity(0, 0);
+            }
+        });
+
         this.applySpawnProtection(player);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  👥 ADD / REMOVE REMOTE PLAYERS
+    //  👥 REMOTE PLAYERS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     addRemotePlayer(playerInfo) {
-        // Don't add duplicates
         if (this.otherPlayerMap[playerInfo.playerId]) {
             console.warn('⚠️ Remote player already exists:', playerInfo.playerId);
             return;
         }
 
-        // Don't add ourselves
         if (this.socket && playerInfo.playerId === this.socket.id) {
             return;
         }
@@ -388,8 +457,13 @@ export default class GameScene extends Phaser.Scene {
         console.log(`🔴 Spawning REMOTE player: ${playerInfo.playerId} at (${playerInfo.x}, ${playerInfo.y})`);
 
         const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false);
-        remotePlayer.health = playerInfo.health || 100;
         remotePlayer.sprite.setTint(0xff6666);
+
+        // ✅ Disable gravity and physics for remote players
+        // Their position comes 100% from the network
+        remotePlayer.sprite.body.setAllowGravity(false);
+        remotePlayer.sprite.body.setImmovable(true);
+        remotePlayer.sprite.body.moves = false;
 
         // Interpolation targets
         remotePlayer.targetX = playerInfo.x;
@@ -402,14 +476,15 @@ export default class GameScene extends Phaser.Scene {
         this.otherPlayers.add(remotePlayer.sprite);
         remotePlayer.sprite.playerId = playerInfo.playerId;
 
-        this.physics.add.collider(remotePlayer.sprite, this.platformGroup);
+        // ✅ No collider needed for remote players — server controls their position
+        // this.physics.add.collider(remotePlayer.sprite, this.platformGroup);  ← REMOVE THIS
     }
 
     removeRemotePlayer(playerId) {
         const remote = this.otherPlayerMap[playerId];
         if (!remote) return;
 
-        console.log(`❌ Removing remote player: ${playerId}`);
+        console.log(`❌ Removing remote: ${playerId}`);
 
         if (remote.sprite) {
             remote.sprite.destroy();
@@ -419,31 +494,33 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  ⚔️ ATTACK SYSTEM (multiplayer)
+    //  ⚔️ ATTACK SYSTEM
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     sendAttackToServer(targetId, damage) {
         if (!this.socket || this.mode !== 'multiplayer') return;
-
-        this.socket.emit('playerAttack', {
-            targetId: targetId,
-            damage: damage
-        });
+        this.socket.emit('playerAttack', { targetId, damage });
     }
 
     checkAttackHits(attackX, attackY, attackW, attackH, damage) {
         if (this.mode !== 'multiplayer') return;
+        if (!this.socket) return;
 
         Object.keys(this.otherPlayerMap).forEach(id => {
             const remote = this.otherPlayerMap[id];
             if (!remote || !remote.sprite || !remote.sprite.active) return;
-            if (remote.health <= 0) return;
+
+            // ✅ Check health on the HealthSystem object
+            if (remote.health && remote.health.current <= 0) return;
 
             const rx = remote.sprite.x;
             const ry = remote.sprite.y;
-            const rw = remote.sprite.displayWidth * 0.3;
-            const rh = remote.sprite.displayHeight * 0.5;
 
+            // ✅ Use actual sprite body size for hitbox
+            const rw = remote.sprite.body.width;
+            const rh = remote.sprite.body.height;
+
+            // AABB overlap check
             const overlap =
                 attackX < rx + rw / 2 &&
                 attackX + attackW > rx - rw / 2 &&
@@ -451,6 +528,7 @@ export default class GameScene extends Phaser.Scene {
                 attackY + attackH > ry - rh / 2;
 
             if (overlap) {
+                console.log(`⚔️ HIT! ${id} for ${damage} damage`);
                 this.sendAttackToServer(id, damage);
             }
         });
@@ -480,8 +558,8 @@ export default class GameScene extends Phaser.Scene {
             fontSize: '8px',
             color: '#ffff00'
         })
-        .setScrollFactor(0)
-        .setDepth(100);
+            .setScrollFactor(0)
+            .setDepth(100);
         this.scoreboardElements.push(header);
 
         scores.forEach((entry, index) => {
@@ -500,8 +578,8 @@ export default class GameScene extends Phaser.Scene {
                     color: color
                 }
             )
-            .setScrollFactor(0)
-            .setDepth(100);
+                .setScrollFactor(0)
+                .setDepth(100);
 
             this.scoreboardElements.push(row);
         });
@@ -521,9 +599,9 @@ export default class GameScene extends Phaser.Scene {
             stroke: '#000000',
             strokeThickness: 4
         })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(200);
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(200);
 
         this.tweens.add({
             targets: msg,
@@ -536,16 +614,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🚪 LEAVE MULTIPLAYER
+    //  🚪 LEAVE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     leaveMultiplayer() {
         if (this.socket) {
             this.socket.emit('leaveRoom');
-            this.socket.removeAllListeners();
-            this.socket.disconnect();
-            this.socket = null;
         }
+
+        SocketManager.disconnect();
+        this.socket = null;
 
         if (this.scoreboardElements) {
             this.scoreboardElements.forEach(el => el.destroy());
@@ -556,7 +634,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🔄 UPDATE LOOP
+    //  🔄 UPDATE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     update() {
@@ -570,7 +648,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     updateSolo() {
-        // Count kills
         const aliveEnemies = [];
         this.enemies.forEach(e => {
             if (!e || !e.sprite || !e.sprite.active || e.state === 'dead') {
@@ -606,14 +683,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     updateMultiplayer() {
-        // Don't update until we've received currentPlayers
         if (!this.multiplayerReady) return;
 
-        // Update local player + emit movement
         if (this.localPlayer && this.localPlayer.sprite && this.localPlayer.sprite.active) {
-            this.localPlayer.update();
 
-            // Only emit if we have a socket and player is controlled
+            try {
+                this.localPlayer.update();
+            } catch (err) {
+                // ignore
+            }
+
             if (this.socket && this.localPlayer.isControlled) {
                 const s = this.localPlayer.sprite;
                 const x = Math.round(s.x);
@@ -621,19 +700,30 @@ export default class GameScene extends Phaser.Scene {
                 const flipX = s.flipX;
                 const anim = s.anims.currentAnim ? s.anims.currentAnim.key : 'idle_anim';
 
+                // 🔍 LOG EVERY EMISSION
                 if (
                     this.localPlayer.lastX !== x ||
                     this.localPlayer.lastY !== y ||
                     this.localPlayer.lastFlip !== flipX ||
                     this.localPlayer.lastAnim !== anim
                 ) {
+
                     this.socket.emit('playerMovement', { x, y, flipX, anim });
                     this.localPlayer.lastX = x;
                     this.localPlayer.lastY = y;
                     this.localPlayer.lastFlip = flipX;
                     this.localPlayer.lastAnim = anim;
                 }
+            } else {
+                // 🔍 WHY NOT SENDING?
+                if (!this.socket) console.log('❌ No socket');
+                if (!this.localPlayer.isControlled) console.log('❌ Not controlled');
             }
+        } else {
+            // 🔍 WHY NO LOCAL PLAYER?
+            if (!this.localPlayer) console.log('❌ No localPlayer');
+            else if (!this.localPlayer.sprite) console.log('❌ No sprite');
+            else if (!this.localPlayer.sprite.active) console.log('❌ Sprite not active');
         }
 
         // Interpolate remote players
@@ -642,9 +732,18 @@ export default class GameScene extends Phaser.Scene {
             if (!remote || !remote.sprite || !remote.sprite.active) return;
 
             if (remote.targetX !== undefined && remote.targetY !== undefined) {
-                const lerpSpeed = 0.2;
-                remote.sprite.x += (remote.targetX - remote.sprite.x) * lerpSpeed;
-                remote.sprite.y += (remote.targetY - remote.sprite.y) * lerpSpeed;
+                const dx = remote.targetX - remote.sprite.x;
+                const dy = remote.targetY - remote.sprite.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 300) {
+                    remote.sprite.x = remote.targetX;
+                    remote.sprite.y = remote.targetY;
+                } else {
+                    const lerpSpeed = 0.3;
+                    remote.sprite.x += dx * lerpSpeed;
+                    remote.sprite.y += dy * lerpSpeed;
+                }
             }
         });
     }
@@ -666,7 +765,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🧍 SPAWN (Solo mode only)
+    //  🧍 SOLO SPAWN
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     spawnPlayer() {
@@ -698,10 +797,6 @@ export default class GameScene extends Phaser.Scene {
             this.physics.add.collider(enemy.sprite, this.platformGroup);
         }
     }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🔄 RESPAWN (Solo mode)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     respawnPlayer() {
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
@@ -736,6 +831,10 @@ export default class GameScene extends Phaser.Scene {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     //  🧱 PLATFORM SYSTEM
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  🧱 PLATFORM SYSTEM — FIXED
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createPlatform(rect) {

@@ -3,8 +3,11 @@ import CombatSystem from '../systems/CombatSystem.js';
 import HealthSystem from '../systems/HealthSystem.js';
 
 export default class Player {
-    constructor(scene, x, y) {
+    constructor(scene, x, y, playerId, isControlled) {
         this.scene = scene;
+
+        this.playerId = playerId || null;
+        this.isControlled = isControlled !== undefined ? isControlled : true;
 
         this.comboStep = 0;
         this.comboTimer = null;
@@ -16,12 +19,25 @@ export default class Player {
         this.sprite.body.setSize(160, 380);
         this.sprite.body.setOffset(180, 30);
 
-        this.controls = new Controls(scene);
+        if (this.isControlled) {
+            this.controls = new Controls(scene);
+        } else {
+            this.controls = null;
+        }
+
         this.combat = new CombatSystem(scene, this);
         this.health = new HealthSystem(scene, this);
 
         this.state = 'idle';
         this.isInvincible = false;
+
+        this.lastX = 0;
+        this.lastY = 0;
+        this.lastFlip = false;
+        this.lastAnim = 'idle_anim';
+
+        this.targetX = x;
+        this.targetY = y;
 
         // ⚔️ attack trigger
         this.sprite.on('animationupdate', (anim, frame) => {
@@ -32,27 +48,63 @@ export default class Player {
                 frame.index === 2
             ) {
                 this.combat.attack();
+
+                // ✅ Multiplayer: check hits against remote players
+                if (this.isControlled && this.scene.mode === 'multiplayer') {
+                    this.checkMultiplayerHit();
+                }
             }
         });
     }
 
+    // ⚔️ MULTIPLAYER HIT DETECTION
+    checkMultiplayerHit() {
+        if (!this.scene || this.scene.mode !== 'multiplayer') return;
+
+        const dir = this.sprite.flipX ? -1 : 1;
+        const attackX = this.sprite.x + (dir * 30);
+        const attackY = this.sprite.y - 20;
+        const attackW = 100;
+        const attackH = 80;
+
+        const damages = { 1: 15, 2: 20, 3: 30 };
+        const damage = damages[this.comboStep] || 15;
+
+        this.scene.checkAttackHits(
+            attackX - attackW / 2,
+            attackY - attackH / 2,
+            attackW,
+            attackH,
+            damage
+        );
+    }
+
     update() {
-
-
-        // 🔥 CRASH FIX
         if (!this.sprite || !this.sprite.body) return;
         if (this.state === 'dead') return;
+
+        // ✅ Remote player — skip input, just update health bar
+        if (!this.isControlled) {
+            if (this.health && typeof this.health.updateBar === 'function') {
+                this.health.updateBar();
+            }
+            return;
+        }
 
         // 🤖 ENEMY MODE
         if (this.isEnemy) {
             this.enemyAI();
-            this.health.updateBar();
+            if (this.health && typeof this.health.updateBar === 'function') {
+                this.health.updateBar();
+            }
             return;
         }
 
         // ⚡ DASH LOCK
         if (this.state === 'dash') {
-            this.health.updateBar();
+            if (this.health && typeof this.health.updateBar === 'function') {
+                this.health.updateBar();
+            }
             return;
         }
 
@@ -60,7 +112,11 @@ export default class Player {
         const jumpForce = this.jumpForce || -650;
         const highJumpForce = this.highJumpForce || -1000;
 
-        this.health.updateBar();
+        if (this.health && typeof this.health.updateBar === 'function') {
+            this.health.updateBar();
+        }
+
+        if (!this.controls) return;
 
         // 🏃 MOVE
         if (this.controls.left.isDown) {
@@ -112,18 +168,14 @@ export default class Player {
         }
     }
 
-    // =====================
     // 🤖 ENEMY AI
-    // =====================
     enemyAI() {
         const player = this.scene.players.find(p => p && p.state !== 'dead');
         if (!player || !player.sprite) return;
 
         const dist = Phaser.Math.Distance.Between(
-            this.sprite.x,
-            this.sprite.y,
-            player.sprite.x,
-            player.sprite.y
+            this.sprite.x, this.sprite.y,
+            player.sprite.x, player.sprite.y
         );
 
         const dir = player.sprite.x < this.sprite.x ? -1 : 1;
@@ -136,21 +188,17 @@ export default class Player {
         if (!this.attackCooldown) this.attackCooldown = false;
 
         switch (this.aiState) {
-
             case 'patrol':
                 if (dist < DETECT_RANGE) {
                     this.aiState = 'chase';
                     return;
                 }
-
                 if (!this.patrolDir) {
                     this.patrolDir = Math.random() < 0.5 ? -1 : 1;
                 }
-
                 this.sprite.setVelocityX(this.patrolDir * this.speed * 0.5);
                 this.sprite.setFlipX(this.patrolDir < 0);
                 this.sprite.anims.play('walk_anim', true);
-
                 break;
 
             case 'chase':
@@ -158,7 +206,6 @@ export default class Player {
                     this.aiState = 'patrol';
                     break;
                 }
-
                 if (dist > ATTACK_RANGE) {
                     this.sprite.setVelocityX(dir * this.speed);
                     this.sprite.setFlipX(dir < 0);
@@ -170,16 +217,13 @@ export default class Player {
 
             case 'attack':
                 this.sprite.setVelocityX(0);
-
                 if (!this.attackCooldown) {
                     this.attack();
                     this.attackCooldown = true;
-
                     this.scene.time.delayedCall(900, () => {
                         this.attackCooldown = false;
                     });
                 }
-
                 if (dist > ATTACK_RANGE) {
                     this.aiState = 'chase';
                 }
@@ -209,22 +253,18 @@ export default class Player {
         });
     }
 
-    // ⚡ DASH (REAL FIX)
+    // ⚡ DASH
     dash() {
         if (this.state === 'dash') return;
-
         this.state = 'dash';
-
         const dir = this.sprite.flipX ? -1 : 1;
-
         this.sprite.setVelocityX(dir * 900);
-
         this.scene.time.delayedCall(200, () => {
             this.state = 'idle';
         });
     }
 
-    // 🔮 SPELL (FIXED DAMAGE)
+    // 🔮 SPELL
     castSpell() {
         const dir = this.sprite.flipX ? -1 : 1;
 
@@ -239,18 +279,32 @@ export default class Player {
         spell.body.allowGravity = false;
         spell.body.setVelocityX(dir * 400);
 
-        const targets = this.isEnemy
-            ? this.scene.players
-            : this.scene.enemies;
+        // ✅ In multiplayer, spell hits remote players via server
+        if (this.isControlled && this.scene.mode === 'multiplayer') {
+            // Check overlap with remote players
+            Object.keys(this.scene.otherPlayerMap).forEach(id => {
+                const remote = this.scene.otherPlayerMap[id];
+                if (!remote || !remote.sprite) return;
 
-        targets.forEach(target => {
-            if (target === this) return;
-
-            this.scene.physics.add.overlap(spell, target.sprite, () => {
-                target.takeDamage(15);
-                spell.destroy();
+                this.scene.physics.add.overlap(spell, remote.sprite, () => {
+                    this.scene.sendAttackToServer(id, 15);
+                    spell.destroy();
+                });
             });
-        });
+        } else {
+            // Solo mode — hit local enemies
+            const targets = this.isEnemy
+                ? this.scene.players
+                : this.scene.enemies;
+
+            targets.forEach(target => {
+                if (target === this) return;
+                this.scene.physics.add.overlap(spell, target.sprite, () => {
+                    target.takeDamage(15);
+                    spell.destroy();
+                });
+            });
+        }
 
         this.scene.time.delayedCall(1000, () => {
             if (spell.active) spell.destroy();
@@ -269,14 +323,12 @@ export default class Player {
 
         console.log("HP:", this.health.current);
 
-        // 🔥 INSTANT DEATH CHECK (FIRST)
         if (this.health.current <= 0) {
             this.health.current = 0;
             this.die();
-            return; // 🔥 STOP EVERYTHING ELSE
+            return;
         }
 
-        // normal hurt
         if (this.isInvincible) return;
 
         this.state = 'hurt';
@@ -296,7 +348,8 @@ export default class Player {
             this.isInvincible = false;
         });
     }
-    // ☠️ DEATH (FULL FIX)
+
+    // ☠️ DEATH
     die() {
         if (this.state === 'dead') return;
 
@@ -306,21 +359,22 @@ export default class Player {
         this.sprite.anims.play('death_anim');
 
         this.sprite.once('animationcomplete', () => {
-
             if (this.isEnemy) {
                 const index = this.scene.enemies.indexOf(this);
                 if (index !== -1) this.scene.enemies.splice(index, 1);
-
                 this.sprite.destroy();
-                this.health.bar.destroy();
+                if (this.health && this.health.bar) this.health.bar.destroy();
             }
             else {
-                this.sprite.destroy();
-                this.health.bar.destroy();
-
-                this.scene.time.delayedCall(1500, () => {
-                    this.scene.respawnPlayer();
-                });
+                // ✅ Solo mode — destroy and respawn
+                if (this.scene.mode === 'solo') {
+                    this.sprite.destroy();
+                    if (this.health && this.health.bar) this.health.bar.destroy();
+                    this.scene.time.delayedCall(1500, () => {
+                        this.scene.respawnPlayer();
+                    });
+                }
+                // ✅ Multiplayer — server handles respawn, don't destroy
             }
         });
     }

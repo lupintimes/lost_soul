@@ -1,7 +1,8 @@
+import SocketManager from './SocketManager.js';
+
 export default class LobbyScene extends Phaser.Scene {
     constructor() {
         super('LobbyScene');
-        this.socket = null;
         this.serverList = [];
         this.serverListElements = [];
     }
@@ -27,7 +28,7 @@ export default class LobbyScene extends Phaser.Scene {
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        // ─── Back Button (top-left) ──────────────────────
+        // ─── Back Button ──────────────────────────────────
         const backBtn = this.add.text(20, 20, '← BACK', {
             fontFamily: '"Press Start 2P"',
             fontSize: '12px',
@@ -35,7 +36,7 @@ export default class LobbyScene extends Phaser.Scene {
             backgroundColor: '#222',
             padding: { x: 10, y: 6 }
         })
-        .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true });
 
         backBtn.on('pointerover', () => {
             backBtn.setStyle({ backgroundColor: '#555' });
@@ -50,7 +51,7 @@ export default class LobbyScene extends Phaser.Scene {
             this.scene.start('MenuScene');
         });
 
-        // ─── Layout: Left Panel (Server List) ────────────
+        // ─── Left Panel (Server List) ─────────────────────
         const panelLeft = {
             x: 30,
             y: 70,
@@ -71,6 +72,7 @@ export default class LobbyScene extends Phaser.Scene {
         });
 
         const headerY = panelLeft.y + 40;
+
         this.add.text(panelLeft.x + 15, headerY, 'NAME', {
             fontFamily: '"Press Start 2P"',
             fontSize: '9px',
@@ -111,7 +113,7 @@ export default class LobbyScene extends Phaser.Scene {
             }
         ).setOrigin(0.5);
 
-        // ─── Layout: Right Panel (Create Server) ─────────
+        // ─── Right Panel (Create Server) ──────────────────
         const panelRight = {
             x: panelLeft.x + panelLeft.w + 20,
             y: 70,
@@ -181,7 +183,6 @@ export default class LobbyScene extends Phaser.Scene {
             color: '#888888'
         });
 
-        // ✅ Default set to 4, min 1, max 10
         this.maxPlayers = 4;
 
         const minusBtn = this.add.text(
@@ -196,7 +197,7 @@ export default class LobbyScene extends Phaser.Scene {
                 padding: { x: 6, y: 4 }
             }
         )
-        .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true });
 
         this.maxPlayersText = this.add.text(
             panelRight.x + 65,
@@ -221,9 +222,9 @@ export default class LobbyScene extends Phaser.Scene {
                 padding: { x: 6, y: 4 }
             }
         )
-        .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true });
 
-        // ✅ Min = 1, Max = 10
+        // ✅ Min 1, Max 10
         minusBtn.on('pointerdown', () => {
             if (this.maxPlayers > 1) {
                 this.maxPlayers--;
@@ -256,24 +257,22 @@ export default class LobbyScene extends Phaser.Scene {
                 padding: { x: 20, y: 12 }
             }
         )
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
         createBtn.on('pointerover', () => {
             createBtn.setStyle({ backgroundColor: '#32CD32' });
             createBtn.setScale(1.05);
         });
-
         createBtn.on('pointerout', () => {
             createBtn.setStyle({ backgroundColor: '#228B22' });
             createBtn.setScale(1);
         });
-
         createBtn.on('pointerdown', () => {
             this.createServer();
         });
 
-        // ── Refresh Button ───────────────────────────────
+        // ── Refresh Button ────────────────────────────────
         const refreshBtn = this.add.text(
             panelLeft.x + panelLeft.w / 2,
             panelLeft.y + panelLeft.h - 25,
@@ -286,8 +285,8 @@ export default class LobbyScene extends Phaser.Scene {
                 padding: { x: 10, y: 6 }
             }
         )
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
         refreshBtn.on('pointerover', () => {
             refreshBtn.setStyle({ backgroundColor: '#333' });
@@ -301,67 +300,79 @@ export default class LobbyScene extends Phaser.Scene {
             this.requestServerList();
         });
 
-        // ─── Connect to Socket.io ────────────────────────
+        // ─── Connect using SocketManager ──────────────────
         this.connectToLobby();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  SOCKET.IO — LOBBY CONNECTION
+    //  SOCKET CONNECTION
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     connectToLobby() {
-        this.socket = io('http://localhost:8081');
+        // Use SocketManager — it reuses the connection if already open
+        const socket = SocketManager.connect('http://localhost:8081');
 
-        this.socket.on('connect', () => {
-            console.log('✅ Connected to lobby server:', this.socket.id);
-            this.requestServerList();
-        });
+        // Remove old lobby listeners before adding new ones
+        socket.off('serverList');
+        socket.off('serverCreated');
+        socket.off('joinedServer');
+        socket.off('lobbyError');
 
-        // Server pushes updated list (on create/join/leave/disconnect)
-        this.socket.on('serverList', (servers) => {
+        socket.on('serverList', (servers) => {
             console.log('📋 Server list received:', servers);
             this.serverList = servers;
             this.renderServerList();
         });
 
-        this.socket.on('serverCreated', (serverData) => {
-            console.log('🎮 Server created, joining game:', serverData);
+        socket.on('serverCreated', (serverData) => {
+            console.log('🎮 Server created:', serverData);
+            SocketManager.setRoom(serverData.roomId);
+
+            // ✅ Clean lobby listeners before switching scene
+            this.cleanup();
+
             this.scene.start('GameScene', {
                 mode: 'multiplayer',
-                roomId: serverData.roomId,
-                socket: this.socket
+                roomId: serverData.roomId
             });
         });
 
-        this.socket.on('joinedServer', (serverData) => {
+        socket.on('joinedServer', (serverData) => {
             console.log('🎮 Joined server:', serverData);
+            SocketManager.setRoom(serverData.roomId);
+
+            // ✅ Clean lobby listeners before switching scene
+            this.cleanup();
+
             this.scene.start('GameScene', {
                 mode: 'multiplayer',
-                roomId: serverData.roomId,
-                socket: this.socket
+                roomId: serverData.roomId
             });
         });
 
-        this.socket.on('lobbyError', (msg) => {
+        socket.on('lobbyError', (msg) => {
             console.warn('⚠️ Lobby error:', msg);
             alert(msg);
         });
 
-        this.socket.on('disconnect', () => {
-            console.log('❌ Disconnected from lobby');
-        });
+        // Request list immediately
+        this.requestServerList();
     }
 
     requestServerList() {
+        const socket = SocketManager.get();
+        if (!socket || !socket.connected) return;
+
         if (this.loadingText) {
             this.loadingText.setText('Refreshing...');
             this.loadingText.setVisible(true);
         }
-        this.socket.emit('getServers');
+
+        socket.emit('getServers');
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  RENDER THE SERVER LIST
+    //  RENDER SERVER LIST
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     renderServerList() {
@@ -396,8 +407,8 @@ export default class LobbyScene extends Phaser.Scene {
                 w - 10, rowH - 4,
                 index % 2 === 0 ? 0x1a1a1a : 0x1f1f1f
             )
-            .setOrigin(0)
-            .setInteractive({ useHandCursor: true });
+                .setOrigin(0)
+                .setInteractive({ useHandCursor: true });
 
             const nameText = this.add.text(
                 x + 15, rowY + 10,
@@ -410,6 +421,7 @@ export default class LobbyScene extends Phaser.Scene {
             );
 
             const isFull = server.players >= server.maxPlayers;
+
             const playersText = this.add.text(
                 x + w * 0.5, rowY + 10,
                 `${server.players}/${server.maxPlayers}`,
@@ -420,15 +432,13 @@ export default class LobbyScene extends Phaser.Scene {
                 }
             );
 
-            const statusLabel = isFull ? 'FULL' : 'OPEN';
-            const statusColor = isFull ? '#ff4444' : '#44ff44';
             const statusText = this.add.text(
                 x + w * 0.75, rowY + 10,
-                statusLabel,
+                isFull ? 'FULL' : 'OPEN',
                 {
                     fontFamily: '"Press Start 2P"',
                     fontSize: '9px',
-                    color: statusColor
+                    color: isFull ? '#ff4444' : '#44ff44'
                 }
             );
 
@@ -459,24 +469,28 @@ export default class LobbyScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createServer() {
-        if (!this.socket || !this.socket.connected) {
+        const socket = SocketManager.get();
+
+        if (!socket || !socket.connected) {
             alert('Not connected to server!');
             return;
         }
 
-        this.socket.emit('createServer', {
+        socket.emit('createServer', {
             name: this.serverNameValue,
             maxPlayers: this.maxPlayers
         });
     }
 
     joinServer(roomId) {
-        if (!this.socket || !this.socket.connected) {
+        const socket = SocketManager.get();
+
+        if (!socket || !socket.connected) {
             alert('Not connected to server!');
             return;
         }
 
-        this.socket.emit('joinServer', { roomId });
+        socket.emit('joinServer', { roomId });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -484,11 +498,14 @@ export default class LobbyScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     cleanup() {
-        if (this.socket) {
-            this.socket.removeAllListeners();
-            this.socket.disconnect();
-            this.socket = null;
+        const socket = SocketManager.get();
+        if (socket) {
+            socket.off('serverList');
+            socket.off('serverCreated');
+            socket.off('joinedServer');
+            socket.off('lobbyError');
         }
+
         this.serverList = [];
         this.serverListElements = [];
     }
