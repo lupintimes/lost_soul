@@ -1,4 +1,4 @@
-
+import PreloadScene from './PreloadScene.js';
 import MenuScene from './MenuScene.js';
 import CustomizeScene from './CustomizeScene.js';
 import LobbyScene from './LobbyScene.js';
@@ -19,7 +19,7 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: [MenuScene, CustomizeScene, LobbyScene, GameScene]
+    scene: [PreloadScene, MenuScene, CustomizeScene, LobbyScene, GameScene]
 };
 
 new Phaser.Game(config);
