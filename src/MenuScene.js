@@ -1,19 +1,8 @@
+import PlayerData from './PlayerData.js';
+
 export default class MenuScene extends Phaser.Scene {
     constructor() {
         super('MenuScene');
-        this.selectedCharacter = 'p1';
-        this.pendingMode = null;
-    }
-
-    preload() {
-        this.load.image('menu_bg', '../assets/background.png');
-        this.load.image('discord', '../assets/ui/discord.png');
-        this.load.image('x_icon', '../assets/ui/x.png');
-
-        // ✅ Load character preview spritesheets
-        this.load.spritesheet('p1_idle', '../assets/p1/idle.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('p2_idle', '../assets/p2/idle.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('p3_idle', '../assets/p3/idle.png', { frameWidth: 520, frameHeight: 420 });
     }
 
     create() {
@@ -28,330 +17,100 @@ export default class MenuScene extends Phaser.Scene {
         this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0);
 
         // 🏷️ Title
-        this.add.text(width / 2, height * 0.2, 'SWORD ARENA', {
+        this.add.text(width * 0.4, height * 0.15, 'SWORD ARENA', {
             fontFamily: '"Press Start 2P"',
             fontSize: '28px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        // 🎮 Buttons
-        this.createButton(width / 2, height * 0.4, 'SOLO', () => {
-            this.pendingMode = 'solo';
-            this.showCharacterSelect();
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  LEFT SIDE — BUTTONS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        const btnX = width * 0.35;
+
+        this.createButton(btnX, height * 0.35, 'SOLO', () => {
+            this.scene.start('GameScene', {
+                mode: 'solo',
+                character: PlayerData.character
+            });
         });
 
-        this.createButton(width / 2, height * 0.5, 'MULTIPLAYER', () => {
-            this.pendingMode = 'multiplayer';
-            this.showCharacterSelect();
+        this.createButton(btnX, height * 0.47, 'MULTIPLAYER', () => {
+            this.scene.start('LobbyScene', {
+                character: PlayerData.character
+            });
         });
 
-        this.createButton(width / 2, height * 0.6, 'ABOUT US', () => {
+        this.createButton(btnX, height * 0.59, 'CUSTOMIZE', () => {
+            this.scene.start('CustomizeScene');
+        });
+
+        this.createButton(btnX, height * 0.71, 'ABOUT US', () => {
             this.showAbout();
         });
 
-        // ✅ Create idle animations for character previews
-        this.createPreviewAnimations();
-    }
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  RIGHT SIDE — CHARACTER PREVIEW
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🎬 CHARACTER PREVIEW ANIMATIONS
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const previewX = width * 0.75;
+        const previewY = height * 0.5;
 
-    createPreviewAnimations() {
-        if (!this.anims.exists('p1_preview')) {
-            this.anims.create({
-                key: 'p1_preview',
-                frames: this.anims.generateFrameNumbers('p1_idle', { start: 0, end: 11 }),
-                frameRate: 6,
-                repeat: -1
-            });
-        }
-        if (!this.anims.exists('p2_preview')) {
-            this.anims.create({
-                key: 'p2_preview',
-                frames: this.anims.generateFrameNumbers('p2_idle', { start: 0, end: 11 }),
-                frameRate: 6,
-                repeat: -1
-            });
-        }
-        if (!this.anims.exists('p3_preview')) {
-            this.anims.create({
-                key: 'p3_preview',
-                frames: this.anims.generateFrameNumbers('p3_idle', { start: 0, end: 11 }),
-                frameRate: 6,
-                repeat: -1
-            });
-        }
-    }
+        // Preview background panel
+        this.add.rectangle(previewX, previewY, 200, 250, 0x111111, 0.7)
+            .setStrokeStyle(2, 0x333333);
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🎭 CHARACTER SELECT SCREEN
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Character name
+        const charInfo = PlayerData.getCharacterInfo();
 
-    showCharacterSelect() {
-        const { width, height } = this.scale;
-
-        const elements = [];
-
-        // 🔲 Overlay
-        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.8)
-            .setOrigin(0)
-            .setDepth(10)
-            .setInteractive();
-        elements.push(overlay);
-
-        // 📦 Panel
-        const panelW = width * 0.8;
-        const panelH = height * 0.75;
-        const panelX = width / 2;
-        const panelY = height / 2;
-
-        const panel = this.add.rectangle(panelX, panelY, panelW, panelH, 0x111111, 0.95)
-            .setDepth(11)
-            .setStrokeStyle(2, 0x444444);
-        elements.push(panel);
-
-        // 🏷️ Title
-        const title = this.add.text(panelX, panelY - panelH / 2 + 25, 'SELECT CHARACTER', {
+        this.add.text(previewX, previewY - 110, charInfo.name, {
             fontFamily: '"Press Start 2P"',
-            fontSize: '14px',
-            color: '#ffff00'
+            fontSize: '12px',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+
+        // Character sprite
+        const previewSprite = this.add.sprite(previewX, previewY - 10, `${PlayerData.character}_idle`);
+        previewSprite.setScale(0.5);
+        previewSprite.anims.play(`${PlayerData.character}_preview`, true);
+
+        // Apply color tint
+        const tint = PlayerData.getColorTint();
+        if (tint) {
+            previewSprite.setTint(tint);
+        }
+
+        // Color label
+        const colorInfo = PlayerData.colors.find(c => c.id === PlayerData.color);
+        this.add.text(previewX, previewY + 85, `COLOR: ${colorInfo?.name || 'DEFAULT'}`, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '7px',
+            color: '#888888'
+        }).setOrigin(0.5);
+
+        // "EDIT" mini button
+        const customBtn = this.add.text(previewX, previewY + 110, '⚙ EDIT', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#44ff44',
+            backgroundColor: '#1a1a1a',
+            padding: { x: 10, y: 5 }
         })
         .setOrigin(0.5)
-        .setDepth(12);
-        elements.push(title);
-
-        // ✖ Close button
-        const closeText = this.add.text(
-            panelX + panelW / 2 - 25,
-            panelY - panelH / 2 + 20,
-            'X',
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '14px',
-                color: '#ff4444'
-            }
-        )
-        .setOrigin(0.5)
-        .setDepth(12);
-        elements.push(closeText);
-
-        const closeHitbox = this.add.rectangle(
-            closeText.x, closeText.y, 40, 40, 0x000000, 0
-        )
-        .setInteractive({ useHandCursor: true })
-        .setDepth(12);
-        elements.push(closeHitbox);
-
-        closeHitbox.on('pointerover', () => {
-            closeText.setScale(1.2);
-            closeText.setColor('#ffffff');
-        });
-        closeHitbox.on('pointerout', () => {
-            closeText.setScale(1);
-            closeText.setColor('#ff4444');
-        });
-        closeHitbox.on('pointerdown', () => {
-            elements.forEach(el => el.destroy());
-            this.pendingMode = null;
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  CHARACTER CARDS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        const characters = [
-            {
-                id: 'p1',
-                name: 'KNIGHT',
-                color: 0x4488ff,
-                anim: 'p1_preview',
-                texture: 'p1_idle',
-                desc: 'Balanced fighter'
-            },
-            {
-                id: 'p2',
-                name: 'SHADOW',
-                color: 0x9944ff,
-                anim: 'p2_preview',
-                texture: 'p2_idle',
-                desc: 'Fast & deadly'
-            },
-            {
-                id: 'p3',
-                name: 'BERSERKER',
-                color: 0xff4444,
-                anim: 'p3_preview',
-                texture: 'p3_idle',
-                desc: 'Heavy hitter'
-            }
-        ];
-
-        const cardW = 150;
-        const cardH = 200;
-        const spacing = 30;
-        const totalW = characters.length * cardW + (characters.length - 1) * spacing;
-        const startX = panelX - totalW / 2 + cardW / 2;
-        const cardY = panelY + 10;
-
-        // Track selection highlight
-        let selectedBorder = null;
-
-        characters.forEach((char, index) => {
-            const cx = startX + index * (cardW + spacing);
-
-            // Card background
-            const cardBg = this.add.rectangle(cx, cardY, cardW, cardH, 0x1a1a1a)
-                .setDepth(12)
-                .setStrokeStyle(2, 0x333333)
-                .setInteractive({ useHandCursor: true });
-            elements.push(cardBg);
-
-            // Character sprite preview
-            const charSprite = this.add.sprite(cx, cardY - 20, char.texture)
-                .setScale(0.25)
-                .setDepth(13);
-            charSprite.anims.play(char.anim, true);
-            elements.push(charSprite);
-
-            // Character name
-            const nameText = this.add.text(cx, cardY + 60, char.name, {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '8px',
-                color: '#ffffff',
-                align: 'center'
-            })
-            .setOrigin(0.5)
-            .setDepth(13);
-            elements.push(nameText);
-
-            // Description
-            const descText = this.add.text(cx, cardY + 80, char.desc, {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '6px',
-                color: '#888888',
-                align: 'center'
-            })
-            .setOrigin(0.5)
-            .setDepth(13);
-            elements.push(descText);
-
-            // ✅ Default selection highlight
-            if (char.id === this.selectedCharacter) {
-                selectedBorder = this.add.rectangle(cx, cardY, cardW + 6, cardH + 6, 0x000000, 0)
-                    .setDepth(11)
-                    .setStrokeStyle(3, char.color);
-                elements.push(selectedBorder);
-            }
-
-            // Hover effects
-            cardBg.on('pointerover', () => {
-                cardBg.setFillStyle(0x333333);
-                charSprite.setScale(0.28);
-                nameText.setColor('#ffff00');
-            });
-
-            cardBg.on('pointerout', () => {
-                if (this.selectedCharacter === char.id) {
-                    cardBg.setFillStyle(0x222222);
-                } else {
-                    cardBg.setFillStyle(0x1a1a1a);
-                }
-                charSprite.setScale(0.25);
-                nameText.setColor('#ffffff');
-            });
-
-            // Click to select
-            cardBg.on('pointerdown', () => {
-                this.selectedCharacter = char.id;
-
-                // Update selection border
-                if (selectedBorder) selectedBorder.destroy();
-                selectedBorder = this.add.rectangle(cx, cardY, cardW + 6, cardH + 6, 0x000000, 0)
-                    .setDepth(11)
-                    .setStrokeStyle(3, char.color);
-                elements.push(selectedBorder);
-
-                // Update all card backgrounds
-                characters.forEach((c, i) => {
-                    // Reset all cards
-                });
-
-                console.log(`🎭 Selected: ${char.name} (${char.id})`);
-            });
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  PLAY BUTTON
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        const playBtn = this.add.text(
-            panelX,
-            panelY + panelH / 2 - 35,
-            '▶ PLAY',
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '16px',
-                color: '#ffffff',
-                backgroundColor: '#228B22',
-                padding: { x: 30, y: 12 }
-            }
-        )
-        .setOrigin(0.5)
-        .setDepth(12)
         .setInteractive({ useHandCursor: true });
-        elements.push(playBtn);
 
-        playBtn.on('pointerover', () => {
-            playBtn.setStyle({ backgroundColor: '#32CD32' });
-            playBtn.setScale(1.05);
+        customBtn.on('pointerover', () => {
+            customBtn.setStyle({ backgroundColor: '#333' });
+            customBtn.setScale(1.05);
         });
-
-        playBtn.on('pointerout', () => {
-            playBtn.setStyle({ backgroundColor: '#228B22' });
-            playBtn.setScale(1);
+        customBtn.on('pointerout', () => {
+            customBtn.setStyle({ backgroundColor: '#1a1a1a' });
+            customBtn.setScale(1);
         });
-
-        playBtn.on('pointerdown', () => {
-            console.log(`🎮 Starting ${this.pendingMode} with character: ${this.selectedCharacter}`);
-
-            // Destroy popup
-            elements.forEach(el => el.destroy());
-
-            // Start the game with character data
-            if (this.pendingMode === 'solo') {
-                this.scene.start('GameScene', {
-                    mode: 'solo',
-                    character: this.selectedCharacter
-                });
-            } else if (this.pendingMode === 'multiplayer') {
-                this.scene.start('LobbyScene', {
-                    character: this.selectedCharacter
-                });
-            }
+        customBtn.on('pointerdown', () => {
+            this.scene.start('CustomizeScene');
         });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  SELECTED CHARACTER LABEL
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        const selectedLabel = this.add.text(
-            panelX,
-            panelY + panelH / 2 - 70,
-            `SELECTED: ${this.selectedCharacter.toUpperCase()}`,
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '8px',
-                color: '#44ff44'
-            }
-        )
-        .setOrigin(0.5)
-        .setDepth(12);
-        elements.push(selectedLabel);
-
-        // ✅ Store elements ref so we can update the label
-        this.charSelectElements = elements;
-        this.selectedLabel = selectedLabel;
     }
 
     // 🔘 Button Creator
@@ -370,12 +129,10 @@ export default class MenuScene extends Phaser.Scene {
             btn.setStyle({ backgroundColor: '#555' });
             btn.setScale(1.05);
         });
-
         btn.on('pointerout', () => {
             btn.setStyle({ backgroundColor: '#222' });
             btn.setScale(1);
         });
-
         btn.on('pointerdown', callback);
     }
 
@@ -422,7 +179,6 @@ export default class MenuScene extends Phaser.Scene {
             closeText.setScale(1.2);
             closeText.setColor('#ffffff');
         });
-
         closeHitbox.on('pointerout', () => {
             closeText.setScale(1);
             closeText.setColor('#ff4444');
