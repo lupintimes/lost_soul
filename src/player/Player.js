@@ -3,16 +3,18 @@ import CombatSystem from '../systems/CombatSystem.js';
 import HealthSystem from '../systems/HealthSystem.js';
 
 export default class Player {
-    constructor(scene, x, y, playerId, isControlled) {
+    constructor(scene, x, y, playerId, isControlled, character) {
         this.scene = scene;
 
         this.playerId = playerId || null;
         this.isControlled = isControlled !== undefined ? isControlled : true;
+        this.character = character || 'p1';
 
         this.comboStep = 0;
         this.comboTimer = null;
+        this.currentAttackStep = 0;
 
-        this.sprite = scene.physics.add.sprite(x, y, 'idle');
+        this.sprite = scene.physics.add.sprite(x, y, `${this.character}_idle`);
         this.sprite.setCollideWorldBounds(true);
 
         this.sprite.setScale(0.4);
@@ -34,7 +36,7 @@ export default class Player {
         this.lastX = 0;
         this.lastY = 0;
         this.lastFlip = false;
-        this.lastAnim = 'idle_anim';
+        this.lastAnim = `${this.character}_idle_anim`;
 
         this.targetX = x;
         this.targetY = y;
@@ -42,14 +44,13 @@ export default class Player {
         // ⚔️ attack trigger
         this.sprite.on('animationupdate', (anim, frame) => {
             if (
-                (anim.key === 'attack_1' ||
-                    anim.key === 'attack_2' ||
-                    anim.key === 'attack_3') &&
+                (anim.key === `${this.character}_attack_1` ||
+                    anim.key === `${this.character}_attack_2` ||
+                    anim.key === `${this.character}_attack_3`) &&
                 frame.index === 2
             ) {
                 this.combat.attack();
 
-                // ✅ Multiplayer: check hits against remote players
                 if (this.isControlled && this.scene.mode === 'multiplayer') {
                     this.checkMultiplayerHit();
                 }
@@ -67,17 +68,14 @@ export default class Player {
         const attackW = 100;
         const attackH = 80;
 
-        // ✅ Get damage from the CURRENT animation, not comboStep
         const currentAnim = this.sprite.anims.currentAnim;
-        let damage = 15; // default
+        let damage = 15;
 
         if (currentAnim) {
-            if (currentAnim.key === 'attack_1') damage = 15;
-            if (currentAnim.key === 'attack_2') damage = 20;
-            if (currentAnim.key === 'attack_3') damage = 30;
+            if (currentAnim.key === `${this.character}_attack_1`) damage = 15;
+            if (currentAnim.key === `${this.character}_attack_2`) damage = 20;
+            if (currentAnim.key === `${this.character}_attack_3`) damage = 30;
         }
-
-        console.log(`⚔️ Checking hit: anim=${currentAnim?.key} damage=${damage}`);
 
         this.scene.checkAttackHits(
             attackX - attackW / 2,
@@ -92,7 +90,6 @@ export default class Player {
         if (!this.sprite || !this.sprite.body) return;
         if (this.state === 'dead') return;
 
-        // ✅ Remote player — skip input, just update health bar
         if (!this.isControlled) {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
@@ -100,7 +97,6 @@ export default class Player {
             return;
         }
 
-        // 🤖 ENEMY MODE
         if (this.isEnemy) {
             this.enemyAI();
             if (this.health && typeof this.health.updateBar === 'function') {
@@ -109,7 +105,6 @@ export default class Player {
             return;
         }
 
-        // ⚡ DASH LOCK
         if (this.state === 'dash') {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
@@ -132,18 +127,18 @@ export default class Player {
             this.sprite.setVelocityX(-speed);
             this.sprite.setFlipX(true);
             if (this.state !== 'attack')
-                this.sprite.anims.play('walk_anim', true);
+                this.sprite.anims.play(`${this.character}_walk_anim`, true);
         }
         else if (this.controls.right.isDown) {
             this.sprite.setVelocityX(speed);
             this.sprite.setFlipX(false);
             if (this.state !== 'attack')
-                this.sprite.anims.play('walk_anim', true);
+                this.sprite.anims.play(`${this.character}_walk_anim`, true);
         }
         else {
             this.sprite.setVelocityX(0);
             if (this.state !== 'attack')
-                this.sprite.anims.play('idle_anim', true);
+                this.sprite.anims.play(`${this.character}_idle_anim`, true);
         }
 
         // 🦘 JUMP
@@ -156,22 +151,18 @@ export default class Player {
             }
         }
 
-        // ⚔️ ATTACK
         if (Phaser.Input.Keyboard.JustDown(this.controls.attack)) {
             this.attack();
         }
 
-        // ⚡ DASH
         if (Phaser.Input.Keyboard.JustDown(this.controls.dash)) {
             this.dash();
         }
 
-        // 🔮 SPELL
         if (Phaser.Input.Keyboard.JustDown(this.controls.spell)) {
             this.castSpell();
         }
 
-        // 😤 TAUNT
         if (Phaser.Input.Keyboard.JustDown(this.controls.taunt)) {
             this.taunt();
         }
@@ -207,7 +198,7 @@ export default class Player {
                 }
                 this.sprite.setVelocityX(this.patrolDir * this.speed * 0.5);
                 this.sprite.setFlipX(this.patrolDir < 0);
-                this.sprite.anims.play('walk_anim', true);
+                this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 break;
 
             case 'chase':
@@ -218,7 +209,7 @@ export default class Player {
                 if (dist > ATTACK_RANGE) {
                     this.sprite.setVelocityX(dir * this.speed);
                     this.sprite.setFlipX(dir < 0);
-                    this.sprite.anims.play('walk_anim', true);
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 } else {
                     this.aiState = 'attack';
                 }
@@ -248,17 +239,18 @@ export default class Player {
 
         this.comboStep++;
         if (this.comboStep > 3) this.comboStep = 1;
+        this.currentAttackStep = this.comboStep;
 
-        this.sprite.anims.play(`attack_${this.comboStep}`);
-
-        this.scene.time.delayedCall(600, () => {
-            this.comboStep = 0;
-        });
+        this.sprite.anims.play(`${this.character}_attack_${this.comboStep}`);
 
         this.sprite.once('animationcomplete', () => {
             if (this.state !== 'dead') {
                 this.state = 'idle';
             }
+            this.scene.time.delayedCall(500, () => {
+                this.comboStep = 0;
+                this.currentAttackStep = 0;
+            });
         });
     }
 
@@ -288,9 +280,7 @@ export default class Player {
         spell.body.allowGravity = false;
         spell.body.setVelocityX(dir * 400);
 
-        // ✅ In multiplayer, spell hits remote players via server
         if (this.isControlled && this.scene.mode === 'multiplayer') {
-            // Check overlap with remote players
             Object.keys(this.scene.otherPlayerMap).forEach(id => {
                 const remote = this.scene.otherPlayerMap[id];
                 if (!remote || !remote.sprite) return;
@@ -301,7 +291,6 @@ export default class Player {
                 });
             });
         } else {
-            // Solo mode — hit local enemies
             const targets = this.isEnemy
                 ? this.scene.players
                 : this.scene.enemies;
@@ -321,7 +310,7 @@ export default class Player {
     }
 
     taunt() {
-        this.sprite.anims.play('taunt_anim');
+        this.sprite.anims.play(`${this.character}_taunt_anim`);
     }
 
     // 💥 DAMAGE
@@ -329,8 +318,6 @@ export default class Player {
         if (this.state === 'dead') return;
 
         this.health.current -= amount;
-
-        console.log("HP:", this.health.current);
 
         if (this.health.current <= 0) {
             this.health.current = 0;
@@ -344,7 +331,7 @@ export default class Player {
         this.isInvincible = true;
 
         this.sprite.setTint(0xff0000);
-        this.sprite.anims.play('hurt_anim');
+        this.sprite.anims.play(`${this.character}_hurt_anim`);
 
         this.scene.time.delayedCall(300, () => {
             if (this.state !== 'dead') {
@@ -365,7 +352,7 @@ export default class Player {
         this.state = 'dead';
 
         this.sprite.setVelocity(0);
-        this.sprite.anims.play('death_anim');
+        this.sprite.anims.play(`${this.character}_death_anim`);
 
         this.sprite.once('animationcomplete', () => {
             if (this.isEnemy) {
@@ -375,7 +362,6 @@ export default class Player {
                 if (this.health && this.health.bar) this.health.bar.destroy();
             }
             else {
-                // ✅ Solo mode — destroy and respawn
                 if (this.scene.mode === 'solo') {
                     this.sprite.destroy();
                     if (this.health && this.health.bar) this.health.bar.destroy();
@@ -383,7 +369,6 @@ export default class Player {
                         this.scene.respawnPlayer();
                     });
                 }
-                // ✅ Multiplayer — server handles respawn, don't destroy
             }
         });
     }

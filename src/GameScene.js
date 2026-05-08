@@ -24,19 +24,24 @@ export default class GameScene extends Phaser.Scene {
     preload() {
         this.load.image('bg', '../assets/background.png');
 
-        this.load.spritesheet('idle', '../assets/p1/idle.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('walk', '../assets/p1/walk.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('attack', '../assets/p1/attack.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('blink', '../assets/p1/blink.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('taunt', '../assets/p1/taunt.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('hurt', '../assets/p1/hurt.png', { frameWidth: 520, frameHeight: 420 });
-        this.load.spritesheet('death', '../assets/p1/death.png', { frameWidth: 520, frameHeight: 420 });
+        const characters = ['p1', 'p2', 'p3'];
+
+        characters.forEach(char => {
+            this.load.spritesheet(`${char}_idle`, `../assets/${char}/idle.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_walk`, `../assets/${char}/walk.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_attack`, `../assets/${char}/attack.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_blink`, `../assets/${char}/blink.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_taunt`, `../assets/${char}/taunt.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_hurt`, `../assets/${char}/hurt.png`, { frameWidth: 520, frameHeight: 420 });
+            this.load.spritesheet(`${char}_death`, `../assets/${char}/death.png`, { frameWidth: 520, frameHeight: 420 });
+        });
     }
 
     create() {
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
         this.roomId = data.roomId || null;
+        this.selectedCharacter = data.character || 'p1';
 
         this.socket = SocketManager.get();
 
@@ -264,7 +269,7 @@ export default class GameScene extends Phaser.Scene {
 
         // 4. Player moved — ✅ THIS IS THE CRITICAL ONE
         this.socket.on('playerMoved', (playerInfo) => {
-            
+
 
             const remote = this.otherPlayerMap[playerInfo.playerId];
             if (!remote) {
@@ -295,7 +300,7 @@ export default class GameScene extends Phaser.Scene {
                 }
 
                 if (this.localPlayer.sprite && this.localPlayer.sprite.active) {
-                    this.localPlayer.sprite.anims.play('hurt_anim', true);
+                    this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_hurt_anim`, true);
                     this.localPlayer.sprite.setTint(0xff0000);
                     this.time.delayedCall(200, () => {
                         if (this.localPlayer && this.localPlayer.sprite && this.localPlayer.sprite.active) {
@@ -313,7 +318,7 @@ export default class GameScene extends Phaser.Scene {
                     remote.health.current = data.remainingHealth;
                 }
 
-                remote.sprite.anims.play('hurt_anim', true);
+                remote.sprite.anims.play(`${remote.character}_hurt_anim`, true);
                 remote.sprite.setTint(0xff0000);
                 this.time.delayedCall(200, () => {
                     if (remote.sprite && remote.sprite.active) {
@@ -406,13 +411,17 @@ export default class GameScene extends Phaser.Scene {
 
     spawnLocalPlayer(playerInfo) {
         if (this.localPlayer) {
-            console.warn('⚠️ Local player already exists');
+
             return;
         }
 
-        console.log(`🟢 Spawning LOCAL at (${playerInfo.x}, ${playerInfo.y})`);
+        // ✅ Pass character
+        const player = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, true, this.selectedCharacter);
 
-        const player = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, true);
+
+
+
+
         if (player.health && typeof player.health.setHealth === 'function') {
             player.health.setHealth(playerInfo.health || 100);
         } else {
@@ -454,9 +463,12 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
 
+
+
         console.log(`🔴 Spawning REMOTE player: ${playerInfo.playerId} at (${playerInfo.x}, ${playerInfo.y})`);
 
-        const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false);
+        const remoteChar = playerInfo.character || 'p1';
+        const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false, remoteChar);
         remotePlayer.sprite.setTint(0xff6666);
 
         // ✅ Disable gravity and physics for remote players
@@ -753,15 +765,19 @@ export default class GameScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createAnimations() {
-        if (this.anims.exists('idle_anim')) return;
+        const chars = ['p1', 'p2', 'p3'];
 
-        this.anims.create({ key: 'idle_anim', frames: this.anims.generateFrameNumbers('idle', { start: 0, end: 11 }), frameRate: 6, repeat: -1 });
-        this.anims.create({ key: 'walk_anim', frames: this.anims.generateFrameNumbers('walk', { start: 0, end: 11 }), frameRate: 12, repeat: -1 });
-        this.anims.create({ key: 'hurt_anim', frames: this.anims.generateFrameNumbers('hurt', { start: 0, end: 3 }), frameRate: 10 });
-        this.anims.create({ key: 'death_anim', frames: this.anims.generateFrameNumbers('death', { start: 0, end: 5 }), frameRate: 8 });
-        this.anims.create({ key: 'attack_1', frames: this.anims.generateFrameNumbers('attack', { start: 0, end: 3 }), frameRate: 14 });
-        this.anims.create({ key: 'attack_2', frames: this.anims.generateFrameNumbers('attack', { start: 4, end: 7 }), frameRate: 16 });
-        this.anims.create({ key: 'attack_3', frames: this.anims.generateFrameNumbers('attack', { start: 8, end: 11 }), frameRate: 18 });
+        chars.forEach(char => {
+            if (this.anims.exists(`${char}_idle_anim`)) return;
+
+            this.anims.create({ key: `${char}_idle_anim`, frames: this.anims.generateFrameNumbers(`${char}_idle`, { start: 0, end: 11 }), frameRate: 6, repeat: -1 });
+            this.anims.create({ key: `${char}_walk_anim`, frames: this.anims.generateFrameNumbers(`${char}_walk`, { start: 0, end: 11 }), frameRate: 12, repeat: -1 });
+            this.anims.create({ key: `${char}_hurt_anim`, frames: this.anims.generateFrameNumbers(`${char}_hurt`, { start: 0, end: 3 }), frameRate: 10 });
+            this.anims.create({ key: `${char}_death_anim`, frames: this.anims.generateFrameNumbers(`${char}_death`, { start: 0, end: 5 }), frameRate: 8 });
+            this.anims.create({ key: `${char}_attack_1`, frames: this.anims.generateFrameNumbers(`${char}_attack`, { start: 0, end: 3 }), frameRate: 14 });
+            this.anims.create({ key: `${char}_attack_2`, frames: this.anims.generateFrameNumbers(`${char}_attack`, { start: 4, end: 7 }), frameRate: 16 });
+            this.anims.create({ key: `${char}_attack_3`, frames: this.anims.generateFrameNumbers(`${char}_attack`, { start: 8, end: 11 }), frameRate: 18 });
+        });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -770,7 +786,7 @@ export default class GameScene extends Phaser.Scene {
 
     spawnPlayer() {
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
-        const player = new Player(this, spawn.x, spawn.y);
+        const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
         this.players.push(player);
         this.physics.add.collider(player.sprite, this.platformGroup);
@@ -800,7 +816,7 @@ export default class GameScene extends Phaser.Scene {
 
     respawnPlayer() {
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
-        const player = new Player(this, spawn.x, spawn.y);
+        const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
         this.players.push(player);
         this.physics.add.collider(player.sprite, this.platformGroup);
@@ -844,7 +860,7 @@ export default class GameScene extends Phaser.Scene {
             rect.w,
             rect.h,
             0xff0000,
-            0.1
+            0.0
         );
 
         this.physics.add.existing(platform, true);

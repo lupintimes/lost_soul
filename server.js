@@ -85,7 +85,8 @@ io.on('connection', (socket) => {
             anim: 'idle_anim',
             health: 100,
             kills: 0,
-            deaths: 0
+            deaths: 0,
+            character: data.character || 'p1'
         };
 
         socket.join(roomId);
@@ -126,7 +127,8 @@ io.on('connection', (socket) => {
             anim: 'idle_anim',
             health: 100,
             kills: 0,
-            deaths: 0
+            deaths: 0,
+            character: data.character || 'p1'
         };
 
         room.players[socket.id] = playerObj;

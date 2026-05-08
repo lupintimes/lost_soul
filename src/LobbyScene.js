@@ -14,6 +14,9 @@ export default class LobbyScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
 
+        const data = this.scene.settings.data || {};
+        this.selectedCharacter = data.character || 'p1';
+
         // ─── Background ───────────────────────────────────
         this.add.image(0, 0, 'menu_bg')
             .setOrigin(0)
@@ -333,7 +336,8 @@ export default class LobbyScene extends Phaser.Scene {
 
             this.scene.start('GameScene', {
                 mode: 'multiplayer',
-                roomId: serverData.roomId
+                roomId: serverData.roomId,
+                character: this.selectedCharacter
             });
         });
 
@@ -346,7 +350,8 @@ export default class LobbyScene extends Phaser.Scene {
 
             this.scene.start('GameScene', {
                 mode: 'multiplayer',
-                roomId: serverData.roomId
+                roomId: serverData.roomId,
+                character: this.selectedCharacter
             });
         });
 
@@ -478,7 +483,8 @@ export default class LobbyScene extends Phaser.Scene {
 
         socket.emit('createServer', {
             name: this.serverNameValue,
-            maxPlayers: this.maxPlayers
+            maxPlayers: this.maxPlayers,
+            character: this.selectedCharacter
         });
     }
 
@@ -490,7 +496,7 @@ export default class LobbyScene extends Phaser.Scene {
             return;
         }
 
-        socket.emit('joinServer', { roomId });
+        socket.emit('joinServer', { roomId, character: this.selectedCharacter });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
