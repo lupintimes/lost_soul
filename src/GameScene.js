@@ -46,6 +46,7 @@ export default class GameScene extends Phaser.Scene {
         this.socket = SocketManager.get();
 
         // Reset everything
+        this.isRespawning = false;
         this.players = [];
         this.enemies = [];
         this.platforms = [];
@@ -673,7 +674,9 @@ export default class GameScene extends Phaser.Scene {
         });
         this.enemies = aliveEnemies;
 
-        this.players = this.players.filter(p => p && p.sprite && p.sprite.active && p.state !== 'dead');
+        // ✅ Only filter players with destroyed sprites, NOT dead state
+        // Dead players still need to play death animation before being removed
+        this.players = this.players.filter(p => p && p.sprite && p.sprite.active);
 
         this.maxEnemies = Math.min(
             this.spawnPoints.length,
@@ -815,6 +818,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     respawnPlayer() {
+        // ✅ Prevent double respawn
+        if (this.isRespawning) return;
+        this.isRespawning = true;
+
+        // Clean dead players
+        this.players = this.players.filter(p => p && p.sprite && p.sprite.active && p.state !== 'dead');
+
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
@@ -826,6 +836,11 @@ export default class GameScene extends Phaser.Scene {
         this.enemies.forEach(enemy => {
             enemy.aiState = 'chase';
             enemy.attackCooldown = false;
+        });
+
+        // ✅ Reset flag after spawn
+        this.time.delayedCall(100, () => {
+            this.isRespawning = false;
         });
     }
 

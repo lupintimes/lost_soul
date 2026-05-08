@@ -114,7 +114,7 @@ export default class Player {
 
         const speed = this.speed || 250;
         const jumpForce = this.jumpForce || -650;
-        const highJumpForce = this.highJumpForce || -1000;
+        const highJumpForce = this.highJumpForce || -850;
 
         if (this.health && typeof this.health.updateBar === 'function') {
             this.health.updateBar();
@@ -269,11 +269,19 @@ export default class Player {
     castSpell() {
         const dir = this.sprite.flipX ? -1 : 1;
 
+        const spellColors = {
+            'p1': 0x00ffff,   // Cyan
+            'p2': 0xff8c00,   // Orange
+            'p3': 0x9b30ff    // Violet
+        };
+
+        const spellColor = spellColors[this.character] || 0x00ffff;
+
         const spell = this.scene.add.circle(
             this.sprite.x + dir * 50,
             this.sprite.y,
             15,
-            0x00ffff
+            spellColor
         );
 
         this.scene.physics.add.existing(spell);
@@ -360,11 +368,18 @@ export default class Player {
                 if (index !== -1) this.scene.enemies.splice(index, 1);
                 this.sprite.destroy();
                 if (this.health && this.health.bar) this.health.bar.destroy();
+
             }
             else {
                 if (this.scene.mode === 'solo') {
+                    // ✅ Remove from players array FIRST
+                    const index = this.scene.players.indexOf(this);
+                    if (index !== -1) this.scene.players.splice(index, 1);
+
                     this.sprite.destroy();
                     if (this.health && this.health.bar) this.health.bar.destroy();
+
+                    // ✅ Only then respawn
                     this.scene.time.delayedCall(1500, () => {
                         this.scene.respawnPlayer();
                     });
