@@ -31,6 +31,8 @@ export default class GameScene extends Phaser.Scene {
         this.roomId = null;
         this.localPlayer = null;
         this.otherPlayerMap = {};
+
+        
     }
 
     preload() {
@@ -305,8 +307,10 @@ export default class GameScene extends Phaser.Scene {
 
         // 5. Player damaged
         this.socket.on('playerDamaged', (data) => {
-            // If WE got hit
             if (data.targetId === this.socket.id && this.localPlayer) {
+                // ✅ Block damage if invincible
+                if (this.localPlayer.isInvincible) return;
+
                 if (this.localPlayer.health && typeof this.localPlayer.health === 'object') {
                     this.localPlayer.health.current = data.remainingHealth;
                 }
@@ -324,15 +328,13 @@ export default class GameScene extends Phaser.Scene {
                 }
             }
 
-            // If a REMOTE player got hit
             const remote = this.otherPlayerMap[data.targetId];
             if (remote && remote.sprite && remote.sprite.active) {
-
                 if (remote.health && typeof remote.health === 'object') {
                     remote.health.current = data.remainingHealth;
                 }
 
-                this.safePlaySound('sfx_hurt', 0.4);
+                this.safePlaySound('sfx_hurt', 0.2);
 
                 remote.sprite.anims.play(`${remote.character}_hurt_anim`, true);
                 remote.sprite.setTint(0xff0000);
@@ -351,7 +353,7 @@ export default class GameScene extends Phaser.Scene {
             // If WE died
             if (data.victimId === this.socket.id && this.localPlayer) {
                 this.localPlayer.state = 'dead';
-                this.localPlayer.sprite.anims.play('death_anim', true);
+                this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_death_anim`, true);
                 this.localPlayer.isControlled = false;
                 this.localPlayer.sprite.setVelocity(0, 0);
                 this.safePlaySound('sfx_death', 0.5);
@@ -362,7 +364,7 @@ export default class GameScene extends Phaser.Scene {
             const remote = this.otherPlayerMap[data.victimId];
             if (remote && remote.sprite && remote.sprite.active) {
                 remote.state = 'dead';
-                remote.sprite.anims.play('death_anim', true);
+                remote.sprite.anims.play(`${remote.character}_death_anim`, true);
                 remote.sprite.setTint(0x444444);
 
                 this.safePlaySound('sfx_death', 0.2);
@@ -390,7 +392,7 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.health.current = data.health;
                 }
 
-                this.localPlayer.sprite.anims.play('idle_anim', true);
+                this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_idle_anim`, true);
                 this.applySpawnProtection(this.localPlayer);
                 this.cameras.main.startFollow(this.localPlayer.sprite, true, 0.1, 0.1);
             }
@@ -409,7 +411,7 @@ export default class GameScene extends Phaser.Scene {
                 }
 
                 remote.sprite.setTint(0xff6666);
-                remote.sprite.anims.play('idle_anim', true);
+                remote.sprite.anims.play(`${remote.character}_idle_anim`, true);
                 remote.sprite.setActive(true).setVisible(true);
             }
         });
@@ -541,17 +543,16 @@ export default class GameScene extends Phaser.Scene {
             const remote = this.otherPlayerMap[id];
             if (!remote || !remote.sprite || !remote.sprite.active) return;
 
-            // ✅ Check health on the HealthSystem object
+            // ✅ Skip invincible players
+            if (remote.isInvincible) return;
+
             if (remote.health && remote.health.current <= 0) return;
 
             const rx = remote.sprite.x;
             const ry = remote.sprite.y;
-
-            // ✅ Use actual sprite body size for hitbox
             const rw = remote.sprite.body.width;
             const rh = remote.sprite.body.height;
 
-            // AABB overlap check
             const overlap =
                 attackX < rx + rw / 2 &&
                 attackX + attackW > rx - rw / 2 &&
@@ -559,7 +560,6 @@ export default class GameScene extends Phaser.Scene {
                 attackY + attackH > ry - rh / 2;
 
             if (overlap) {
-                console.log(`⚔️ HIT! ${id} for ${damage} damage`);
                 this.sendAttackToServer(id, damage);
             }
         });
@@ -726,37 +726,33 @@ export default class GameScene extends Phaser.Scene {
                 // ignore
             }
 
-            if (this.socket && this.localPlayer.isControlled) {
+            if (this.socket && this.localPlayer.isControlled && this.localPlayer.state !== 'dead') {
                 const s = this.localPlayer.sprite;
                 const x = Math.round(s.x);
                 const y = Math.round(s.y);
                 const flipX = s.flipX;
-                const anim = s.anims.currentAnim ? s.anims.currentAnim.key : 'idle_anim';
+                const anim = s.anims.currentAnim ? s.anims.currentAnim.key : `${this.localPlayer.character}_idle_anim`;
 
-                // 🔍 LOG EVERY EMISSION
-                if (
+                // ✅ THIS LINE WAS MISSING
+                const now = Date.now();
+
+                if (!this.lastEmitTime) this.lastEmitTime = 0;
+
+                const hasChanged =
                     this.localPlayer.lastX !== x ||
                     this.localPlayer.lastY !== y ||
                     this.localPlayer.lastFlip !== flipX ||
-                    this.localPlayer.lastAnim !== anim
-                ) {
+                    this.localPlayer.lastAnim !== anim;
 
+                if (hasChanged && (now - this.lastEmitTime) > 50) {
                     this.socket.emit('playerMovement', { x, y, flipX, anim });
                     this.localPlayer.lastX = x;
                     this.localPlayer.lastY = y;
                     this.localPlayer.lastFlip = flipX;
                     this.localPlayer.lastAnim = anim;
+                    this.lastEmitTime = now;
                 }
-            } else {
-                // 🔍 WHY NOT SENDING?
-                if (!this.socket) console.log('❌ No socket');
-                if (!this.localPlayer.isControlled) console.log('❌ Not controlled');
             }
-        } else {
-            // 🔍 WHY NO LOCAL PLAYER?
-            if (!this.localPlayer) console.log('❌ No localPlayer');
-            else if (!this.localPlayer.sprite) console.log('❌ No sprite');
-            else if (!this.localPlayer.sprite.active) console.log('❌ Sprite not active');
         }
 
         // Interpolate remote players
@@ -870,10 +866,86 @@ export default class GameScene extends Phaser.Scene {
         player.isInvincible = true;
         player.sprite.setTint(0x00ffff);
 
-        this.time.delayedCall(1500, () => {
+        // ✅ Track spawn position
+        const spawnX = player.sprite.x;
+        const spawnY = player.sprite.y;
+
+        // ✅ Start with 5 seconds
+        let protectionTime = 5000;
+
+        // ✅ Check for movement every 100ms
+        const moveCheck = this.time.addEvent({
+            delay: 100,
+            repeat: -1,
+            callback: () => {
+                if (!player || !player.sprite || !player.sprite.active) {
+                    moveCheck.destroy();
+                    return;
+                }
+
+                const dx = Math.abs(player.sprite.x - spawnX);
+                const dy = Math.abs(player.sprite.y - spawnY);
+
+                // ✅ If player moved more than 5px, reduce to 2 seconds
+                if (dx > 5 || dy > 5) {
+                    moveCheck.destroy();
+
+                    // ✅ Remove protection after 2 seconds from first movement
+                    this.time.delayedCall(2000, () => {
+                        if (player && player.sprite && player.sprite.active) {
+                            player.isInvincible = false;
+                            player.sprite.clearTint();
+                        }
+                    });
+                }
+            }
+        });
+
+        // ✅ Max protection = 5 seconds (if no movement at all)
+        this.time.delayedCall(protectionTime, () => {
+            moveCheck.destroy();
+
             if (player && player.sprite && player.sprite.active) {
                 player.isInvincible = false;
                 player.sprite.clearTint();
+            }
+        });
+
+        // ✅ Blinking effect to show invincibility
+        const blinkEvent = this.time.addEvent({
+            delay: 200,
+            repeat: -1,
+            callback: () => {
+                if (!player || !player.sprite || !player.sprite.active || !player.isInvincible) {
+                    blinkEvent.destroy();
+                    return;
+                }
+
+                // Toggle visibility for blink effect
+                if (player.sprite.alpha === 1) {
+                    player.sprite.setAlpha(0.5);
+                } else {
+                    player.sprite.setAlpha(1);
+                }
+            }
+        });
+
+        // ✅ When invincibility ends, reset alpha
+        const checkEnd = this.time.addEvent({
+            delay: 100,
+            repeat: -1,
+            callback: () => {
+                if (!player || !player.sprite || !player.sprite.active) {
+                    checkEnd.destroy();
+                    blinkEvent.destroy();
+                    return;
+                }
+
+                if (!player.isInvincible) {
+                    checkEnd.destroy();
+                    blinkEvent.destroy();
+                    player.sprite.setAlpha(1);
+                }
             }
         });
     }

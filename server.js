@@ -86,7 +86,8 @@ io.on('connection', (socket) => {
             health: 100,
             kills: 0,
             deaths: 0,
-            character: data.character || 'p1'
+            character: data.character || 'p1',
+            isInvincible: true
         };
 
         socket.join(roomId);
@@ -94,8 +95,18 @@ io.on('connection', (socket) => {
 
         console.log(`🏠 Room created: ${roomId} | Spawn: (${spawn.x}, ${spawn.y})`);
 
-        // ✅ Only send serverCreated — GameScene will requestPlayers
         socket.emit('serverCreated', { roomId, name: rooms[roomId].name });
+
+        // ✅ FIX: Store in local variables for timeout
+        const createdRoomId = roomId;
+        const createdSocketId = socket.id;
+
+        setTimeout(() => {
+            if (rooms[createdRoomId] && rooms[createdRoomId].players[createdSocketId]) {
+                rooms[createdRoomId].players[createdSocketId].isInvincible = false;
+                console.log(`🛡️ Invincibility ended for ${createdSocketId}`);
+            }
+        }, 5000);
 
         broadcastServerList();
     });
@@ -128,7 +139,8 @@ io.on('connection', (socket) => {
             health: 100,
             kills: 0,
             deaths: 0,
-            character: data.character || 'p1'
+            character: data.character || 'p1',
+            isInvincible: true
         };
 
         room.players[socket.id] = playerObj;
@@ -137,11 +149,19 @@ io.on('connection', (socket) => {
 
         console.log(`🎮 ${socket.id} joined: ${data.roomId} (${Object.keys(room.players).length}/${room.maxPlayers})`);
 
-        // ✅ Only send joinedServer — GameScene will requestPlayers
         socket.emit('joinedServer', { roomId: data.roomId, name: room.name });
-
-        // ✅ Tell OTHER players about the new player
         socket.to(data.roomId).emit('newPlayer', playerObj);
+
+        // ✅ FIX: Store roomId in a variable for the timeout
+        const joinedRoomId = data.roomId;
+        const joinedSocketId = socket.id;
+
+        setTimeout(() => {
+            if (rooms[joinedRoomId] && rooms[joinedRoomId].players[joinedSocketId]) {
+                rooms[joinedRoomId].players[joinedSocketId].isInvincible = false;
+                console.log(`🛡️ Invincibility ended for ${joinedSocketId}`);
+            }
+        }, 5000);
 
         broadcastServerList();
     });
@@ -195,8 +215,13 @@ io.on('connection', (socket) => {
         if (!attacker || !target) return;
         if (target.health <= 0) return;
 
+        // ✅ Block damage if target is invincible
+        if (target.isInvincible) return;
+
         const damage = attackData.damage || 10;
         target.health = Math.max(0, target.health - damage);
+
+
 
         console.log(`⚔️ ${socket.id} hit ${attackData.targetId} for ${damage} dmg (HP: ${target.health})`);
 
@@ -220,12 +245,25 @@ io.on('connection', (socket) => {
                 victimDeaths: target.deaths
             });
 
+            // In playerAttack handler, the respawn section:
             setTimeout(() => {
                 if (rooms[roomId] && rooms[roomId].players[attackData.targetId]) {
                     const respawnPoint = getUniqueSpawn(room);
                     target.health = 100;
                     target.x = respawnPoint.x;
                     target.y = respawnPoint.y;
+                    target.isInvincible = true;
+
+                    // ✅ FIX: Store in local variables
+                    const respawnRoomId = roomId;
+                    const respawnPlayerId = attackData.targetId;
+
+                    setTimeout(() => {
+                        if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
+                            rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
+                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
+                        }
+                    }, 5000);
 
                     io.to(roomId).emit('playerRespawned', {
                         playerId: attackData.targetId,

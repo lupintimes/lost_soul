@@ -17,6 +17,26 @@ export default class Player {
         }
     }
 
+    getDamage() {
+        const charDamage = this.damageTable[this.character] || this.damageTable['p1'];
+        const currentAnim = this.sprite.anims.currentAnim;
+
+        if (currentAnim) {
+            if (currentAnim.key === `${this.character}_attack_1`) return charDamage.attack_1;
+            if (currentAnim.key === `${this.character}_attack_2`) return charDamage.attack_2;
+            if (currentAnim.key === `${this.character}_attack_3`) return charDamage.attack_3;
+        }
+
+        return charDamage.attack_1;
+    }
+
+    getSpellDamage() {
+        const charDamage = this.damageTable[this.character] || this.damageTable['p1'];
+        return charDamage.spell;
+    }
+
+
+
     constructor(scene, x, y, playerId, isControlled, character) {
         this.scene = scene;
 
@@ -55,14 +75,30 @@ export default class Player {
         this.targetX = x;
         this.targetY = y;
 
+        this.damageTable = {
+            'p1': { attack_1: 25, attack_2: 35, attack_3: 50, spell: 20 },
+            'p2': { attack_1: 20, attack_2: 30, attack_3: 45, spell: 25 },
+            'p3': { attack_1: 35, attack_2: 45, attack_3: 65, spell: 30 }
+        };
+
+
+
+        // ⚔️ attack trigger
         // ⚔️ attack trigger
         this.sprite.on('animationupdate', (anim, frame) => {
+            // 🔍 DEBUG — log ALL attack frames
+            if (anim.key.includes('attack')) {
+                console.log(`🎬 ${anim.key} | frame: ${frame.index}`);
+            }
+
             if (
                 (anim.key === `${this.character}_attack_1` ||
                     anim.key === `${this.character}_attack_2` ||
                     anim.key === `${this.character}_attack_3`) &&
                 frame.index === 2
             ) {
+                console.log(`⚔️ HIT TRIGGERED! anim: ${anim.key}`);
+
                 this.combat.attack();
 
                 if (this.isControlled && this.scene.mode === 'multiplayer') {
@@ -82,14 +118,8 @@ export default class Player {
         const attackW = 100;
         const attackH = 80;
 
-        const currentAnim = this.sprite.anims.currentAnim;
-        let damage = 15;
-
-        if (currentAnim) {
-            if (currentAnim.key === `${this.character}_attack_1`) damage = 15;
-            if (currentAnim.key === `${this.character}_attack_2`) damage = 20;
-            if (currentAnim.key === `${this.character}_attack_3`) damage = 30;
-        }
+        // ✅ Use same damage table
+        const damage = this.getDamage();
 
         this.scene.checkAttackHits(
             attackX - attackW / 2,
@@ -258,7 +288,7 @@ export default class Player {
 
         this.sprite.anims.play(`${this.character}_attack_${this.comboStep}`);
 
-         this.playSound(`sfx_attack${this.comboStep}`, 0.3);
+        this.playSound(`sfx_attack${this.comboStep}`, 0.3);
 
         this.sprite.once('animationcomplete', () => {
             if (this.state !== 'dead') {
@@ -276,7 +306,7 @@ export default class Player {
         if (this.state === 'dash') return;
         this.state = 'dash';
 
-         this.playSound('sfx_dash', 0.3);
+        this.playSound('sfx_dash', 0.3);
 
         const dir = this.sprite.flipX ? -1 : 1;
         this.sprite.setVelocityX(dir * 900);
@@ -287,18 +317,20 @@ export default class Player {
 
     // 🔮 SPELL
     castSpell() {
+        this.playSound('sfx_spell', 0.4);
+
         const dir = this.sprite.flipX ? -1 : 1;
 
-         this.playSound('sfx_spell', 0.2);
-
-
         const spellColors = {
-            'p1': 0x00ffff,   // Cyan
-            'p2': 0xff8c00,   // Orange
-            'p3': 0x9b30ff    // Violet
+            'p1': 0x00ffff,
+            'p2': 0xff8c00,
+            'p3': 0x9b30ff
         };
 
         const spellColor = spellColors[this.character] || 0x00ffff;
+
+        // ✅ Use character-specific spell damage
+        const damage = this.getSpellDamage();
 
         const spell = this.scene.add.circle(
             this.sprite.x + dir * 50,
@@ -317,7 +349,7 @@ export default class Player {
                 if (!remote || !remote.sprite) return;
 
                 this.scene.physics.add.overlap(spell, remote.sprite, () => {
-                    this.scene.sendAttackToServer(id, 15);
+                    this.scene.sendAttackToServer(id, damage);
                     spell.destroy();
                 });
             });
@@ -329,7 +361,7 @@ export default class Player {
             targets.forEach(target => {
                 if (target === this) return;
                 this.scene.physics.add.overlap(spell, target.sprite, () => {
-                    target.takeDamage(15);
+                    target.takeDamage(damage);
                     spell.destroy();
                 });
             });
@@ -348,6 +380,9 @@ export default class Player {
     takeDamage(amount) {
         if (this.state === 'dead') return;
 
+        // ✅ Block ALL damage during invincibility
+        if (this.isInvincible) return;
+
         this.health.current -= amount;
 
         if (this.health.current <= 0) {
@@ -356,13 +391,10 @@ export default class Player {
             return;
         }
 
-        if (this.isInvincible) return;
-
         this.state = 'hurt';
         this.isInvincible = true;
 
-         this.playSound('sfx_hurt', 0.4);
-
+        this.playSound('sfx_hurt', 0.4);
 
         this.sprite.setTint(0xff0000);
         this.sprite.anims.play(`${this.character}_hurt_anim`);
@@ -379,13 +411,60 @@ export default class Player {
         });
     }
 
+    hitNearbyTargets(damage) {
+        const dir = this.sprite.flipX ? -1 : 1;
+        const attackX = this.sprite.x + (dir * 30);
+        const attackY = this.sprite.y - 20;
+        const attackW = 100;
+        const attackH = 80;
+
+        // ✅ Show red debug hitbox
+        const debugBox = this.scene.add.rectangle(
+            attackX,
+            attackY,
+            attackW,
+            attackH,
+            0xff0000,
+            0.3
+        );
+        this.scene.time.delayedCall(200, () => {
+            debugBox.destroy();
+        });
+
+        const targets = this.isEnemy
+            ? this.scene.players
+            : this.scene.enemies;
+
+        targets.forEach(target => {
+            if (!target || !target.sprite || !target.sprite.active) return;
+            if (target === this) return;
+            if (target.state === 'dead') return;
+            if (target.isInvincible) return;
+
+            const tx = target.sprite.x;
+            const ty = target.sprite.y;
+            const tw = target.sprite.body.width;
+            const th = target.sprite.body.height;
+
+            const overlap =
+                (attackX - attackW / 2) < (tx + tw / 2) &&
+                (attackX + attackW / 2) > (tx - tw / 2) &&
+                (attackY - attackH / 2) < (ty + th / 2) &&
+                (attackY + attackH / 2) > (ty - th / 2);
+
+            if (overlap) {
+                target.takeDamage(damage);
+            }
+        });
+    }
+
     // ☠️ DEATH
     die() {
         if (this.state === 'dead') return;
 
         this.state = 'dead';
 
-         this.playSound('sfx_death', 0.5);
+        this.playSound('sfx_death', 0.5);
 
         this.sprite.setVelocity(0);
         this.sprite.anims.play(`${this.character}_death_anim`);

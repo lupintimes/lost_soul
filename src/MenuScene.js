@@ -18,10 +18,7 @@ export default class MenuScene extends Phaser.Scene {
     create() {
         const { width, height } = this.scale;
 
-        // 🖼️ Background
-        this.add.image(0, 0, 'menu_bg')
-            .setOrigin(0)
-            .setDisplaySize(width, height);
+
 
         // 🌑 Dark overlay
         this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0);
@@ -68,7 +65,7 @@ export default class MenuScene extends Phaser.Scene {
         const previewY = height * 0.5;
 
         // Preview background panel
-        this.add.rectangle(previewX, previewY, 200, 250, 0x111111, 0.7)
+        this.add.rectangle(previewX, previewY, 200, 250, 0x111111, 1)
             .setStrokeStyle(2, 0x333333);
 
         // Character name
