@@ -2,7 +2,21 @@ import Controls from './Controls.js';
 import CombatSystem from '../systems/CombatSystem.js';
 import HealthSystem from '../systems/HealthSystem.js';
 
+
 export default class Player {
+
+    // Add this method to Player clas
+    // s
+    playSound(key, volume = 0.5) {
+        try {
+            if (this.scene.cache.audio.exists(key)) {
+                this.scene.sound.play(key, { volume });
+            }
+        } catch (e) {
+            // Silently ignore missing audio
+        }
+    }
+
     constructor(scene, x, y, playerId, isControlled, character) {
         this.scene = scene;
 
@@ -144,6 +158,7 @@ export default class Player {
         // 🦘 JUMP
         if (this.sprite.body.blocked.down) {
             if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
+                this.playSound('sfx_highjump', 0.3);
                 this.sprite.setVelocityY(highJumpForce);
             }
             else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
@@ -243,6 +258,8 @@ export default class Player {
 
         this.sprite.anims.play(`${this.character}_attack_${this.comboStep}`);
 
+         this.playSound(`sfx_attack${this.comboStep}`, 0.3);
+
         this.sprite.once('animationcomplete', () => {
             if (this.state !== 'dead') {
                 this.state = 'idle';
@@ -258,6 +275,9 @@ export default class Player {
     dash() {
         if (this.state === 'dash') return;
         this.state = 'dash';
+
+         this.playSound('sfx_dash', 0.3);
+
         const dir = this.sprite.flipX ? -1 : 1;
         this.sprite.setVelocityX(dir * 900);
         this.scene.time.delayedCall(200, () => {
@@ -268,6 +288,9 @@ export default class Player {
     // 🔮 SPELL
     castSpell() {
         const dir = this.sprite.flipX ? -1 : 1;
+
+         this.playSound('sfx_spell', 0.2);
+
 
         const spellColors = {
             'p1': 0x00ffff,   // Cyan
@@ -338,6 +361,9 @@ export default class Player {
         this.state = 'hurt';
         this.isInvincible = true;
 
+         this.playSound('sfx_hurt', 0.4);
+
+
         this.sprite.setTint(0xff0000);
         this.sprite.anims.play(`${this.character}_hurt_anim`);
 
@@ -358,6 +384,8 @@ export default class Player {
         if (this.state === 'dead') return;
 
         this.state = 'dead';
+
+         this.playSound('sfx_death', 0.5);
 
         this.sprite.setVelocity(0);
         this.sprite.anims.play(`${this.character}_death_anim`);
