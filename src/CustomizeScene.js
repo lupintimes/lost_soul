@@ -6,6 +6,16 @@ export default class CustomizeScene extends Phaser.Scene {
         this.activeTab = 'character';
     }
 
+    playClick() {
+        try {
+            if (this.cache.audio.exists('sfx_click')) {
+                this.sound.play('sfx_click', { volume: 0.3 });
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     create() {
         const { width, height } = this.scale;
 
@@ -31,7 +41,7 @@ export default class CustomizeScene extends Phaser.Scene {
             backgroundColor: '#222',
             padding: { x: 8, y: 5 }
         })
-        .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true });
 
         backBtn.on('pointerover', () => {
             backBtn.setStyle({ backgroundColor: '#555' });
@@ -42,6 +52,7 @@ export default class CustomizeScene extends Phaser.Scene {
             backBtn.setScale(1);
         });
         backBtn.on('pointerdown', () => {
+            this.playClick(); 
             this.scene.start('MenuScene');
         });
 
@@ -116,8 +127,8 @@ export default class CustomizeScene extends Phaser.Scene {
                 backgroundColor: isActive ? '#333' : '#1a1a1a',
                 padding: { x: 12, y: 8 }
             })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
 
             tabBtn.tabKey = tabKeys[i];
 
@@ -133,6 +144,7 @@ export default class CustomizeScene extends Phaser.Scene {
             });
 
             tabBtn.on('pointerdown', () => {
+                this.playClick(); 
                 this.activeTab = tabBtn.tabKey;
                 this.renderOptions();
 
@@ -198,9 +210,9 @@ export default class CustomizeScene extends Phaser.Scene {
                 w, itemH - 5,
                 isSelected ? 0x2a2a2a : 0x1a1a1a
             )
-            .setOrigin(0)
-            .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0x44ff44 : 0x333333)
-            .setInteractive({ useHandCursor: true });
+                .setOrigin(0)
+                .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0x44ff44 : 0x333333)
+                .setInteractive({ useHandCursor: true });
             this.optionElements.push(itemBg);
 
             // Color indicator dot
@@ -272,6 +284,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Click to select
             itemBg.on('pointerdown', () => {
+                this.playClick(); 
                 switch (this.activeTab) {
                     case 'character':
                         PlayerData.setCharacter(item.id);

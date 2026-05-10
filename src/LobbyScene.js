@@ -11,7 +11,19 @@ export default class LobbyScene extends Phaser.Scene {
         this.load.image('menu_bg', '../assets/background.png');
     }
 
+    playClick() {
+        try {
+            if (this.cache.audio.exists('sfx_click')) {
+                this.sound.play('sfx_click', { volume: 0.3 });
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     create() {
+
+
         const { width, height } = this.scale;
 
         const data = this.scene.settings.data || {};
@@ -51,6 +63,7 @@ export default class LobbyScene extends Phaser.Scene {
         });
         backBtn.on('pointerdown', () => {
             this.cleanup();
+            this.playClick(); 
             this.scene.start('MenuScene');
         });
 
@@ -272,7 +285,9 @@ export default class LobbyScene extends Phaser.Scene {
             createBtn.setScale(1);
         });
         createBtn.on('pointerdown', () => {
+            this.playClick(); 
             this.createServer();
+
         });
 
         // ── Refresh Button ────────────────────────────────
@@ -301,6 +316,7 @@ export default class LobbyScene extends Phaser.Scene {
         });
         refreshBtn.on('pointerdown', () => {
             this.requestServerList();
+            this.playClick(); 
         });
 
         // ─── Connect using SocketManager ──────────────────
@@ -458,11 +474,13 @@ export default class LobbyScene extends Phaser.Scene {
             });
 
             rowBg.on('pointerdown', () => {
+                this.playClick(); 
                 if (isFull) {
                     alert('Server is full!');
                     return;
                 }
                 this.joinServer(server.roomId);
+                
             });
 
             this.serverListElements.push(rowBg, nameText, playersText, statusText);

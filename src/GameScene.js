@@ -2,6 +2,18 @@ import Player from './player/Player.js';
 import SocketManager from './SocketManager.js';
 
 export default class GameScene extends Phaser.Scene {
+
+    // Add this method to GameScene class
+    safePlaySound(key, volume = 0.5) {
+        try {
+            if (this.cache.audio.exists(key)) {
+                this.sound.play(key, { volume });
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     constructor() {
         super('GameScene');
 
@@ -295,10 +307,11 @@ export default class GameScene extends Phaser.Scene {
         this.socket.on('playerDamaged', (data) => {
             // If WE got hit
             if (data.targetId === this.socket.id && this.localPlayer) {
-                // ✅ Update HealthSystem, not a raw number
                 if (this.localPlayer.health && typeof this.localPlayer.health === 'object') {
                     this.localPlayer.health.current = data.remainingHealth;
                 }
+
+                this.safePlaySound('sfx_hurt', 0.4);
 
                 if (this.localPlayer.sprite && this.localPlayer.sprite.active) {
                     this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_hurt_anim`, true);
@@ -314,10 +327,12 @@ export default class GameScene extends Phaser.Scene {
             // If a REMOTE player got hit
             const remote = this.otherPlayerMap[data.targetId];
             if (remote && remote.sprite && remote.sprite.active) {
-                // ✅ Update HealthSystem
+
                 if (remote.health && typeof remote.health === 'object') {
                     remote.health.current = data.remainingHealth;
                 }
+
+                this.safePlaySound('sfx_hurt', 0.4);
 
                 remote.sprite.anims.play(`${remote.character}_hurt_anim`, true);
                 remote.sprite.setTint(0xff0000);
@@ -339,6 +354,7 @@ export default class GameScene extends Phaser.Scene {
                 this.localPlayer.sprite.anims.play('death_anim', true);
                 this.localPlayer.isControlled = false;
                 this.localPlayer.sprite.setVelocity(0, 0);
+                this.safePlaySound('sfx_death', 0.5);
                 this.showKillMessage('YOU DIED!', '#ff4444');
             }
 
@@ -348,6 +364,8 @@ export default class GameScene extends Phaser.Scene {
                 remote.state = 'dead';
                 remote.sprite.anims.play('death_anim', true);
                 remote.sprite.setTint(0x444444);
+
+                this.safePlaySound('sfx_death', 0.2);
             }
 
             // If WE got the kill

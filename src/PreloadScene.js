@@ -49,6 +49,20 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.image('discord', '../assets/ui/discord.png');
         this.load.image('x_icon', '../assets/ui/x.png');
 
+
+        //ADUIO
+
+        this.load.audio('sfx_click', '../assets/audio/click.mp3');
+
+        this.load.audio('sfx_attack1', '../assets/audio/attack1.mp3');
+        this.load.audio('sfx_attack2', '../assets/audio/attack2.mp3');
+        
+        this.load.audio('sfx_hurt', '../assets/audio/hurt.mp3');
+        this.load.audio('sfx_death', '../assets/audio/death.mp3');
+        this.load.audio('sfx_dash', '../assets/audio/dash.mp3');
+        this.load.audio('sfx_spell', '../assets/audio/spell.mp3');
+        this.load.audio('sfx_highjump', '../assets/audio/highjump.mp3');
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -5,6 +5,16 @@ export default class MenuScene extends Phaser.Scene {
         super('MenuScene');
     }
 
+    playClick() {
+        try {
+            if (this.cache.audio.exists('sfx_click')) {
+                this.sound.play('sfx_click', { volume: 0.3 });
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
     create() {
         const { width, height } = this.scale;
 
@@ -97,8 +107,8 @@ export default class MenuScene extends Phaser.Scene {
             backgroundColor: '#1a1a1a',
             padding: { x: 10, y: 5 }
         })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
         customBtn.on('pointerover', () => {
             customBtn.setStyle({ backgroundColor: '#333' });
@@ -109,6 +119,8 @@ export default class MenuScene extends Phaser.Scene {
             customBtn.setScale(1);
         });
         customBtn.on('pointerdown', () => {
+
+            this.playClick();
             this.scene.start('CustomizeScene');
         });
     }
@@ -122,8 +134,8 @@ export default class MenuScene extends Phaser.Scene {
             backgroundColor: '#222',
             padding: { x: 15, y: 10 }
         })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true });
 
         btn.on('pointerover', () => {
             btn.setStyle({ backgroundColor: '#555' });
@@ -133,7 +145,10 @@ export default class MenuScene extends Phaser.Scene {
             btn.setStyle({ backgroundColor: '#222' });
             btn.setScale(1);
         });
-        btn.on('pointerdown', callback);
+        btn.on('pointerdown', () => {
+            this.playClick();  // ✅ Click on press
+            callback();
+        });
     }
 
     // 📜 About Popup
@@ -164,15 +179,15 @@ export default class MenuScene extends Phaser.Scene {
                 color: '#ff4444'
             }
         )
-        .setOrigin(0.5)
-        .setDepth(12);
+            .setOrigin(0.5)
+            .setDepth(12);
         elements.push(closeText);
 
         const closeHitbox = this.add.rectangle(
             closeText.x, closeText.y, 60, 60, 0x000000, 0
         )
-        .setInteractive({ useHandCursor: true })
-        .setDepth(12);
+            .setInteractive({ useHandCursor: true })
+            .setDepth(12);
         elements.push(closeHitbox);
 
         closeHitbox.on('pointerover', () => {
@@ -195,8 +210,8 @@ export default class MenuScene extends Phaser.Scene {
                 wordWrap: { width: width * 0.4 }
             }
         )
-        .setOrigin(0.5)
-        .setDepth(12);
+            .setOrigin(0.5)
+            .setDepth(12);
         elements.push(aboutText);
 
         const discord = this.add.image(width / 2 - 60, height / 2 + 80, 'discord')
@@ -208,6 +223,7 @@ export default class MenuScene extends Phaser.Scene {
         discord.on('pointerover', () => discord.setScale(0.6));
         discord.on('pointerout', () => discord.setScale(0.5));
         discord.on('pointerdown', () => {
+            this.playClick();
             window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
         });
 
@@ -220,10 +236,12 @@ export default class MenuScene extends Phaser.Scene {
         xBtn.on('pointerover', () => xBtn.setScale(0.6));
         xBtn.on('pointerout', () => xBtn.setScale(0.5));
         xBtn.on('pointerdown', () => {
+            this.playClick();
             console.log("Add X link later");
         });
 
         closeHitbox.on('pointerdown', () => {
+            this.playClick();
             elements.forEach(el => el.destroy());
         });
     }
