@@ -45,6 +45,7 @@ export default class PreloadScene extends Phaser.Scene {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         this.load.image('bg', '../assets/background.png');
+        this.load.tilemapTiledJSON('map', '../assets/map.json');
         this.load.image('menu_bg', '../assets/background.png');
         this.load.image('discord', '../assets/ui/discord.png');
         this.load.image('x_icon', '../assets/ui/x.png');

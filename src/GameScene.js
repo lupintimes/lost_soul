@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
         this.localPlayer = null;
         this.otherPlayerMap = {};
 
-        
+
     }
 
     preload() {
@@ -52,6 +52,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        
+
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
         this.roomId = data.roomId || null;
@@ -87,19 +89,20 @@ export default class GameScene extends Phaser.Scene {
         // 🧱 Platform group
         this.platformGroup = this.physics.add.staticGroup();
 
-        // ─── Load Colliders ───────────────────────────────
-        const saved = [
-            { x: 0, y: 3747, w: 6000, h: 251 },
-            { x: 1122, y: 3340, w: 141, h: 408 },
-            { x: 3, y: 0, w: 115, h: 4000 },
-            { x: 414, y: 3341, w: 814, h: 68 },
-            { x: 689, y: 3214, w: 96, h: 132 },
-            { x: 1216, y: 3339, w: 544, h: 70 },
-            { x: 916, y: 3131, w: 582, h: 22 },
-            { x: 1167, y: 3048, w: 281, h: 17 }
-        ];
+        const map = this.make.tilemap({ key: 'map' });
 
-        saved.forEach(r => this.createPlatform(r));
+        const collisionLayer = map.getObjectLayer('collision');
+
+        collisionLayer.objects.forEach(obj => {
+
+            this.createPlatform({
+                x: obj.x,
+                y: obj.y,
+                w: obj.width,
+                h: obj.height
+            });
+        });
+
 
         // 🎥 Camera bounds
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
@@ -965,7 +968,7 @@ export default class GameScene extends Phaser.Scene {
             rect.w,
             rect.h,
             0xff0000,
-            0.0
+            0.4
         );
 
         this.physics.add.existing(platform, true);
