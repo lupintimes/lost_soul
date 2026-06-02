@@ -51,8 +51,104 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    checkTeleports() {
+        // ✅ Get the correct player based on mode
+        let player;
+        if (this.mode === 'multiplayer') {
+            if (!this.localPlayer) return;
+            player = this.localPlayer.sprite;
+        } else {
+            if (!this.players[0]) return;
+            player = this.players[0].sprite;
+        }
+
+        if (!this.canTeleport || !player) return;
+
+        // ✅ Create teleporter sprites once
+        if (!this.teleporterSprites) {
+            this.teleporterSprites = [];
+
+            // Create teleporter texture once
+            const graphics = this.add.graphics();
+            graphics.fillStyle(0x00ffff, 0.3);
+            graphics.fillCircle(50, 50, 50);
+            graphics.lineStyle(4, 0x00ffff, 1);
+            graphics.strokeCircle(50, 50, 50);
+            graphics.generateTexture('teleporter', 100, 100);
+            graphics.destroy();
+
+            const visibleTeleports = [
+                { x: 375, y: 2900 },
+                { x: 2293, y: 2244 },
+                { x: 2937, y: 226 },
+                { x: 3356, y: 219 },
+                { x: 5510, y: 3542 }
+            ];
+
+            visibleTeleports.forEach(tp => {
+                const teleporter = this.add.sprite(tp.x, tp.y, 'teleporter')
+                    .setDepth(1)
+                    .setAlpha(0.6);
+
+                // Pulsing animation
+                this.tweens.add({
+                    targets: teleporter,
+                    alpha: 0.3,
+                    scale: 1.1,
+                    duration: 1000,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+
+                this.teleporterSprites.push(teleporter);
+            });
+        }
+
+        // ✅ Teleport configuration
+        const teleports = [
+            { x: 375, y: 2900, tx: 2350, ty: 2244 },
+            { x: 2293, y: 2244, tx: 3000, ty: 226 },
+            { x: 2937, y: 226, tx: 3450, ty: 219 },
+            { x: 3356, y: 219, tx: 5600, ty: 3542 },
+            { x: 5510, y: 3542, tx: 450, ty: 2900 }
+        ];
+
+        // ✅ Check each teleporter
+        for (let i = 0; i < teleports.length; i++) {
+            const tp = teleports[i];
+
+            const dist = Phaser.Math.Distance.Between(
+                player.x,
+                player.y,
+                tp.x,
+                tp.y
+            );
+
+            if (dist < 100) {
+                console.log(`🌀 Teleporting from (${tp.x}, ${tp.y}) to (${tp.tx}, ${tp.ty})`);
+
+                this.canTeleport = false;
+
+                player.setPosition(tp.tx, tp.ty);
+                player.body.stop();
+
+                this.cameras.main.flash(200, 255, 255, 255);
+                this.safePlaySound('sfx_teleport', 0.5); // if you have this sound
+
+                this.time.delayedCall(1000, () => {
+                    this.canTeleport = true;
+                });
+
+                break; // Only teleport once per check
+            }
+        }
+    }
+
     create() {
-        
+
+
+
 
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
@@ -102,6 +198,8 @@ export default class GameScene extends Phaser.Scene {
                 h: obj.height
             });
         });
+
+        this.canTeleport = true;
 
 
         // 🎥 Camera bounds
@@ -203,6 +301,8 @@ export default class GameScene extends Phaser.Scene {
             }));
             console.log("COLLIDERS:\n", JSON.stringify(data, null, 2));
         });
+
+
 
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.mode === 'multiplayer') {
@@ -683,6 +783,7 @@ export default class GameScene extends Phaser.Scene {
 
     updateSolo() {
         const aliveEnemies = [];
+        this.checkTeleports();
         this.enemies.forEach(e => {
             if (!e || !e.sprite || !e.sprite.active || e.state === 'dead') {
                 if (!e.countedAsKill) {
@@ -693,6 +794,7 @@ export default class GameScene extends Phaser.Scene {
                 aliveEnemies.push(e);
             }
         });
+
         this.enemies = aliveEnemies;
 
         // ✅ Only filter players with destroyed sprites, NOT dead state
@@ -716,6 +818,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.players.forEach(p => p.update());
         this.enemies.forEach(e => e.update());
+        this.checkTeleports();
     }
 
     updateMultiplayer() {
@@ -778,6 +881,7 @@ export default class GameScene extends Phaser.Scene {
                 }
             }
         });
+        this.checkTeleports();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
