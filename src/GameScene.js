@@ -64,47 +64,6 @@ export default class GameScene extends Phaser.Scene {
 
         if (!this.canTeleport || !player) return;
 
-        // ✅ Create teleporter sprites once
-        if (!this.teleporterSprites) {
-            this.teleporterSprites = [];
-
-            // Create teleporter texture once
-            const graphics = this.add.graphics();
-            graphics.fillStyle(0x00ffff, 0.3);
-            graphics.fillCircle(50, 50, 50);
-            graphics.lineStyle(4, 0x00ffff, 1);
-            graphics.strokeCircle(50, 50, 50);
-            graphics.generateTexture('teleporter', 100, 100);
-            graphics.destroy();
-
-            const visibleTeleports = [
-                { x: 375, y: 2900 },
-                { x: 2293, y: 2244 },
-                { x: 2937, y: 226 },
-                { x: 3356, y: 219 },
-                { x: 5510, y: 3542 }
-            ];
-
-            visibleTeleports.forEach(tp => {
-                const teleporter = this.add.sprite(tp.x, tp.y, 'teleporter')
-                    .setDepth(1)
-                    .setAlpha(0.6);
-
-                // Pulsing animation
-                this.tweens.add({
-                    targets: teleporter,
-                    alpha: 0.3,
-                    scale: 1.1,
-                    duration: 1000,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: 'Sine.easeInOut'
-                });
-
-                this.teleporterSprites.push(teleporter);
-            });
-        }
-
         // ✅ Teleport configuration
         const teleports = [
             { x: 375, y: 2900, tx: 2350, ty: 2244 },
@@ -113,6 +72,37 @@ export default class GameScene extends Phaser.Scene {
             { x: 3356, y: 219, tx: 5600, ty: 3542 },
             { x: 5510, y: 3542, tx: 450, ty: 2900 }
         ];
+
+        // ✅ Create teleporter sprites once
+        if (!this.teleporterSprites || this.teleporterSprites.length === 0) {
+            this.teleporterSprites = [];
+
+            const portalKeys = ['portal_gold', 'portal_pink', 'portal_teal', 'portal_purple', 'portal_gray'];
+
+            // Source portals (full portal sprite, one per teleport)
+            teleports.forEach((tp, i) => {
+                const portalKey = portalKeys[i % portalKeys.length];
+                const teleporter = this.add.sprite(tp.x, tp.y, portalKey)
+                    .setDepth(1)
+                    .setAlpha(1)
+                    .setScale(0.4);
+
+                // Pulsing animation
+                this.tweens.add({
+                    targets: teleporter,
+                    alpha: 0.8,
+                    scale: 0.45,
+                    duration: 1200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+
+                this.teleporterSprites.push(teleporter);
+            });
+
+
+        }
 
         // ✅ Check each teleporter
         for (let i = 0; i < teleports.length; i++) {
@@ -168,6 +158,9 @@ export default class GameScene extends Phaser.Scene {
         this.maxEnemies = 3;
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
+        // Reset teleporter state
+        this.canTeleport = true;
+        this.teleporterSprites = [];
 
         // 🌍 Background
         this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
@@ -738,7 +731,11 @@ export default class GameScene extends Phaser.Scene {
             this.scoreboardElements.forEach(el => el.destroy());
             this.scoreboardElements = [];
         }
-
+        // Clean up teleporter sprites
+        if (this.teleporterSprites) {
+            this.teleporterSprites.forEach(tp => tp.destroy());
+            this.teleporterSprites = [];
+        }
         this.scene.start('LobbyScene');
     }
 

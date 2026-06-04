@@ -46,7 +46,12 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.image('bg', '../assets/background.png');
         this.load.tilemapTiledJSON('map', '../assets/map.json');
-        this.load.image('menu_bg', '../assets/background.png');
+        // Load all portal variants
+        this.load.image('portal_gold', '../assets/portal/gold_portal.webp');
+        this.load.image('portal_gray', '../assets/portal/gray_portal.webp');
+        this.load.image('portal_pink', '../assets/portal/pink_portal.webp');
+        this.load.image('portal_purple', '../assets/portal/purple_portal.webp');
+        this.load.image('portal_teal', '../assets/portal/teal_portal.webp');
         this.load.image('discord', '../assets/ui/discord.png');
         this.load.image('x_icon', '../assets/ui/x.png');
 
@@ -57,7 +62,7 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.audio('sfx_attack1', '../assets/audio/attack1.mp3');
         this.load.audio('sfx_attack2', '../assets/audio/attack2.mp3');
-        
+
         this.load.audio('sfx_hurt', '../assets/audio/hurt.mp3');
         this.load.audio('sfx_death', '../assets/audio/death.mp3');
         this.load.audio('sfx_dash', '../assets/audio/dash.mp3');
