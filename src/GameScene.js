@@ -131,7 +131,7 @@ export default class GameScene extends Phaser.Scene {
                 this.canTeleport = false;
 
                 player.setPosition(tp.tx, tp.ty);
-                player.body.stop();
+                player.setVelocity(0, 0);
 
                 this.cameras.main.flash(200, 255, 255, 255);
                 this.safePlaySound('sfx_teleport', 0.5); // if you have this sound
@@ -169,21 +169,16 @@ export default class GameScene extends Phaser.Scene {
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
 
-        this.otherPlayers = this.physics.add.group();
-
         // 🌍 Background
         this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
 
         const worldWidth = this.bg.width;
         const worldHeight = this.bg.height;
 
-        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+        this.matter.world.setBounds(0, 0, worldWidth, worldHeight);
 
         // 🎬 Animations
         this.createAnimations();
-
-        // 🧱 Platform group
-        this.platformGroup = this.physics.add.staticGroup();
 
         const map = this.make.tilemap({ key: 'map' });
 
@@ -195,7 +190,8 @@ export default class GameScene extends Phaser.Scene {
                 x: obj.x,
                 y: obj.y,
                 w: obj.width,
-                h: obj.height
+                h: obj.height,
+                rotation: obj.rotation
             });
         });
 
@@ -552,24 +548,10 @@ export default class GameScene extends Phaser.Scene {
             player.hp = playerInfo.health || 100;
         }
 
-        // ✅ Disable physics body briefly so sprite doesn't collide on spawn
-        player.sprite.body.enable = false;
-        player.sprite.body.setVelocity(0, 0);
-
         this.localPlayer = player;
         this.players.push(player);
 
-        this.physics.add.collider(player.sprite, this.platformGroup);
         this.cameras.main.startFollow(player.sprite, true, 0.1, 0.1);
-
-        // ✅ Re-enable physics after a short delay (lets position settle)
-        this.time.delayedCall(100, () => {
-            if (player.sprite && player.sprite.body) {
-                player.sprite.body.enable = true;
-                player.sprite.body.setVelocity(0, 0);
-            }
-        });
-
         this.applySpawnProtection(player);
     }
 
@@ -595,11 +577,9 @@ export default class GameScene extends Phaser.Scene {
         const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false, remoteChar);
         remotePlayer.sprite.setTint(0xff6666);
 
-        // ✅ Disable gravity and physics for remote players
-        // Their position comes 100% from the network
-        remotePlayer.sprite.body.setAllowGravity(false);
-        remotePlayer.sprite.body.setImmovable(true);
-        remotePlayer.sprite.body.moves = false;
+        // ✅ Disable gravity and physics for remote players in Matter
+        remotePlayer.sprite.setSensor(true);
+        remotePlayer.sprite.setIgnoreGravity(true);
 
         // Interpolation targets
         remotePlayer.targetX = playerInfo.x;
@@ -608,12 +588,7 @@ export default class GameScene extends Phaser.Scene {
         // Store by ID
         this.otherPlayerMap[playerInfo.playerId] = remotePlayer;
 
-        // Add to physics group
-        this.otherPlayers.add(remotePlayer.sprite);
         remotePlayer.sprite.playerId = playerInfo.playerId;
-
-        // ✅ No collider needed for remote players — server controls their position
-        // this.physics.add.collider(remotePlayer.sprite, this.platformGroup);  ← REMOVE THIS
     }
 
     removeRemotePlayer(playerId) {
@@ -653,8 +628,8 @@ export default class GameScene extends Phaser.Scene {
 
             const rx = remote.sprite.x;
             const ry = remote.sprite.y;
-            const rw = remote.sprite.body.width;
-            const rh = remote.sprite.body.height;
+            const rw = 64;
+            const rh = 152;
 
             const overlap =
                 attackX < rx + rw / 2 &&
@@ -913,7 +888,6 @@ export default class GameScene extends Phaser.Scene {
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
         this.players.push(player);
-        this.physics.add.collider(player.sprite, this.platformGroup);
         this.applySpawnProtection(player);
     }
 
@@ -927,14 +901,13 @@ export default class GameScene extends Phaser.Scene {
 
             enemy.isEnemy = true;
             enemy.state = 'idle';
-            enemy.speed = 120;
-            enemy.jumpForce = -400;
+            enemy.speed = 3; // Scaled for Matter
+            enemy.jumpForce = -16; // Scaled for Matter
             enemy.countedAsKill = false;
 
             enemy.sprite.setTint(0xff0000);
 
             this.enemies.push(enemy);
-            this.physics.add.collider(enemy.sprite, this.platformGroup);
         }
     }
 
@@ -950,7 +923,6 @@ export default class GameScene extends Phaser.Scene {
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
         this.players.push(player);
-        this.physics.add.collider(player.sprite, this.platformGroup);
         this.applySpawnProtection(player);
         this.cameras.main.startFollow(player.sprite, true, 0.1, 0.1);
 
@@ -1066,17 +1038,31 @@ export default class GameScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createPlatform(rect) {
-        const platform = this.add.rectangle(
-            rect.x + rect.w / 2,
-            rect.y + rect.h / 2,
-            rect.w,
-            rect.h,
-            0xff0000,
-            0.4
-        );
+        const rotation = rect.rotation || 0;
+        const angle = Phaser.Math.DegToRad(rotation);
 
-        this.physics.add.existing(platform, true);
-        this.platformGroup.add(platform);
+        // Calculate center for Matter body taking rotation around top-left into account
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const cx = rect.x + (rect.w / 2) * cos - (rect.h / 2) * sin;
+        const cy = rect.y + (rect.w / 2) * sin + (rect.h / 2) * cos;
+
+        const platform = this.add.rectangle(
+            cx,
+            cy,
+            rect.w,
+            rect.h
+        );
+        this.matter.add.gameObject(platform, {
+            isStatic: true,
+            friction: 0.1
+        });
+
+        platform.setFillStyle(0xff0000, 0.4);
+
+        if (rotation !== 0) {
+            platform.setAngle(rotation);
+        }
 
         this.platforms.push({ gameObject: platform, ...rect });
     }

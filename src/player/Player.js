@@ -48,12 +48,12 @@ export default class Player {
         this.comboTimer = null;
         this.currentAttackStep = 0;
 
-        this.sprite = scene.physics.add.sprite(x, y, `${this.character}_idle`);
-        this.sprite.setCollideWorldBounds(true);
-
+        this.sprite = scene.matter.add.sprite(x, y, `${this.character}_idle`);
         this.sprite.setScale(0.4);
-        this.sprite.body.setSize(160, 380);
-        this.sprite.body.setOffset(180, 30);
+        this.sprite.setRectangle(64, 152);
+        this.sprite.setFixedRotation();
+        this.sprite.setFriction(0.1, 0.05, 0.01);
+        this.sprite.setBounce(0);
 
         if (this.isControlled) {
             this.controls = new Controls(scene);
@@ -76,9 +76,9 @@ export default class Player {
         this.targetY = y;
 
         this.damageTable = {
-            'p1': { attack_1: 25, attack_2: 35, attack_3: 50, spell: 20 },
-            'p2': { attack_1: 20, attack_2: 30, attack_3: 45, spell: 25 },
-            'p3': { attack_1: 35, attack_2: 45, attack_3: 65, spell: 30 }
+            'p1': { attack_1: 35, attack_2: 50, attack_3: 70, spell: 30 },
+            'p2': { attack_1: 30, attack_2: 40, attack_3: 60, spell: 35 },
+            'p3': { attack_1: 50, attack_2: 65, attack_3: 90, spell: 45 }
         };
 
 
@@ -134,6 +134,11 @@ export default class Player {
         if (!this.sprite || !this.sprite.body) return;
         if (this.state === 'dead') return;
 
+        if (this.sprite.y > 3900) {
+            this.die();
+            return;
+        }
+
         if (!this.isControlled) {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
@@ -156,9 +161,9 @@ export default class Player {
             return;
         }
 
-        const speed = this.speed || 250;
-        const jumpForce = this.jumpForce || -650;
-        const highJumpForce = this.highJumpForce || -850;
+        const speed = this.speed || 10;
+        const jumpForce = this.jumpForce || -20;
+        const highJumpForce = this.highJumpForce || -36;
 
         if (this.health && typeof this.health.updateBar === 'function') {
             this.health.updateBar();
@@ -186,7 +191,7 @@ export default class Player {
         }
 
         // 🦘 JUMP
-        if (this.sprite.body.blocked.down) {
+        if (this.isOnGround()) {
             if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
                 this.playSound('sfx_highjump', 0.3);
                 this.sprite.setVelocityY(highJumpForce);
@@ -309,7 +314,7 @@ export default class Player {
         this.playSound('sfx_dash', 0.3);
 
         const dir = this.sprite.flipX ? -1 : 1;
-        this.sprite.setVelocityX(dir * 900);
+        this.sprite.setVelocityX(dir * 20.6);
         this.scene.time.delayedCall(200, () => {
             this.state = 'idle';
         });
@@ -335,37 +340,43 @@ export default class Player {
         const spell = this.scene.add.circle(
             this.sprite.x + dir * 50,
             this.sprite.y,
-            15,
-            spellColor
+            15
         );
+        this.scene.matter.add.gameObject(spell);
+        spell.setCircle(15, {
+            isSensor: true,
+            ignoreGravity: true
+        });
+        spell.setFillStyle(spellColor);
+        spell.setVelocityX(dir * 8);
 
-        this.scene.physics.add.existing(spell);
-        spell.body.allowGravity = false;
-        spell.body.setVelocityX(dir * 400);
+        spell.setOnCollide(pair => {
+            const otherBody = pair.bodyA === spell.body ? pair.bodyB : pair.bodyA;
+            const otherGO = otherBody.gameObject;
+            if (!otherGO) return;
 
-        if (this.isControlled && this.scene.mode === 'multiplayer') {
-            Object.keys(this.scene.otherPlayerMap).forEach(id => {
-                const remote = this.scene.otherPlayerMap[id];
-                if (!remote || !remote.sprite) return;
-
-                this.scene.physics.add.overlap(spell, remote.sprite, () => {
-                    this.scene.sendAttackToServer(id, damage);
-                    spell.destroy();
+            if (this.isControlled && this.scene.mode === 'multiplayer') {
+                Object.keys(this.scene.otherPlayerMap).forEach(id => {
+                    const remote = this.scene.otherPlayerMap[id];
+                    if (remote && remote.sprite === otherGO) {
+                        this.scene.sendAttackToServer(id, damage);
+                        spell.destroy();
+                    }
                 });
-            });
-        } else {
-            const targets = this.isEnemy
-                ? this.scene.players
-                : this.scene.enemies;
+            } else {
+                const targets = this.isEnemy
+                    ? this.scene.players
+                    : this.scene.enemies;
 
-            targets.forEach(target => {
-                if (target === this) return;
-                this.scene.physics.add.overlap(spell, target.sprite, () => {
-                    target.takeDamage(damage);
-                    spell.destroy();
+                targets.forEach(target => {
+                    if (target === this) return;
+                    if (target.sprite === otherGO) {
+                        target.takeDamage(damage);
+                        spell.destroy();
+                    }
                 });
-            });
-        }
+            }
+        });
 
         this.scene.time.delayedCall(1000, () => {
             if (spell.active) spell.destroy();
@@ -443,8 +454,8 @@ export default class Player {
 
             const tx = target.sprite.x;
             const ty = target.sprite.y;
-            const tw = target.sprite.body.width;
-            const th = target.sprite.body.height;
+            const tw = 64;
+            const th = 152;
 
             const overlap =
                 (attackX - attackW / 2) < (tx + tw / 2) &&
@@ -466,7 +477,7 @@ export default class Player {
 
         this.playSound('sfx_death', 0.5);
 
-        this.sprite.setVelocity(0);
+        this.sprite.setVelocity(0, 0);
         this.sprite.anims.play(`${this.character}_death_anim`);
 
         this.sprite.once('animationcomplete', () => {
@@ -479,6 +490,9 @@ export default class Player {
             }
             else {
                 if (this.scene.mode === 'solo') {
+                    // Stop camera follow to prevent errors on destroyed sprite
+                    this.scene.cameras.main.stopFollow();
+
                     // ✅ Remove from players array FIRST
                     const index = this.scene.players.indexOf(this);
                     if (index !== -1) this.scene.players.splice(index, 1);
@@ -493,5 +507,32 @@ export default class Player {
                 }
             }
         });
+    }
+
+    isOnGround() {
+        if (!this.sprite || !this.sprite.body) return false;
+
+        const body = this.sprite.body;
+
+        // If we are moving downwards fast, we are definitely falling, not on ground
+        if (body.velocity.y > 2) {
+            return false;
+        }
+
+        // If we are moving upwards fast (e.g. already jumping), we are not on ground
+        if (body.velocity.y < -2) {
+            return false;
+        }
+
+        // Otherwise, if we are colliding with anything, we must be on the ground/slope
+        const pairs = this.scene.matter.world.engine.pairs.list;
+        for (let i = 0; i < pairs.length; i++) {
+            const pair = pairs[i];
+            if (pair.isActive && (pair.bodyA === body || pair.bodyB === body)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
