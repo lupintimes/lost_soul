@@ -19,6 +19,7 @@ export default class HealthSystem {
 
         this.bar.fillStyle(0x000000);
         this.bar.fillRect(x, y, 60, 8);
+        this.bar.setDepth(4);
 
         this.bar.fillStyle(0xff0000);
         this.bar.fillRect(x, y, 60 * (this.current / this.max), 8);

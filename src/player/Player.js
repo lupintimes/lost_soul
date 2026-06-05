@@ -50,6 +50,7 @@ export default class Player {
 
         this.sprite = scene.matter.add.sprite(x, y, `${this.character}_idle`);
         this.sprite.setScale(0.4);
+        this.sprite.setDepth(2);
         this.sprite.setRectangle(64, 152);
         this.sprite.setFixedRotation();
         this.sprite.setFriction(0.1, 0.05, 0.01);

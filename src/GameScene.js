@@ -538,6 +538,8 @@ export default class GameScene extends Phaser.Scene {
         this.localPlayer = player;
         this.players.push(player);
 
+        player.sprite.setDepth(10);
+
         this.cameras.main.startFollow(player.sprite, true, 0.1, 0.1);
         this.applySpawnProtection(player);
     }
@@ -567,6 +569,7 @@ export default class GameScene extends Phaser.Scene {
         // ✅ Disable gravity and physics for remote players in Matter
         remotePlayer.sprite.setSensor(true);
         remotePlayer.sprite.setIgnoreGravity(true);
+        remotePlayer.sprite.setDepth(10);
 
         // Interpolation targets
         remotePlayer.targetX = playerInfo.x;
@@ -1124,11 +1127,9 @@ export default class GameScene extends Phaser.Scene {
     removeobstacle(pointer) {
         const world = pointer.positionToCamera(this.cameras.main);
 
-        // Search from top to bottom so the latest obstacle gets removed first
         for (let i = this.platforms.length - 1; i >= 0; i--) {
             const p = this.platforms[i];
 
-            // Only allow player-created obstacles to be removed
             if (!p.deletable) continue;
 
             if (
