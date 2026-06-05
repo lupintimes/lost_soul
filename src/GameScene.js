@@ -252,10 +252,11 @@ export default class GameScene extends Phaser.Scene {
         this.preview = this.add.graphics();
         this.isDrawing = false;
         this.startPoint = null;
+        this.keyX = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
 
         this.input.on('pointerdown', (pointer) => {
-            if (pointer.rightButtonDown()) {
-                this.removePlatform(pointer);
+            if (this.keyX.isDown) {
+                this.removeobstacle(pointer);
                 return;
             }
             const world = pointer.positionToCamera(this.cameras.main);
@@ -267,6 +268,7 @@ export default class GameScene extends Phaser.Scene {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
             const rect = this.getRect(this.startPoint, world);
+
             this.preview.clear();
             this.preview.lineStyle(2, 0xffff00, 1);
             this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
@@ -276,20 +278,12 @@ export default class GameScene extends Phaser.Scene {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
             const rect = this.getRect(this.startPoint, world);
-            this.createPlatform(rect);
+            const opacity = 0.9;
+            this.createObstacle(rect, opacity);
             this.preview.clear();
             this.isDrawing = false;
         });
 
-        this.input.keyboard.on('keydown-P', () => {
-            const data = this.platforms.map(p => ({
-                x: Math.round(p.x),
-                y: Math.round(p.y),
-                w: Math.round(p.w),
-                h: Math.round(p.h)
-            }));
-            console.log("COLLIDERS:\n", JSON.stringify(data, null, 2));
-        });
 
 
 
@@ -999,7 +993,7 @@ export default class GameScene extends Phaser.Scene {
 
                 // Toggle visibility for blink effect
                 if (player.sprite.alpha === 1) {
-                    player.sprite.setAlpha(0.5);
+                    player.sprite.setAlpha(0.75);
                 } else {
                     player.sprite.setAlpha(1);
                 }
@@ -1030,9 +1024,6 @@ export default class GameScene extends Phaser.Scene {
     //  🧱 PLATFORM SYSTEM
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    //  🧱 PLATFORM SYSTEM — FIXED
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createPlatform(rect) {
         const rotation = rect.rotation || 0;
@@ -1055,20 +1046,90 @@ export default class GameScene extends Phaser.Scene {
             friction: 0.1
         });
 
-        platform.setFillStyle(0xff0000, 0.4);
+        platform.setFillStyle(0xff0000, 0);
 
         if (rotation !== 0) {
             platform.setAngle(rotation);
         }
 
-        this.platforms.push({ gameObject: platform, ...rect });
+        this.platforms.push({
+            gameObject: platform,
+            ...rect,
+            deletable: false,
+            source: 'map'
+        });
     }
 
-    removePlatform(pointer) {
+    createObstacle(rect, opacity) {
+        const rotation = rect.rotation || 0;
+        const angle = Phaser.Math.DegToRad(rotation);
+
+        // Calculate center for Matter body taking rotation around top-left into account
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const cx = rect.x + (rect.w / 2) * cos - (rect.h / 2) * sin;
+        const cy = rect.y + (rect.w / 2) * sin + (rect.h / 2) * cos;
+
+        // Fill
+        const platform = this.add.rectangle(
+            cx,
+            cy,
+            rect.w,
+            rect.h,
+            0x0000000,
+            opacity
+        );
+        // Outer white border
+        const outer = this.add.rectangle(
+            cx,
+            cy,
+            rect.w - 12.5,
+            rect.h - 12.5,
+            0xffffff,
+            opacity
+        );
+
+        // Inner black border
+        const middle = this.add.rectangle(
+            cx,
+            cy,
+            rect.w - 25,
+            rect.h - 25,
+            0x000000,
+            opacity
+        );
+
+
+        this.matter.add.gameObject(platform, {
+            isStatic: true,
+            friction: 0.1
+        });
+
+
+        if (rotation !== 0) {
+            platform.setAngle(rotation);
+            outer.setAngle(rotation);
+            middle.setAngle(rotation);
+        }
+        this.platforms.push({
+            gameObject: platform,
+            outer,
+            middle,
+            ...rect,
+            deletable: true,
+            source: 'user'
+        });
+    }
+
+    removeobstacle(pointer) {
         const world = pointer.positionToCamera(this.cameras.main);
 
-        for (let i = 0; i < this.platforms.length; i++) {
+        // Search from top to bottom so the latest obstacle gets removed first
+        for (let i = this.platforms.length - 1; i >= 0; i--) {
             const p = this.platforms[i];
+
+            // Only allow player-created obstacles to be removed
+            if (!p.deletable) continue;
 
             if (
                 world.x > p.x &&
@@ -1076,7 +1137,10 @@ export default class GameScene extends Phaser.Scene {
                 world.y > p.y &&
                 world.y < p.y + p.h
             ) {
-                p.gameObject.destroy();
+                if (p.gameObject) p.gameObject.destroy();
+                if (p.outer) p.outer.destroy();
+                if (p.middle) p.middle.destroy();
+
                 this.platforms.splice(i, 1);
                 return;
             }
