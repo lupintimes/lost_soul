@@ -135,15 +135,15 @@ export default class Player {
             return;
         }
 
-        if (!this.isControlled) {
+        if (this.isEnemy) {
+            this.enemyAI();
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
             }
             return;
         }
 
-        if (this.isEnemy) {
-            this.enemyAI();
+        if (!this.isControlled) {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
             }
