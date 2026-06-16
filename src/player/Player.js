@@ -157,6 +157,22 @@ export default class Player {
             return;
         }
 
+        if (this.state === 'taunt') {
+            // Allow interrupting taunt with movement, jump, attack, dash, or spell
+            if (this.controls.left.isDown || this.controls.right.isDown || 
+                this.controls.jump.isDown || this.controls.highJump.isDown ||
+                Phaser.Input.Keyboard.JustDown(this.controls.attack) || 
+                Phaser.Input.Keyboard.JustDown(this.controls.dash) || 
+                Phaser.Input.Keyboard.JustDown(this.controls.spell)) {
+                this.state = 'idle';
+            } else {
+                if (this.health && typeof this.health.updateBar === 'function') {
+                    this.health.updateBar();
+                }
+                return;
+            }
+        }
+
         const speed = this.speed || 10;
         const jumpForce = this.jumpForce || -20;
         const highJumpForce = this.highJumpForce || -36;
@@ -380,7 +396,14 @@ export default class Player {
     }
 
     taunt() {
+        if (this.state === 'attack' || this.state === 'dead' || this.state === 'dash') return;
+        this.state = 'taunt';
         this.sprite.anims.play(`${this.character}_taunt_anim`);
+        this.sprite.once('animationcomplete', () => {
+            if (this.state === 'taunt') {
+                this.state = 'idle';
+            }
+        });
     }
 
     // 💥 DAMAGE
