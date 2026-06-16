@@ -248,6 +248,12 @@ export default class GameScene extends Phaser.Scene {
             this.setupMultiplayer();
         }
 
+        // ─── Obstacle Limit Configuration ────────────────
+        this.OBSTACLE_MIN_WIDTH = 30;
+        this.OBSTACLE_MIN_HEIGHT = 30;
+        this.OBSTACLE_MIN_AREA = 900;
+        this.OBSTACLE_MAX_AREA = 250000;
+
         // ─── Draw Tool ───────────────────────────────────
         this.preview = this.add.graphics();
         this.isDrawing = false;
@@ -267,7 +273,25 @@ export default class GameScene extends Phaser.Scene {
         this.input.on('pointermove', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
-            const rect = this.getRect(this.startPoint, world);
+            
+            // Limit dimensions to max area while dragging
+            let dx = world.x - this.startPoint.x;
+            let dy = world.y - this.startPoint.y;
+            let w = Math.abs(dx);
+            let h = Math.abs(dy);
+            let area = w * h;
+
+            if (area > this.OBSTACLE_MAX_AREA) {
+                const scale = Math.sqrt(this.OBSTACLE_MAX_AREA / area);
+                dx *= scale;
+                dy *= scale;
+            }
+
+            const clampedWorld = {
+                x: this.startPoint.x + dx,
+                y: this.startPoint.y + dy
+            };
+            const rect = this.getRect(this.startPoint, clampedWorld);
 
             this.preview.clear();
             this.preview.lineStyle(2, 0xffff00, 1);
@@ -277,7 +301,25 @@ export default class GameScene extends Phaser.Scene {
         this.input.on('pointerup', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
-            const rect = this.getRect(this.startPoint, world);
+            
+            // Apply same limit clamping on pointer up
+            let dx = world.x - this.startPoint.x;
+            let dy = world.y - this.startPoint.y;
+            let w = Math.abs(dx);
+            let h = Math.abs(dy);
+            let area = w * h;
+
+            if (area > this.OBSTACLE_MAX_AREA) {
+                const scale = Math.sqrt(this.OBSTACLE_MAX_AREA / area);
+                dx *= scale;
+                dy *= scale;
+            }
+
+            const clampedWorld = {
+                x: this.startPoint.x + dx,
+                y: this.startPoint.y + dy
+            };
+            const rect = this.getRect(this.startPoint, clampedWorld);
             const opacity = 0.9;
             this.createObstacle(rect, opacity);
             this.preview.clear();
@@ -1064,6 +1106,31 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createObstacle(rect, opacity) {
+        const minW = this.OBSTACLE_MIN_WIDTH || 30;
+        const minH = this.OBSTACLE_MIN_HEIGHT || 30;
+        const minArea = this.OBSTACLE_MIN_AREA || 900;
+        const maxArea = this.OBSTACLE_MAX_AREA || 250000;
+
+        const w = rect.w;
+        const h = rect.h;
+        const area = w * h;
+
+        // Validate width and height
+        if (w < minW || h < minH) {
+            this.showKillMessage('OBSTACLE TOO NARROW!', '#ff4444');
+            return;
+        }
+
+        // Validate area limits
+        if (area < minArea) {
+            this.showKillMessage('OBSTACLE AREA TOO SMALL!', '#ff4444');
+            return;
+        }
+        if (area > maxArea + 1) {
+            this.showKillMessage('OBSTACLE AREA TOO LARGE!', '#ff4444');
+            return;
+        }
+
         const rotation = rect.rotation || 0;
         const angle = Phaser.Math.DegToRad(rotation);
 

@@ -12,7 +12,7 @@ const config = {
         default: 'matter',
         matter: {
             gravity: { y: 1.5 },
-            debug: true // set debug to true initially to see slope boundaries
+            debug: false // set debug to true initially to see slope boundaries
         }
     },
     scale: {

@@ -44,7 +44,7 @@ export default class PreloadScene extends Phaser.Scene {
         //  🌍 BACKGROUNDS & UI
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        this.load.image('bg', '../assets/background.png');
+        this.load.image('bg', '../assets/background.webp');
         this.load.tilemapTiledJSON('map', '../assets/map.json');
         // Load all portal variants
         this.load.image('portal_gold', '../assets/portal/gold_portal.webp');
