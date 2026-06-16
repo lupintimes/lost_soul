@@ -1233,18 +1233,23 @@ export default class GameScene extends Phaser.Scene {
 
     removeobstacle(pointer) {
         const world = pointer.positionToCamera(this.cameras.main);
+        console.log(`🔍 [removeobstacle] Clicked at world: (${Math.round(world.x)}, ${Math.round(world.y)})`);
 
         for (let i = this.platforms.length - 1; i >= 0; i--) {
             const p = this.platforms[i];
 
             if (!p.deletable) continue;
 
-            if (
+            const isInside = 
                 world.x > p.x &&
                 world.x < p.x + p.w &&
                 world.y > p.y &&
-                world.y < p.y + p.h
-            ) {
+                world.y < p.y + p.h;
+
+            console.log(`🔍 [removeobstacle] Checking user platform ${p.id || 'no-id'} at (${Math.round(p.x)}, ${Math.round(p.y)}, w:${Math.round(p.w)}, h:${Math.round(p.h)}). Click inside? ${isInside}`);
+
+            if (isInside) {
+                console.log(`🗑️ [removeobstacle] Match found! Deleting platform: ${p.id || 'no-id'}`);
                 if (this.mode === 'multiplayer' && this.socket && p.id) {
                     this.socket.emit('removeObstacle', { id: p.id });
                 }
@@ -1257,6 +1262,7 @@ export default class GameScene extends Phaser.Scene {
                 return;
             }
         }
+        console.log(`🔍 [removeobstacle] No matching user platform found under click.`);
     }
 
     getRect(p1, p2) {
