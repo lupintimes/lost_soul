@@ -1692,10 +1692,10 @@ export default class GameScene extends Phaser.Scene {
 
         const controlsTextStr = 
             "CONTROLS HINT:\n" +
-            "• Move: A/D | Jump: SPACE | Dash: I | Taunt: O | Spell: R\n" +
-            "• Attack Combo: J (Hit 1), K (Hit 2), L (Hit 3)\n" +
-            "• Build Block: Left Click & Drag\n" +
-            "• Delete Block: Right Click (or X + Click)";
+            "• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T\n" +
+            "• Spell: R | Attack/Combo: SPACE\n" +
+            "• (Press SPACE repeatedly to perform attack combos 1, 2, and 3)\n" +
+            "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
 
         this.hudControlsText = this.add.text((width - 460) / 2 + 15, height - 78, controlsTextStr, {
             fontFamily: '"Press Start 2P"',
