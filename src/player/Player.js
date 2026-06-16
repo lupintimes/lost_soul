@@ -457,8 +457,8 @@ export default class Player {
         // 2. Camera flash & Screen Shake
         const isLocalPlayer = !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
         if (isLocalPlayer) {
-            const isDead = this.health.current <= 0;
-            const shakeIntensity = isDead ? 0.015 : 0.006;
+            const isFatal = this.health.current <= 0;
+            const shakeIntensity = isFatal ? 0.015 : 0.006;
             this.scene.cameras.main.shake(150, shakeIntensity);
             this.scene.cameras.main.flash(100, 255, 0, 0, false);
         } else if (this.isEnemy && attacker && !attacker.isEnemy) {
