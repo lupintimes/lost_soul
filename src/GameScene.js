@@ -395,6 +395,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.createBuildPointsUI();
+        this.createHUD();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -874,6 +875,7 @@ export default class GameScene extends Phaser.Scene {
 
     update() {
         this.updateBuildPointsUI();
+        this.updateHUD();
 
         if (this.mode === 'solo') {
             this.updateSolo();
@@ -1615,5 +1617,129 @@ export default class GameScene extends Phaser.Scene {
 
         // Filter out tiny pieces
         return pieces.filter(p => p.w > 0.1 && p.h > 0.1);
+    }
+
+    createHUD() {
+        const { width, height } = this.scale;
+
+        // 1. Health Panel (top-left)
+        this.hudHealthBg = this.add.rectangle(10, 10, 220, 48, 0x000000, 0.6)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.hudHealthBg.setStrokeStyle(1.5, 0x333333);
+
+        this.hudHealthTitle = this.add.text(20, 16, 'PLAYER HP', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#ff4444'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudHealthBarBg = this.add.rectangle(20, 28, 200, 10, 0x222222)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudHealthBarFill = this.add.rectangle(20, 28, 200, 10, 0x2ecc71)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudHealthText = this.add.text(20, 41, 'HP: 100 / 100', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '7px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // 2. Kills Panel (below Health panel)
+        this.hudKillsBg = this.add.rectangle(10, 68, 120, 24, 0x000000, 0.6)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.hudKillsBg.setStrokeStyle(1.5, 0x333333);
+
+        this.hudKillsText = this.add.text(20, 75, 'KILLS: 0', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // 3. Bottom Controls Hint Panel
+        this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 85, 460, 75, 0x000000, 0.7)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.hudControlsBg.setStrokeStyle(1.5, 0x555555);
+
+        const controlsTextStr = 
+            "CONTROLS HINT:\n" +
+            "• Move: A/D | Jump: SPACE | Dash: I | Taunt: O | Spell: R\n" +
+            "• Attack Combo: J (Hit 1), K (Hit 2), L (Hit 3)\n" +
+            "• Build Block: Left Click & Drag\n" +
+            "• Delete Block: Right Click (or X + Click)";
+
+        this.hudControlsText = this.add.text((width - 460) / 2 + 15, height - 78, controlsTextStr, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '7px',
+            color: '#cccccc',
+            lineSpacing: 5
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Fade out controls panel after 10 seconds
+        this.time.delayedCall(10000, () => {
+            this.tweens.add({
+                targets: [this.hudControlsBg, this.hudControlsText],
+                alpha: 0,
+                duration: 1500,
+                onComplete: () => {
+                    if (this.hudControlsBg && this.hudControlsBg.active) this.hudControlsBg.destroy();
+                    if (this.hudControlsText && this.hudControlsText.active) this.hudControlsText.destroy();
+                }
+            });
+        });
+    }
+
+    updateHUD() {
+        let currentHp = 0;
+        let maxHp = 100;
+        let playerObj = null;
+
+        if (this.mode === 'multiplayer') {
+            playerObj = this.localPlayer;
+        } else {
+            playerObj = this.players[0];
+        }
+
+        if (playerObj && playerObj.health) {
+            currentHp = playerObj.health.current;
+            maxHp = playerObj.health.max;
+        }
+
+        if (this.hudHealthBarFill && this.hudHealthText) {
+            const pct = Math.max(0, Math.min(1, currentHp / maxHp));
+            this.hudHealthBarFill.width = 200 * pct;
+
+            let color = 0x2ecc71; // Green
+            if (pct < 0.3) {
+                color = 0xe74c3c; // Red
+            } else if (pct < 0.6) {
+                color = 0xf1c40f; // Yellow
+            }
+            this.hudHealthBarFill.setFillStyle(color);
+
+            this.hudHealthText.setText(`HP: ${currentHp} / ${maxHp}`);
+        }
+
+        if (this.hudKillsText) {
+            this.hudKillsText.setText(`KILLS: ${this.killCount}`);
+        }
     }
 }
