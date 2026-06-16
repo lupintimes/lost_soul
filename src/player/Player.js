@@ -44,9 +44,7 @@ export default class Player {
         this.isControlled = isControlled !== undefined ? isControlled : true;
         this.character = character || 'p1';
 
-        this.comboStep = 0;
-        this.comboTimer = null;
-        this.currentAttackStep = 0;
+
 
         this.sprite = scene.matter.add.sprite(x, y, `${this.character}_idle`);
         this.sprite.setScale(0.4);
@@ -341,22 +339,14 @@ export default class Player {
 
         this.state = 'attack';
 
-        this.comboStep++;
-        if (this.comboStep > 3) this.comboStep = 1;
-        this.currentAttackStep = this.comboStep;
+        this.sprite.anims.play(`${this.character}_attack_1`);
 
-        this.sprite.anims.play(`${this.character}_attack_${this.comboStep}`);
-
-        this.playSound(`sfx_attack${this.comboStep}`, 0.3);
+        this.playSound('sfx_attack1', 0.3);
 
         this.sprite.once('animationcomplete', () => {
             if (this.state !== 'dead') {
                 this.state = 'idle';
             }
-            this.scene.time.delayedCall(500, () => {
-                this.comboStep = 0;
-                this.currentAttackStep = 0;
-            });
         });
     }
 

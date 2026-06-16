@@ -1683,8 +1683,7 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
-        // 3. Bottom Controls Hint Panel
-        this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 85, 460, 75, 0x000000, 0.7)
+        this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 70, 460, 60, 0x000000, 0.7)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
@@ -1693,11 +1692,10 @@ export default class GameScene extends Phaser.Scene {
         const controlsTextStr = 
             "CONTROLS HINT:\n" +
             "• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T\n" +
-            "• Spell: R | Attack/Combo: SPACE\n" +
-            "• (Press SPACE repeatedly to perform attack combos 1, 2, and 3)\n" +
+            "• Spell: R | Attack: SPACE\n" +
             "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
 
-        this.hudControlsText = this.add.text((width - 460) / 2 + 15, height - 78, controlsTextStr, {
+        this.hudControlsText = this.add.text((width - 460) / 2 + 15, height - 63, controlsTextStr, {
             fontFamily: '"Press Start 2P"',
             fontSize: '7px',
             color: '#cccccc',
