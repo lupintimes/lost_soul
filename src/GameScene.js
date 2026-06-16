@@ -981,15 +981,33 @@ export default class GameScene extends Phaser.Scene {
 
         for (let i = 0; i < spawnCount; i++) {
             const spawn = shuffled[i];
-            const enemy = new Player(this, spawn.x, spawn.y);
+            const randomChar = Phaser.Utils.Array.GetRandom(['p1', 'p2', 'p3']);
+            
+            // Pass false for isControlled to avoid redundant controls classes
+            const enemy = new Player(this, spawn.x, spawn.y, null, false, randomChar);
 
             enemy.isEnemy = true;
             enemy.state = 'idle';
-            enemy.speed = 3; // Scaled for Matter
-            enemy.jumpForce = -16; // Scaled for Matter
             enemy.countedAsKill = false;
+            enemy.chaseOffset = Phaser.Math.Between(-40, 40);
 
-            enemy.sprite.setTint(0xff0000);
+            // Configure speed, jumpForce, and visual indicator based on archetype
+            if (randomChar === 'p1') {
+                // Knight (balanced/cautious)
+                enemy.speed = 3;
+                enemy.jumpForce = -16;
+                enemy.sprite.setTint(0xaaaaaa);
+            } else if (randomChar === 'p2') {
+                // Shadow (fast/spellcaster)
+                enemy.speed = 3.8;
+                enemy.jumpForce = -18;
+                enemy.sprite.setTint(0x8844ff);
+            } else {
+                // Berserker (slow/heavy/aggressive)
+                enemy.speed = 2.6;
+                enemy.jumpForce = -14;
+                enemy.sprite.setTint(0xff4444);
+            }
 
             this.enemies.push(enemy);
         }

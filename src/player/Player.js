@@ -240,7 +240,9 @@ export default class Player {
             player.sprite.x, player.sprite.y
         );
 
-        const dir = player.sprite.x < this.sprite.x ? -1 : 1;
+        // Group flanking / chase offset X position
+        const targetX = player.sprite.x + (this.chaseOffset || 0);
+        const dir = targetX < this.sprite.x ? -1 : 1;
 
         const DETECT_RANGE = 400;
         const ATTACK_RANGE = 130;
@@ -248,6 +250,32 @@ export default class Player {
 
         if (!this.aiState) this.aiState = 'patrol';
         if (!this.attackCooldown) this.attackCooldown = false;
+        if (this.lastJumpTime === undefined) this.lastJumpTime = 0;
+        if (this.lastSpellTime === undefined) this.lastSpellTime = 0;
+
+        const time = this.scene.time.now;
+
+        // 🦘 PATHFINDING / JUMPING
+        // Jump if player is on a platform above and we are horizontally close, OR if we are moving but stuck horizontally against a wall/obstacle
+        if (this.aiState === 'chase' || this.aiState === 'retreat') {
+            const isStuck = this.isOnGround() && Math.abs(this.sprite.body.velocity.x) < 0.5;
+            const playerAbove = player.sprite.y < this.sprite.y - 80 && Math.abs(player.sprite.x - this.sprite.x) < 150;
+            
+            if ((isStuck || playerAbove) && this.isOnGround() && (time - this.lastJumpTime > 1500)) {
+                this.sprite.setVelocityY(this.jumpForce || -16);
+                this.lastJumpTime = time;
+            }
+        }
+
+        // 🔮 SHADOW (p2) SPELLCASTING
+        if (this.character === 'p2' && this.aiState === 'chase' && dist > 150 && dist < 400) {
+            if (time - this.lastSpellTime > 3000 && Math.random() < 0.02) {
+                // Orient towards player
+                this.sprite.setFlipX(player.sprite.x < this.sprite.x);
+                this.castSpell();
+                this.lastSpellTime = time;
+            }
+        }
 
         switch (this.aiState) {
             case 'patrol':
@@ -282,12 +310,26 @@ export default class Player {
                 if (!this.attackCooldown) {
                     this.attack();
                     this.attackCooldown = true;
-                    this.scene.time.delayedCall(900, () => {
+                    // Berserker has a shorter attack cooldown
+                    const cooldownDuration = this.character === 'p3' ? 600 : 900;
+                    this.scene.time.delayedCall(cooldownDuration, () => {
                         this.attackCooldown = false;
                     });
                 }
                 if (dist > ATTACK_RANGE) {
                     this.aiState = 'chase';
+                }
+                break;
+
+            case 'retreat':
+                // Move away from the player
+                this.sprite.setVelocityX(-dir * this.speed * 1.2);
+                this.sprite.setFlipX(-dir < 0);
+                this.sprite.anims.play(`${this.character}_walk_anim`, true);
+                
+                if (dist > LOSE_RANGE) {
+                    this.aiState = 'patrol';
+                    if (this.retreatTimer) this.retreatTimer.destroy();
                 }
                 break;
         }
@@ -421,6 +463,24 @@ export default class Player {
             return;
         }
 
+        // Low health retreat trigger for enemies
+        if (this.isEnemy && this.health.current / this.health.max < 0.35) {
+            const roll = Math.random();
+            let retreatChance = 0;
+            if (this.character === 'p1') retreatChance = 0.3; // Knight
+            if (this.character === 'p2') retreatChance = 0.6; // Shadow
+
+            if (roll < retreatChance && this.aiState !== 'retreat') {
+                this.aiState = 'retreat';
+                if (this.retreatTimer) this.retreatTimer.destroy();
+                this.retreatTimer = this.scene.time.delayedCall(1500, () => {
+                    if (this.aiState === 'retreat') {
+                        this.aiState = 'chase';
+                    }
+                });
+            }
+        }
+
         this.state = 'hurt';
         this.isInvincible = true;
 
@@ -431,7 +491,11 @@ export default class Player {
 
         this.scene.time.delayedCall(300, () => {
             if (this.state !== 'dead') {
-                this.sprite.clearTint();
+                if (this.originalTint !== undefined) {
+                    this.sprite.setTint(this.originalTint);
+                } else {
+                    this.sprite.clearTint();
+                }
                 this.state = 'idle';
             }
         });
