@@ -638,9 +638,9 @@ export default class Player {
     }
 
     createHitParticles(x, y, color = 0xffffff) {
-        const particleCount = 8;
+        const particleCount = 24;
         for (let i = 0; i < particleCount; i++) {
-            const size = Phaser.Math.Between(4, 8);
+            const size = Phaser.Math.Between(12, 24);
             const p = this.scene.add.rectangle(x, y, size, size, color)
                 .setDepth(5);
 
