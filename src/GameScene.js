@@ -1194,10 +1194,6 @@ export default class GameScene extends Phaser.Scene {
                 const p = this.platforms[i];
                 if (!p.deletable) continue;
 
-                // Only subtract from obstacles created by OTHER players
-                const isEnemy = p.creatorId !== creatorId;
-                if (!isEnemy) continue;
-
                 // Check overlap
                 const overlap = 
                     rect.x < p.x + p.w &&
