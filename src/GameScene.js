@@ -321,7 +321,14 @@ export default class GameScene extends Phaser.Scene {
             };
             const rect = this.getRect(this.startPoint, clampedWorld);
             const opacity = 0.9;
-            this.createObstacle(rect, opacity);
+            
+            const id = this.mode === 'multiplayer' && this.socket ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}` : null;
+            const success = this.createObstacle(rect, opacity, id);
+
+            if (success && this.mode === 'multiplayer' && this.socket) {
+                this.socket.emit('createObstacle', { id, rect, opacity });
+            }
+
             this.preview.clear();
             this.isDrawing = false;
         });
@@ -363,6 +370,9 @@ export default class GameScene extends Phaser.Scene {
         this.socket.off('serverCreated');
         this.socket.off('joinedServer');
         this.socket.off('lobbyError');
+        this.socket.off('obstacleCreated');
+        this.socket.off('obstacleRemoved');
+        this.socket.off('currentObstacles');
 
         // 1. Current players
         this.socket.on('currentPlayers', (players) => {
@@ -547,6 +557,34 @@ export default class GameScene extends Phaser.Scene {
         // 8. Scoreboard
         this.socket.on('scoreboard', (scores) => {
             this.updateScoreboard(scores);
+        });
+
+        // 9. Obstacle sync events
+        this.socket.on('obstacleCreated', (data) => {
+            console.log('🧱 Remote obstacle created:', data.id);
+            this.createObstacle(data.rect, data.opacity, data.id);
+        });
+
+        this.socket.on('obstacleRemoved', (data) => {
+            console.log('🗑️ Remote obstacle removed:', data.id);
+            const index = this.platforms.findIndex(p => p.id === data.id);
+            if (index !== -1) {
+                const p = this.platforms[index];
+                if (p.gameObject) p.gameObject.destroy();
+                if (p.outer) p.outer.destroy();
+                if (p.middle) p.middle.destroy();
+                this.platforms.splice(index, 1);
+            }
+        });
+
+        this.socket.on('currentObstacles', (obstacles) => {
+            console.log('📋 Received current obstacles:', obstacles);
+            Object.keys(obstacles).forEach(id => {
+                const obs = obstacles[id];
+                if (!this.platforms.some(p => p.id === id)) {
+                    this.createObstacle(obs.rect, obs.opacity, id);
+                }
+            });
         });
 
         // ✅ Request players after all listeners are ready
@@ -1105,7 +1143,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    createObstacle(rect, opacity) {
+    createObstacle(rect, opacity, id = null) {
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
@@ -1118,17 +1156,17 @@ export default class GameScene extends Phaser.Scene {
         // Validate width and height
         if (w < minW || h < minH) {
             this.showKillMessage('OBSTACLE TOO NARROW!', '#ff4444');
-            return;
+            return false;
         }
 
         // Validate area limits
         if (area < minArea) {
             this.showKillMessage('OBSTACLE AREA TOO SMALL!', '#ff4444');
-            return;
+            return false;
         }
         if (area > maxArea + 1) {
             this.showKillMessage('OBSTACLE AREA TOO LARGE!', '#ff4444');
-            return;
+            return false;
         }
 
         const rotation = rect.rotation || 0;
@@ -1187,8 +1225,10 @@ export default class GameScene extends Phaser.Scene {
             middle,
             ...rect,
             deletable: true,
-            source: 'user'
+            source: 'user',
+            id: id
         });
+        return true;
     }
 
     removeobstacle(pointer) {
@@ -1205,6 +1245,10 @@ export default class GameScene extends Phaser.Scene {
                 world.y > p.y &&
                 world.y < p.y + p.h
             ) {
+                if (this.mode === 'multiplayer' && this.socket && p.id) {
+                    this.socket.emit('removeObstacle', { id: p.id });
+                }
+
                 if (p.gameObject) p.gameObject.destroy();
                 if (p.outer) p.outer.destroy();
                 if (p.middle) p.middle.destroy();

@@ -72,7 +72,8 @@ io.on('connection', (socket) => {
             name: data.name || 'Unnamed Server',
             maxPlayers,
             players: {},
-            hostId: socket.id
+            hostId: socket.id,
+            obstacles: {}
         };
 
         const spawn = getUniqueSpawn(rooms[roomId]);
@@ -184,6 +185,39 @@ io.on('connection', (socket) => {
 
         // ✅ Send the FULL object with all player data
         socket.emit('currentPlayers', playersData);
+
+        // Send existing obstacles to the joining player
+        if (rooms[roomId].obstacles) {
+            socket.emit('currentObstacles', rooms[roomId].obstacles);
+        }
+    });
+
+    socket.on('createObstacle', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        if (!rooms[roomId].obstacles) {
+            rooms[roomId].obstacles = {};
+        }
+
+        rooms[roomId].obstacles[data.id] = {
+            id: data.id,
+            rect: data.rect,
+            opacity: data.opacity,
+            creatorId: socket.id
+        };
+
+        socket.to(roomId).emit('obstacleCreated', data);
+    });
+
+    socket.on('removeObstacle', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        if (rooms[roomId].obstacles && rooms[roomId].obstacles[data.id]) {
+            delete rooms[roomId].obstacles[data.id];
+            socket.to(roomId).emit('obstacleRemoved', data);
+        }
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
