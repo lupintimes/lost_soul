@@ -786,7 +786,7 @@ export default class GameScene extends Phaser.Scene {
         this.scoreboardElements = [];
 
         const startX = 10;
-        const startY = 10;
+        const startY = 102;
 
         const bg = this.add.rectangle(startX, startY, 200, 16 + scores.length * 14 + 4, 0x000000, 0.6)
             .setOrigin(0)
