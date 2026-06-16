@@ -19,6 +19,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.isSpawningEnemies = false;
         this.killCount = 0;
+        this.deathCount = 0;
         this.maxEnemies = 12;
 
         this.platforms = [];
@@ -155,6 +156,7 @@ export default class GameScene extends Phaser.Scene {
         this.otherPlayerMap = {};
         this.localPlayer = null;
         this.killCount = 0;
+        this.deathCount = 0;
         this.maxEnemies = 12;
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
@@ -610,6 +612,13 @@ export default class GameScene extends Phaser.Scene {
         // 8. Scoreboard
         this.socket.on('scoreboard', (scores) => {
             this.updateScoreboard(scores);
+            if (this.socket) {
+                const myScore = scores.find(s => s.playerId === this.socket.id);
+                if (myScore) {
+                    this.killCount = myScore.kills;
+                    this.deathCount = myScore.deaths;
+                }
+            }
         });
 
         // 9. Obstacle sync events
@@ -1139,6 +1148,10 @@ export default class GameScene extends Phaser.Scene {
         if (this.isRespawning) return;
         this.isRespawning = true;
 
+        if (this.mode === 'solo') {
+            this.deathCount++;
+        }
+
         // Clean dead players
         this.players = this.players.filter(p => p && p.sprite && p.sprite.active && p.state !== 'dead');
 
@@ -1655,14 +1668,14 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
-        // 2. Kills Panel (below Health panel)
-        this.hudKillsBg = this.add.rectangle(10, 68, 120, 24, 0x000000, 0.6)
+        // 2. Stats Panel (below Health panel)
+        this.hudKillsBg = this.add.rectangle(10, 68, 220, 24, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudKillsBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudKillsText = this.add.text(20, 75, 'KILLS: 0', {
+        this.hudKillsText = this.add.text(20, 75, 'KILLS: 0   DEATHS: 0', {
             fontFamily: '"Press Start 2P"',
             fontSize: '8px',
             color: '#ffffff'
@@ -1739,7 +1752,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (this.hudKillsText) {
-            this.hudKillsText.setText(`KILLS: ${this.killCount}`);
+            this.hudKillsText.setText(`KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`);
         }
     }
 }
