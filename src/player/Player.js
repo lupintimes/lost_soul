@@ -133,6 +133,13 @@ export default class Player {
             return;
         }
 
+        if (this.state === 'hurt' || this.state === 'dash') {
+            if (this.health && typeof this.health.updateBar === 'function') {
+                this.health.updateBar();
+            }
+            return;
+        }
+
         if (this.isEnemy) {
             this.enemyAI();
             if (this.health && typeof this.health.updateBar === 'function') {
@@ -142,13 +149,6 @@ export default class Player {
         }
 
         if (!this.isControlled) {
-            if (this.health && typeof this.health.updateBar === 'function') {
-                this.health.updateBar();
-            }
-            return;
-        }
-
-        if (this.state === 'dash') {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
             }
@@ -446,6 +446,15 @@ export default class Player {
         if (this.isInvincible) return;
 
         this.health.current -= amount;
+        const isFatal = this.health.current <= 0;
+        if (isFatal) {
+            this.health.current = 0;
+        }
+
+        // Immediately update health bar so the visual feedback is instant
+        if (this.health && typeof this.health.updateBar === 'function') {
+            this.health.updateBar();
+        }
 
         // 1. Knockback force
         if (attacker && attacker.sprite) {
@@ -457,7 +466,6 @@ export default class Player {
         // 2. Camera flash & Screen Shake
         const isLocalPlayer = !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
         if (isLocalPlayer) {
-            const isFatal = this.health.current <= 0;
             const shakeIntensity = isFatal ? 0.015 : 0.0005;
             this.scene.cameras.main.shake(150, shakeIntensity);
             this.scene.cameras.main.flash(2, 255, 0, 0, false);
@@ -475,9 +483,19 @@ export default class Player {
         }
         this.createHitParticles(this.sprite.x, this.sprite.y, sparkColor);
 
-        if (this.health.current <= 0) {
-            this.health.current = 0;
-            this.die();
+        // Fatal hit handling: play hurt hitstun first, then trigger die()
+        if (isFatal) {
+            this.state = 'hurt';
+            this.isInvincible = true;
+
+            this.playSound('sfx_hurt', 0.4);
+
+            this.sprite.setTint(0xff0000);
+            this.sprite.anims.play(`${this.character}_hurt_anim`);
+
+            this.scene.time.delayedCall(300, () => {
+                this.die();
+            });
             return;
         }
 
