@@ -323,10 +323,11 @@ export default class GameScene extends Phaser.Scene {
             const opacity = 0.9;
             
             const id = this.mode === 'multiplayer' && this.socket ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}` : null;
-            const success = this.createObstacle(rect, opacity, id);
+            const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
+            const success = this.createObstacle(rect, opacity, id, creatorId, true);
 
             if (success && this.mode === 'multiplayer' && this.socket) {
-                this.socket.emit('createObstacle', { id, rect, opacity });
+                this.socket.emit('createObstacle', { id, rect, opacity, creatorId });
             }
 
             this.preview.clear();
@@ -562,7 +563,7 @@ export default class GameScene extends Phaser.Scene {
         // 9. Obstacle sync events
         this.socket.on('obstacleCreated', (data) => {
             console.log('🧱 Remote obstacle created:', data.id);
-            this.createObstacle(data.rect, data.opacity, data.id);
+            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false);
         });
 
         this.socket.on('obstacleRemoved', (data) => {
@@ -582,7 +583,7 @@ export default class GameScene extends Phaser.Scene {
             Object.keys(obstacles).forEach(id => {
                 const obs = obstacles[id];
                 if (!this.platforms.some(p => p.id === id)) {
-                    this.createObstacle(obs.rect, obs.opacity, id);
+                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false);
                 }
             });
         });
@@ -1143,7 +1144,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    createObstacle(rect, opacity, id = null) {
+    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false) {
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
@@ -1153,20 +1154,69 @@ export default class GameScene extends Phaser.Scene {
         const h = rect.h;
         const area = w * h;
 
-        // Validate width and height
+        // Validate width and height (warnings only shown to local drawing player)
         if (w < minW || h < minH) {
-            this.showKillMessage('OBSTACLE TOO NARROW!', '#ff4444');
+            if (isLocalInit) this.showKillMessage('OBSTACLE TOO NARROW!', '#ff4444');
             return false;
         }
 
         // Validate area limits
         if (area < minArea) {
-            this.showKillMessage('OBSTACLE AREA TOO SMALL!', '#ff4444');
+            if (isLocalInit) this.showKillMessage('OBSTACLE AREA TOO SMALL!', '#ff4444');
             return false;
         }
         if (area > maxArea + 1) {
-            this.showKillMessage('OBSTACLE AREA TOO LARGE!', '#ff4444');
+            if (isLocalInit) this.showKillMessage('OBSTACLE AREA TOO LARGE!', '#ff4444');
             return false;
+        }
+
+        // 2. Subtraction logic: replace enemy obstacles in covered regions
+        if (isLocalInit) {
+            for (let i = this.platforms.length - 1; i >= 0; i--) {
+                const p = this.platforms[i];
+                if (!p.deletable) continue;
+
+                // Only subtract from obstacles created by OTHER players
+                const isEnemy = p.creatorId !== creatorId;
+                if (!isEnemy) continue;
+
+                // Check overlap
+                const overlap = 
+                    rect.x < p.x + p.w &&
+                    rect.x + rect.w > p.x &&
+                    rect.y < p.y + p.h &&
+                    rect.y + rect.h > p.y;
+
+                if (overlap) {
+                    console.log(`✂️ Overlap detected with enemy obstacle ${p.id || 'no-id'}. Performing subtraction.`);
+                    
+                    // Remove old enemy obstacle locally
+                    if (p.gameObject) p.gameObject.destroy();
+                    if (p.outer) p.outer.destroy();
+                    if (p.middle) p.middle.destroy();
+                    this.platforms.splice(i, 1);
+
+                    // Notify server to remove it
+                    if (this.mode === 'multiplayer' && this.socket && p.id) {
+                        this.socket.emit('removeObstacle', { id: p.id });
+                    }
+
+                    // Compute remaining regions of the enemy obstacle
+                    const pieces = this.subtractRect(p, rect);
+                    console.log(`✂️ Obstacle split into ${pieces.length} smaller pieces.`);
+
+                    // Create and emit split pieces under original creator's ownership
+                    pieces.forEach((piece, index) => {
+                        const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
+                        
+                        this.createObstacle(piece, opacity, subId, p.creatorId, false);
+
+                        if (this.mode === 'multiplayer' && this.socket) {
+                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId });
+                        }
+                    });
+                }
+            }
         }
 
         const rotation = rect.rotation || 0;
@@ -1226,7 +1276,8 @@ export default class GameScene extends Phaser.Scene {
             ...rect,
             deletable: true,
             source: 'user',
-            id: id
+            id: id,
+            creatorId: creatorId
         });
         return true;
     }
@@ -1249,6 +1300,14 @@ export default class GameScene extends Phaser.Scene {
             console.log(`🔍 [removeobstacle] Checking user platform ${p.id || 'no-id'} at (${Math.round(p.x)}, ${Math.round(p.y)}, w:${Math.round(p.w)}, h:${Math.round(p.h)}). Click inside? ${isInside}`);
 
             if (isInside) {
+                // Check ownership: other players can't remove another player's obstacles
+                const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
+                if (!isOwner) {
+                    console.log(`⚠️ [removeobstacle] Cannot delete obstacle: owned by another player ${p.creatorId}`);
+                    this.showKillMessage("CANNOT REMOVE ANOTHER PLAYER'S OBSTACLE!", '#ff4444');
+                    return;
+                }
+
                 console.log(`🗑️ [removeobstacle] Match found! Deleting platform: ${p.id || 'no-id'}`);
                 if (this.mode === 'multiplayer' && this.socket && p.id) {
                     this.socket.emit('removeObstacle', { id: p.id });
@@ -1272,5 +1331,70 @@ export default class GameScene extends Phaser.Scene {
             w: Math.abs(p1.x - p2.x),
             h: Math.abs(p1.y - p2.y)
         };
+    }
+
+    subtractRect(A, B) {
+        // Check overlap
+        const noOverlap = 
+            A.x >= B.x + B.w ||
+            A.x + A.w <= B.x ||
+            A.y >= B.y + B.h ||
+            A.y + A.h <= B.y;
+
+        if (noOverlap) {
+            return [A];
+        }
+
+        const pieces = [];
+
+        // 1. Top piece
+        if (A.y < B.y) {
+            pieces.push({
+                x: A.x,
+                y: A.y,
+                w: A.w,
+                h: B.y - A.y
+            });
+        }
+
+        // 2. Bottom piece
+        if (A.y + A.h > B.y + B.h) {
+            pieces.push({
+                x: A.x,
+                y: B.y + B.h,
+                w: A.w,
+                h: (A.y + A.h) - (B.y + B.h)
+            });
+        }
+
+        // Y overlap range
+        const overlapYStart = Math.max(A.y, B.y);
+        const overlapYEnd = Math.min(A.y + A.h, B.y + B.h);
+        const overlapH = overlapYEnd - overlapYStart;
+
+        if (overlapH > 0) {
+            // 3. Left piece
+            if (A.x < B.x) {
+                pieces.push({
+                    x: A.x,
+                    y: overlapYStart,
+                    w: B.x - A.x,
+                    h: overlapH
+                });
+            }
+
+            // 4. Right piece
+            if (A.x + A.w > B.x + B.w) {
+                pieces.push({
+                    x: B.x + B.w,
+                    y: overlapYStart,
+                    w: (A.x + A.w) - (B.x + B.w),
+                    h: overlapH
+                });
+            }
+        }
+
+        // Filter out tiny pieces
+        return pieces.filter(p => p.w > 0.1 && p.h > 0.1);
     }
 }

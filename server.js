@@ -200,13 +200,15 @@ io.on('connection', (socket) => {
             rooms[roomId].obstacles = {};
         }
 
+        const creatorId = data.creatorId || socket.id;
         rooms[roomId].obstacles[data.id] = {
             id: data.id,
             rect: data.rect,
             opacity: data.opacity,
-            creatorId: socket.id
+            creatorId: creatorId
         };
 
+        data.creatorId = creatorId;
         socket.to(roomId).emit('obstacleCreated', data);
     });
 
