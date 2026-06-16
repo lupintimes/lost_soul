@@ -460,7 +460,7 @@ export default class Player {
             const isFatal = this.health.current <= 0;
             const shakeIntensity = isFatal ? 0.015 : 0.0005;
             this.scene.cameras.main.shake(150, shakeIntensity);
-            this.scene.cameras.main.flash(15, 255, 0, 0, false);
+            this.scene.cameras.main.flash(5, 255, 0, 0, false);
         } else if (this.isEnemy && attacker && !attacker.isEnemy) {
             // Player hit an enemy
             this.scene.cameras.main.shake(80, 0.005);
