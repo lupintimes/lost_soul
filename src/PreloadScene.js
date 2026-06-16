@@ -58,16 +58,16 @@ export default class PreloadScene extends Phaser.Scene {
 
         //ADUIO
 
-        this.load.audio('sfx_click', '../assets/audio/click.mp3');
+        this.load.binary('sfx_click_bin', '../assets/audio/click.mp3_');
 
-        this.load.audio('sfx_attack1', '../assets/audio/attack1.mp3');
-        this.load.audio('sfx_attack2', '../assets/audio/attack2.mp3');
+        this.load.binary('sfx_attack1_bin', '../assets/audio/attack1.mp3_');
+        this.load.binary('sfx_attack2_bin', '../assets/audio/attack2.mp3_');
 
-        this.load.audio('sfx_hurt', '../assets/audio/hurt.mp3');
-        this.load.audio('sfx_death', '../assets/audio/death.mp3');
-        this.load.audio('sfx_dash', '../assets/audio/dash.mp3');
-        this.load.audio('sfx_spell', '../assets/audio/spell.mp3');
-        this.load.audio('sfx_highjump', '../assets/audio/highjump.mp3');
+        this.load.binary('sfx_hurt_bin', '../assets/audio/hurt.mp3_');
+        this.load.binary('sfx_death_bin', '../assets/audio/death.mp3_');
+        this.load.binary('sfx_dash_bin', '../assets/audio/dash.mp3_');
+        this.load.binary('sfx_spell_bin', '../assets/audio/spell.mp3_');
+        this.load.binary('sfx_highjump_bin', '../assets/audio/highjump.mp3_');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
@@ -171,8 +171,59 @@ export default class PreloadScene extends Phaser.Scene {
             });
         });
 
-        console.log('✅ All assets loaded and animations created');
+        console.log('✅ All assets loaded and animations created. Decoding audio...');
 
-        this.scene.start('MenuScene');
+        const audioKeys = ['sfx_click', 'sfx_attack1', 'sfx_attack2', 'sfx_hurt', 'sfx_death', 'sfx_dash', 'sfx_spell', 'sfx_highjump'];
+        
+        // Count how many keys we expect to decode
+        let decodedCount = 0;
+        const totalToDecode = audioKeys.length;
+
+        const checkTransition = () => {
+            if (decodedCount >= totalToDecode) {
+                console.log('✅ All assets loaded, audio decoded, and animations created');
+                this.scene.start('MenuScene');
+            }
+        };
+
+        this.sound.on('decoded', (key) => {
+            if (audioKeys.includes(key)) {
+                decodedCount++;
+                checkTransition();
+            }
+        });
+
+        // Start decoding
+        audioKeys.forEach(key => {
+            try {
+                const buffer = this.cache.binary.get(key + '_bin');
+                if (buffer) {
+                    this.sound.decodeAudio(key, buffer);
+                } else {
+                    console.warn(`⚠️ Missing binary buffer for: ${key}`);
+                    decodedCount++;
+                    checkTransition();
+                }
+            } catch (err) {
+                console.error(`❌ Error decoding audio: ${key}`, err);
+                decodedCount++;
+                checkTransition();
+            }
+        });
+
+        // Fallback: if sound manager doesn't use Web Audio or decodeAudio doesn't trigger, 
+        // transition after a timeout or if decodeAudio is not supported
+        if (!this.sound.decodeAudio || !this.sound.context) {
+            console.log('⚠️ Web Audio not supported or decodeAudio unavailable, skipping decoding wait');
+            this.scene.start('MenuScene');
+        } else {
+            // Also add a safety timeout (e.g., 2.5 seconds) in case of decoding errors
+            this.time.delayedCall(2500, () => {
+                if (decodedCount < totalToDecode) {
+                    console.warn('⚠️ Audio decoding timed out for some sounds, transitioning anyway...');
+                    this.scene.start('MenuScene');
+                }
+            });
+        }
     }
 }
