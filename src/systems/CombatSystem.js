@@ -32,7 +32,7 @@ export default class CombatSystem {
                 // 🔥 IMPORTANT FIX: skip self
                 if (target === this.player) return;
                 if (target.sprite === otherGO) {
-                    target.takeDamage(this.player.getDamage());
+                    target.takeDamage(this.player.getDamage(), this.player);
                 }
             });
         });

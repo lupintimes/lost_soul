@@ -415,7 +415,7 @@ export default class Player {
                 targets.forEach(target => {
                     if (target === this) return;
                     if (target.sprite === otherGO) {
-                        target.takeDamage(damage);
+                        target.takeDamage(damage, this);
                         spell.destroy();
                     }
                 });
@@ -439,13 +439,39 @@ export default class Player {
     }
 
     // 💥 DAMAGE
-    takeDamage(amount) {
+    takeDamage(amount, attacker = null) {
         if (this.state === 'dead') return;
 
         // ✅ Block ALL damage during invincibility
         if (this.isInvincible) return;
 
         this.health.current -= amount;
+
+        // 1. Knockback force
+        if (attacker && attacker.sprite) {
+            const pushDir = attacker.sprite.x < this.sprite.x ? 1 : -1;
+            const forceX = this.isEnemy ? 8 : 12;
+            this.sprite.setVelocity(pushDir * forceX, -4);
+        }
+
+        // 2. Camera flash & Screen Shake
+        const isLocalPlayer = !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
+        if (isLocalPlayer) {
+            this.scene.cameras.main.shake(150, 0.015);
+            this.scene.cameras.main.flash(100, 255, 0, 0, false);
+        } else if (this.isEnemy && attacker && !attacker.isEnemy) {
+            // Player hit an enemy
+            this.scene.cameras.main.shake(80, 0.005);
+        }
+
+        // 3. Pixel Particles Burst
+        let sparkColor = 0x00ffff; // Default player cyan
+        if (this.isEnemy) {
+            if (this.character === 'p1') sparkColor = 0xcccccc; // Knight grey
+            else if (this.character === 'p2') sparkColor = 0x8844ff; // Shadow purple
+            else sparkColor = 0xff4444; // Berserker red
+        }
+        this.createHitParticles(this.sprite.x, this.sprite.y, sparkColor);
 
         if (this.health.current <= 0) {
             this.health.current = 0;
@@ -607,5 +633,32 @@ export default class Player {
         }
 
         return false;
+    }
+
+    createHitParticles(x, y, color = 0xffffff) {
+        const particleCount = 8;
+        for (let i = 0; i < particleCount; i++) {
+            const size = Phaser.Math.Between(4, 8);
+            const p = this.scene.add.rectangle(x, y, size, size, color)
+                .setDepth(5);
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Phaser.Math.Between(40, 100);
+            const targetX = x + Math.cos(angle) * speed;
+            const targetY = y + Math.sin(angle) * speed - Phaser.Math.Between(10, 30);
+
+            this.scene.tweens.add({
+                targets: p,
+                x: targetX,
+                y: targetY,
+                alpha: 0,
+                scale: 0.1,
+                duration: Phaser.Math.Between(400, 600),
+                ease: 'Power2',
+                onComplete: () => {
+                    if (p && p.active) p.destroy();
+                }
+            });
+        }
     }
 }
