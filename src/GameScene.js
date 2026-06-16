@@ -19,7 +19,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.isSpawningEnemies = false;
         this.killCount = 0;
-        this.maxEnemies = 3;
+        this.maxEnemies = 12;
 
         this.platforms = [];
         this.players = [];
@@ -155,7 +155,7 @@ export default class GameScene extends Phaser.Scene {
         this.otherPlayerMap = {};
         this.localPlayer = null;
         this.killCount = 0;
-        this.maxEnemies = 3;
+        this.maxEnemies = 12;
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
         // Reset teleporter state
@@ -199,29 +199,73 @@ export default class GameScene extends Phaser.Scene {
 
         // ─── Spawn Points — EXACT for 152px player height ────
         this.spawnPoints = [
-            // On the ground (surface y = 3747)
+            // Original starting spawn points
             { x: 300, y: 3669 },
             { x: 600, y: 3669 },
             { x: 900, y: 3669 },
             { x: 1200, y: 3669 },
             { x: 1500, y: 3669 },
-
-            // On platform A (surface y = 3341, x: 414-1228)
             { x: 550, y: 3263 },
             { x: 800, y: 3263 },
-
-            // On platform B (surface y = 3339, x: 1216-1760)
             { x: 1350, y: 3261 },
             { x: 1550, y: 3261 },
-
-            // On platform C (surface y = 3131, x: 916-1498)
             { x: 1050, y: 3053 },
+
+            // Middle ground & platforms
+            { x: 1800, y: 3757 },
+            { x: 2100, y: 3757 },
+            { x: 2400, y: 3757 },
+            { x: 300, y: 2448 },
+            { x: 800, y: 2448 },
+            { x: 1300, y: 2448 },
+            { x: 1800, y: 2448 },
+            { x: 2700, y: 2744 },
+            { x: 3100, y: 2744 },
+            { x: 3500, y: 2744 },
+
+            // Right side ground & platforms
+            { x: 4000, y: 3781 },
+            { x: 4300, y: 3781 },
+            { x: 4600, y: 3781 },
+            { x: 5000, y: 3781 },
+            { x: 5300, y: 3781 },
+            { x: 4900, y: 3596 },
+            { x: 5300, y: 3596 },
+            { x: 5700, y: 3596 },
+
+            // High altitude platforms
+            { x: 4000, y: 2224 },
+            { x: 4400, y: 2224 },
+            { x: 4700, y: 2224 },
+            { x: 4700, y: 1910 },
+            { x: 5000, y: 1910 },
+            { x: 4800, y: 792 },
+            { x: 5100, y: 792 },
+            { x: 5600, y: 792 },
+            { x: 5800, y: 792 },
+
+            // User-defined additional spawn positions
+            { x: 150, y: 200 },
+            { x: 230, y: 1000 },
+            { x: 2050, y: 975 },
+            { x: 3350, y: 270 },
+            { x: 5060, y: 1200 },
+            { x: 2700, y: 2650 },
+            { x: 2880, y: 1240 },
+            { x: 300, y: 2275 },
+            { x: 1200, y: 2350 },
+            { x: 2300, y: 2060 },
+            { x: 4050, y: 2050 },
+            { x: 4125, y: 3085 },
+            { x: 5445, y: 3575 },
+            { x: 5300, y: 2850 }
         ];
 
         // ─── Mode Setup ──────────────────────────────────
         if (this.mode === 'solo') {
-            this.spawnPlayer();
-            this.spawnEnemyWave();
+            this.maxEnemies = this.spawnPoints.length - 2;
+            const playerSpawn = this.spawnPlayer();
+            this.spawnInitialEnemies(playerSpawn);
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
 
         } else if (this.mode === 'multiplayer') {
@@ -860,16 +904,13 @@ export default class GameScene extends Phaser.Scene {
         // Dead players still need to play death animation before being removed
         this.players = this.players.filter(p => p && p.sprite && p.sprite.active);
 
-        this.maxEnemies = Math.min(
-            this.spawnPoints.length,
-            3 + Math.floor(this.killCount / 3)
-        );
+        this.maxEnemies = this.spawnPoints.length - 2;
 
-        if (this.enemies.length === 0 && !this.isSpawningEnemies) {
+        if (this.enemies.length < this.maxEnemies && !this.isSpawningEnemies) {
             this.isSpawningEnemies = true;
             const needed = this.maxEnemies - this.enemies.length;
 
-            this.time.delayedCall(1000, () => {
+            this.time.delayedCall(2000, () => {
                 this.spawnEnemyWave(needed);
                 this.isSpawningEnemies = false;
             });
@@ -973,10 +1014,88 @@ export default class GameScene extends Phaser.Scene {
 
         this.players.push(player);
         this.applySpawnProtection(player);
+        return spawn;
+    }
+
+    spawnInitialEnemies(playerSpawn) {
+        this.spawnPoints.forEach(spawn => {
+            if (playerSpawn && spawn.x === playerSpawn.x && spawn.y === playerSpawn.y) {
+                return;
+            }
+            const randomChar = Phaser.Utils.Array.GetRandom(['p1', 'p2', 'p3']);
+            const enemy = new Player(this, spawn.x, spawn.y, null, false, randomChar);
+
+            enemy.isEnemy = true;
+            enemy.state = 'idle';
+            enemy.countedAsKill = false;
+            enemy.chaseOffset = Phaser.Math.Between(-40, 40);
+
+            if (randomChar === 'p1') {
+                enemy.speed = 3;
+                enemy.jumpForce = -16;
+                enemy.sprite.setTint(0xaaaaaa);
+            } else if (randomChar === 'p2') {
+                enemy.speed = 3.8;
+                enemy.jumpForce = -18;
+                enemy.sprite.setTint(0x8844ff);
+            } else {
+                enemy.speed = 2.6;
+                enemy.jumpForce = -14;
+                enemy.sprite.setTint(0xff4444);
+            }
+
+            this.enemies.push(enemy);
+        });
     }
 
     spawnEnemyWave(count = 3) {
-        const shuffled = Phaser.Utils.Array.Shuffle([...this.spawnPoints]);
+        let playerX = 0;
+        let playerY = 0;
+        let hasPlayer = false;
+        if (this.players && this.players[0] && this.players[0].sprite) {
+            playerX = this.players[0].sprite.x;
+            playerY = this.players[0].sprite.y;
+            hasPlayer = true;
+        }
+
+        let candidates = this.spawnPoints.filter(sp => {
+            // Avoid visible viewport to prevent visible spawning (teleporting)
+            if (this.cameras && this.cameras.main && this.cameras.main.worldView) {
+                const view = this.cameras.main.worldView;
+                if (sp.x >= view.x && sp.x <= view.x + view.width &&
+                    sp.y >= view.y && sp.y <= view.y + view.height) {
+                    return false;
+                }
+            }
+
+            if (hasPlayer) {
+                const distToPlayer = Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY);
+                if (distToPlayer < 500) return false;
+            }
+            for (let enemy of this.enemies) {
+                if (enemy && enemy.sprite && enemy.sprite.active) {
+                    const distToEnemy = Phaser.Math.Distance.Between(sp.x, sp.y, enemy.sprite.x, enemy.sprite.y);
+                    if (distToEnemy < 100) return false;
+                }
+            }
+            return true;
+        });
+
+        if (candidates.length < count) {
+            candidates = this.spawnPoints.filter(sp => {
+                if (hasPlayer) {
+                    const distToPlayer = Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY);
+                    return distToPlayer > 300;
+                }
+                return true;
+            });
+        }
+
+        if (candidates.length === 0) {
+            candidates = [...this.spawnPoints];
+        }
+
+        const shuffled = Phaser.Utils.Array.Shuffle(candidates);
         const spawnCount = Math.min(count, shuffled.length);
 
         for (let i = 0; i < spawnCount; i++) {
