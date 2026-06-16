@@ -253,6 +253,7 @@ export default class GameScene extends Phaser.Scene {
         this.OBSTACLE_MIN_HEIGHT = 30;
         this.OBSTACLE_MIN_AREA = 900;
         this.OBSTACLE_MAX_AREA = 250000;
+        this.MAX_BUILD_POINTS = 300000;
 
         // ─── Draw Tool ───────────────────────────────────
         this.preview = this.add.graphics();
@@ -281,8 +282,10 @@ export default class GameScene extends Phaser.Scene {
             let h = Math.abs(dy);
             let area = w * h;
 
-            if (area > this.OBSTACLE_MAX_AREA) {
-                const scale = Math.sqrt(this.OBSTACLE_MAX_AREA / area);
+            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+            if (area > maxAllowedArea) {
+                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
                 dx *= scale;
                 dy *= scale;
             }
@@ -309,8 +312,10 @@ export default class GameScene extends Phaser.Scene {
             let h = Math.abs(dy);
             let area = w * h;
 
-            if (area > this.OBSTACLE_MAX_AREA) {
-                const scale = Math.sqrt(this.OBSTACLE_MAX_AREA / area);
+            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+            if (area > maxAllowedArea) {
+                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
                 dx *= scale;
                 dy *= scale;
             }
@@ -344,6 +349,8 @@ export default class GameScene extends Phaser.Scene {
                 this.scene.start('MenuScene');
             }
         });
+
+        this.createBuildPointsUI();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -822,6 +829,8 @@ export default class GameScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     update() {
+        this.updateBuildPointsUI();
+
         if (this.mode === 'solo') {
             this.updateSolo();
         }
@@ -1170,6 +1179,15 @@ export default class GameScene extends Phaser.Scene {
             return false;
         }
 
+        // Validate build points limit
+        if (isLocalInit) {
+            const usedPoints = this.getUsedBuildPoints();
+            if (usedPoints + area > this.MAX_BUILD_POINTS) {
+                this.showKillMessage('NOT ENOUGH BUILD POINTS!', '#ff4444');
+                return false;
+            }
+        }
+
         // 2. Subtraction logic: replace enemy obstacles in covered regions
         if (isLocalInit) {
             for (let i = this.platforms.length - 1; i >= 0; i--) {
@@ -1280,6 +1298,80 @@ export default class GameScene extends Phaser.Scene {
             creatorId: creatorId
         });
         return true;
+    }
+
+    getUsedBuildPoints() {
+        let used = 0;
+        this.platforms.forEach(p => {
+            if (p.deletable && (!p.creatorId || (this.socket && p.creatorId === this.socket.id))) {
+                used += p.w * p.h;
+            }
+        });
+        return used;
+    }
+
+    createBuildPointsUI() {
+        const { width } = this.scale;
+        const startX = width - 230;
+        const startY = 10;
+        const panelW = 220;
+        const panelH = 45;
+
+        this.buildUIBg = this.add.rectangle(startX, startY, panelW, panelH, 0x000000, 0.6)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.buildUIBg.setStrokeStyle(1.5, 0x333333);
+
+        this.buildUITitle = this.add.text(startX + 10, startY + 6, 'BUILD POINTS', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#ffff00'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.buildUIBarBg = this.add.rectangle(startX + 10, startY + 20, panelW - 20, 10, 0x222222)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 20, panelW - 20, 10, 0x00ffcc)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.buildUIText = this.add.text(startX + 10, startY + 34, '300,000 / 300,000', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '7px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+    }
+
+    updateBuildPointsUI() {
+        if (!this.buildUIBarFill || !this.buildUIText) return;
+
+        const used = this.getUsedBuildPoints();
+        const available = Math.max(0, this.MAX_BUILD_POINTS - used);
+        const pct = Math.max(0, Math.min(1, available / this.MAX_BUILD_POINTS));
+
+        // Update bar width (max width is panelW - 20 = 200)
+        this.buildUIBarFill.width = 200 * pct;
+
+        // Change bar fill color depending on remaining build points percentage
+        if (pct < 0.2) {
+            this.buildUIBarFill.setFillStyle(0xff4444); // Red
+        } else if (pct < 0.5) {
+            this.buildUIBarFill.setFillStyle(0xffaa00); // Orange
+        } else {
+            this.buildUIBarFill.setFillStyle(0x00ffcc); // Cyan
+        }
+
+        // Format numbers with commas (e.g. 150,000)
+        const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        this.buildUIText.setText(`${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`);
     }
 
     removeobstacle(pointer) {

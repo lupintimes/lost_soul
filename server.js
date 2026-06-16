@@ -201,6 +201,24 @@ io.on('connection', (socket) => {
         }
 
         const creatorId = data.creatorId || socket.id;
+
+        // Calculate total area currently used by this player on the server
+        let usedArea = 0;
+        Object.values(rooms[roomId].obstacles).forEach(obs => {
+            if (obs.creatorId === creatorId) {
+                usedArea += obs.rect.w * obs.rect.h;
+            }
+        });
+
+        const newArea = data.rect.w * data.rect.h;
+        const MAX_BUILD_POINTS = 300000;
+
+        // Enforce the limit only if the player is creating their own obstacle
+        if (creatorId === socket.id && (usedArea + newArea) > MAX_BUILD_POINTS) {
+            console.warn(`⚠️ Blocked createObstacle from ${socket.id}: Build points budget exceeded (${usedArea + newArea} > ${MAX_BUILD_POINTS})`);
+            return;
+        }
+
         rooms[roomId].obstacles[data.id] = {
             id: data.id,
             rect: data.rect,
