@@ -36,7 +36,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('bg', '../assets/background.png');
+        this.load.image('bg', '../assets/background.webp');
 
         const characters = ['p1', 'p2', 'p3'];
 
@@ -1145,56 +1145,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false) {
-        let finalRect = { ...rect };
-        let platformsToRemove = [];
-
-        // 1. Merge overlapping deletable obstacles into a single union bounding box
-        if (isLocalInit) {
-            let merged = true;
-            while (merged) {
-                merged = false;
-                for (let i = 0; i < this.platforms.length; i++) {
-                    const p = this.platforms[i];
-                    if (!p.deletable) continue;
-                    if (platformsToRemove.includes(p)) continue;
-
-                    // Check overlap
-                    const overlap = 
-                        finalRect.x < p.x + p.w &&
-                        finalRect.x + finalRect.w > p.x &&
-                        finalRect.y < p.y + p.h &&
-                        finalRect.y + finalRect.h > p.y;
-
-                    if (overlap) {
-                        console.log(`🔗 Overlap detected. Merging obstacle ${p.id || 'no-id'} into union.`);
-                        
-                        // Calculate union bounding box
-                        const minX = Math.min(finalRect.x, p.x);
-                        const minY = Math.min(finalRect.y, p.y);
-                        const maxX = Math.max(finalRect.x + finalRect.w, p.x + p.w);
-                        const maxY = Math.max(finalRect.y + finalRect.h, p.y + p.h);
-
-                        finalRect.x = minX;
-                        finalRect.y = minY;
-                        finalRect.w = maxX - minX;
-                        finalRect.h = maxY - minY;
-
-                        platformsToRemove.push(p);
-                        merged = true;
-                        break; // Restart loop to check if the new larger bounding box overlaps others
-                    }
-                }
-            }
-        }
-
-        // 2. Validate the final rectangle properties
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
         const maxArea = this.OBSTACLE_MAX_AREA || 250000;
 
-        const w = finalRect.w;
-        const h = finalRect.h;
+        const w = rect.w;
+        const h = rect.h;
         const area = w * h;
 
         // Validate width and height (warnings only shown to local drawing player)
@@ -1213,40 +1170,70 @@ export default class GameScene extends Phaser.Scene {
             return false;
         }
 
-        // 3. Perform deletions of merged platforms since validation passed
-        if (isLocalInit && platformsToRemove.length > 0) {
-            platformsToRemove.forEach(p => {
-                const index = this.platforms.indexOf(p);
-                if (index !== -1) {
+        // 2. Subtraction logic: replace enemy obstacles in covered regions
+        if (isLocalInit) {
+            for (let i = this.platforms.length - 1; i >= 0; i--) {
+                const p = this.platforms[i];
+                if (!p.deletable) continue;
+
+                // Only subtract from obstacles created by OTHER players
+                const isEnemy = p.creatorId !== creatorId;
+                if (!isEnemy) continue;
+
+                // Check overlap
+                const overlap = 
+                    rect.x < p.x + p.w &&
+                    rect.x + rect.w > p.x &&
+                    rect.y < p.y + p.h &&
+                    rect.y + rect.h > p.y;
+
+                if (overlap) {
+                    console.log(`✂️ Overlap detected with enemy obstacle ${p.id || 'no-id'}. Performing subtraction.`);
+                    
+                    // Remove old enemy obstacle locally
                     if (p.gameObject) p.gameObject.destroy();
                     if (p.outer) p.outer.destroy();
                     if (p.middle) p.middle.destroy();
-                    this.platforms.splice(index, 1);
-                }
+                    this.platforms.splice(i, 1);
 
-                // Notify server to remove old obstacle
-                if (this.mode === 'multiplayer' && this.socket && p.id) {
-                    this.socket.emit('removeObstacle', { id: p.id });
+                    // Notify server to remove it
+                    if (this.mode === 'multiplayer' && this.socket && p.id) {
+                        this.socket.emit('removeObstacle', { id: p.id });
+                    }
+
+                    // Compute remaining regions of the enemy obstacle
+                    const pieces = this.subtractRect(p, rect);
+                    console.log(`✂️ Obstacle split into ${pieces.length} smaller pieces.`);
+
+                    // Create and emit split pieces under original creator's ownership
+                    pieces.forEach((piece, index) => {
+                        const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
+                        
+                        this.createObstacle(piece, opacity, subId, p.creatorId, false);
+
+                        if (this.mode === 'multiplayer' && this.socket) {
+                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId });
+                        }
+                    });
                 }
-            });
+            }
         }
 
-        // 4. Render and register the final merged obstacle
-        const rotation = finalRect.rotation || 0;
+        const rotation = rect.rotation || 0;
         const angle = Phaser.Math.DegToRad(rotation);
 
         // Calculate center for Matter body taking rotation around top-left into account
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
-        const cx = finalRect.x + (finalRect.w / 2) * cos - (finalRect.h / 2) * sin;
-        const cy = finalRect.y + (finalRect.w / 2) * sin + (finalRect.h / 2) * cos;
+        const cx = rect.x + (rect.w / 2) * cos - (rect.h / 2) * sin;
+        const cy = rect.y + (rect.w / 2) * sin + (rect.h / 2) * cos;
 
         // Fill
         const platform = this.add.rectangle(
             cx,
             cy,
-            finalRect.w,
-            finalRect.h,
+            rect.w,
+            rect.h,
             0x0000000,
             opacity
         );
@@ -1254,8 +1241,8 @@ export default class GameScene extends Phaser.Scene {
         const outer = this.add.rectangle(
             cx,
             cy,
-            finalRect.w - 12.5,
-            finalRect.h - 12.5,
+            rect.w - 12.5,
+            rect.h - 12.5,
             0xffffff,
             opacity
         );
@@ -1264,8 +1251,8 @@ export default class GameScene extends Phaser.Scene {
         const middle = this.add.rectangle(
             cx,
             cy,
-            finalRect.w - 25,
-            finalRect.h - 25,
+            rect.w - 25,
+            rect.h - 25,
             0x000000,
             opacity
         );
@@ -1286,25 +1273,17 @@ export default class GameScene extends Phaser.Scene {
             gameObject: platform,
             outer,
             middle,
-            ...finalRect,
+            ...rect,
             deletable: true,
             source: 'user',
             id: id,
             creatorId: creatorId
         });
-
-        // Write properties back to the caller's rect object so pointerup emits correct final merged dimensions
-        rect.x = finalRect.x;
-        rect.y = finalRect.y;
-        rect.w = finalRect.w;
-        rect.h = finalRect.h;
-
         return true;
     }
 
     removeobstacle(pointer) {
         const world = pointer.positionToCamera(this.cameras.main);
-        console.log(`🔍 [removeobstacle] Clicked at world: (${Math.round(world.x)}, ${Math.round(world.y)})`);
 
         for (let i = this.platforms.length - 1; i >= 0; i--) {
             const p = this.platforms[i];
@@ -1317,18 +1296,14 @@ export default class GameScene extends Phaser.Scene {
                 world.y > p.y &&
                 world.y < p.y + p.h;
 
-            console.log(`🔍 [removeobstacle] Checking user platform ${p.id || 'no-id'} at (${Math.round(p.x)}, ${Math.round(p.y)}, w:${Math.round(p.w)}, h:${Math.round(p.h)}). Click inside? ${isInside}`);
-
             if (isInside) {
                 // Check ownership: other players can't remove another player's obstacles
                 const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
                 if (!isOwner) {
-                    console.log(`⚠️ [removeobstacle] Cannot delete obstacle: owned by another player ${p.creatorId}`);
                     this.showKillMessage("CANNOT REMOVE ANOTHER PLAYER'S OBSTACLE!", '#ff4444');
                     return;
                 }
 
-                console.log(`🗑️ [removeobstacle] Match found! Deleting platform: ${p.id || 'no-id'}`);
                 if (this.mode === 'multiplayer' && this.socket && p.id) {
                     this.socket.emit('removeObstacle', { id: p.id });
                 }
@@ -1341,7 +1316,6 @@ export default class GameScene extends Phaser.Scene {
                 return;
             }
         }
-        console.log(`🔍 [removeobstacle] No matching user platform found under click.`);
     }
 
     getRect(p1, p2) {
@@ -1351,5 +1325,70 @@ export default class GameScene extends Phaser.Scene {
             w: Math.abs(p1.x - p2.x),
             h: Math.abs(p1.y - p2.y)
         };
+    }
+
+    subtractRect(A, B) {
+        // Check overlap
+        const noOverlap = 
+            A.x >= B.x + B.w ||
+            A.x + A.w <= B.x ||
+            A.y >= B.y + B.h ||
+            A.y + A.h <= B.y;
+
+        if (noOverlap) {
+            return [A];
+        }
+
+        const pieces = [];
+
+        // 1. Top piece
+        if (A.y < B.y) {
+            pieces.push({
+                x: A.x,
+                y: A.y,
+                w: A.w,
+                h: B.y - A.y
+            });
+        }
+
+        // 2. Bottom piece
+        if (A.y + A.h > B.y + B.h) {
+            pieces.push({
+                x: A.x,
+                y: B.y + B.h,
+                w: A.w,
+                h: (A.y + A.h) - (B.y + B.h)
+            });
+        }
+
+        // Y overlap range
+        const overlapYStart = Math.max(A.y, B.y);
+        const overlapYEnd = Math.min(A.y + A.h, B.y + B.h);
+        const overlapH = overlapYEnd - overlapYStart;
+
+        if (overlapH > 0) {
+            // 3. Left piece
+            if (A.x < B.x) {
+                pieces.push({
+                    x: A.x,
+                    y: overlapYStart,
+                    w: B.x - A.x,
+                    h: overlapH
+                });
+            }
+
+            // 4. Right piece
+            if (A.x + A.w > B.x + B.w) {
+                pieces.push({
+                    x: B.x + B.w,
+                    y: overlapYStart,
+                    w: (A.x + A.w) - (B.x + B.w),
+                    h: overlapH
+                });
+            }
+        }
+
+        // Filter out tiny pieces
+        return pieces.filter(p => p.w > 0.1 && p.h > 0.1);
     }
 }

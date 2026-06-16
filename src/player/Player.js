@@ -87,11 +87,6 @@ export default class Player {
         // ⚔️ attack trigger
         // ⚔️ attack trigger
         this.sprite.on('animationupdate', (anim, frame) => {
-            // 🔍 DEBUG — log ALL attack frames
-            if (anim.key.includes('attack')) {
-                console.log(`🎬 ${anim.key} | frame: ${frame.index}`);
-            }
-
             if (
                 (anim.key === `${this.character}_attack_1` ||
                     anim.key === `${this.character}_attack_2` ||

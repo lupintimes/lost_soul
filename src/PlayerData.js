@@ -1,6 +1,15 @@
+let savedCharacter = 'p1';
+let savedColor = 'default';
+try {
+    savedCharacter = localStorage.getItem('lost_soul_character') || 'p1';
+    savedColor = localStorage.getItem('lost_soul_color') || 'default';
+} catch (e) {
+    // Safe fallback if localStorage is not accessible
+}
+
 const PlayerData = {
-    character: 'p1',
-    color: 'default',
+    character: savedCharacter,
+    color: savedColor,
 
     characters: [
         { id: 'p1', name: 'KNIGHT', color: 0x4488ff, desc: 'Balanced fighter' },
@@ -18,10 +27,16 @@ const PlayerData = {
 
     setCharacter(id) {
         this.character = id;
+        try {
+            localStorage.setItem('lost_soul_character', id);
+        } catch (e) {}
     },
 
     setColor(id) {
         this.color = id;
+        try {
+            localStorage.setItem('lost_soul_color', id);
+        } catch (e) {}
     },
 
     getCharacterInfo() {

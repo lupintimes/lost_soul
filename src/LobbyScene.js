@@ -8,7 +8,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('menu_bg', '../assets/background.png');
+        this.load.image('menu_bg', '../assets/background.webp');
     }
 
     playClick() {

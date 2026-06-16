@@ -8,7 +8,7 @@ export default class Controls {
             highJump: 'Q',
             dash: 'SHIFT',
             spell: 'R',
-            taunt: 'X'
+            taunt: 'T'
         });
 
         Object.assign(this, this.keys);

@@ -55,7 +55,7 @@
         }, 
         {
          "id":5,
-         "image":"background.png",
+         "image":"background.webp",
          "imageheight":4000,
          "imagewidth":6000,
          "name":"Image Layer 1",
