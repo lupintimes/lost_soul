@@ -1366,6 +1366,64 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
+    drawFrozen(graphics, w, h, opacity, tint) {
+        graphics.clear();
+        const r = Math.min(w, h, 6);
+        const baseColor = (tint !== null && tint !== undefined) ? tint : 0x00e5ff;
+
+        // 1. Semi-translucent frozen body fill (the ice itself)
+        graphics.fillStyle(baseColor, 0.6 * opacity);
+        
+        // 2. Frozen block outer border
+        graphics.lineStyle(3, 0xffffff, 0.85 * opacity);
+        graphics.strokeRoundedRect(-w / 2 + 1.5, -h / 2 + 1.5, w - 3, h - 3, r);
+        graphics.fillRoundedRect(-w / 2 + 1.5, -h / 2 + 1.5, w - 3, h - 3, r);
+
+        // 3. Inner cold core border
+        graphics.lineStyle(1.5, baseColor, 0.75 * opacity);
+        graphics.strokeRoundedRect(-w / 2 + 5, -h / 2 + 5, w - 10, h - 10, Math.max(1, r - 2));
+
+        // 4. Glossy reflection glare (top highlight)
+        const glareH = Math.min(6, h * 0.15);
+        graphics.fillStyle(0xffffff, 0.4 * opacity);
+        graphics.fillRoundedRect(-w / 2 + 5, -h / 2 + 4, w - 10, glareH, Math.max(1, r - 3));
+
+        // 5. Crystalline Frost Cracks (Internal ice fractures)
+        if (w > 30 && h > 30) {
+            graphics.lineStyle(1.0, 0xffffff, 0.35 * opacity);
+            
+            // Crack 1: Top-Left to Center-Right
+            graphics.beginPath();
+            graphics.moveTo(-w / 3, -h / 6);
+            graphics.lineTo(-w / 8, h / 8);
+            graphics.lineTo(w / 4, -h / 12);
+            graphics.strokePath();
+
+            // Branch from Crack 1
+            graphics.beginPath();
+            graphics.moveTo(-w / 8, h / 8);
+            graphics.lineTo(-w / 6, h / 3);
+            graphics.strokePath();
+
+            // Crack 2: Bottom-Right small crack
+            graphics.beginPath();
+            graphics.moveTo(w / 3, h / 3);
+            graphics.lineTo(w / 6, h / 4);
+            graphics.strokePath();
+        }
+
+        // 6. Diagonal Ice shine (subtle glass reflection)
+        graphics.fillStyle(0xffffff, 0.12 * opacity);
+        graphics.beginPath();
+        graphics.moveTo(-w / 2 + 4, -h / 2 + 4);
+        graphics.lineTo(-w / 2 + 20, -h / 2 + 4);
+        graphics.lineTo(w / 2 - 4, h / 2 - 4);
+        graphics.lineTo(w / 2 - 20, h / 2 - 4);
+        graphics.closePath();
+        graphics.fillPath();
+    }
+
+
     startJellyIdle(jellyVisual) {
         if (!jellyVisual || !jellyVisual.active) return;
         
@@ -1545,7 +1603,7 @@ export default class GameScene extends Phaser.Scene {
             rect.w,
             rect.h,
             0x000000,
-            blockType === 'bounce' ? 0 : opacity
+            (blockType === 'bounce' || blockType === 'slide') ? 0 : opacity
         );
 
         let outer = null;
@@ -1556,14 +1614,12 @@ export default class GameScene extends Phaser.Scene {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawJelly(jelly, rect.w, rect.h, opacity, tint);
             this.startJellyIdle(jelly);
+        } else if (blockType === 'slide') {
+            jelly = this.add.graphics({ x: cx, y: cy });
+            this.drawFrozen(jelly, rect.w, rect.h, opacity, tint);
         } else {
             // Outer border color: blockType takes priority, then tint, then default slate
-            let outerColor;
-            if (blockType === 'slide') {
-                outerColor = 0x00e5ff; // Cyan for slide/ice
-            } else {
-                outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
-            }
+            let outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
             outer = this.add.rectangle(
                 cx,
                 cy,
