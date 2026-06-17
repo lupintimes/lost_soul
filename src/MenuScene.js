@@ -16,6 +16,7 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.setRoundPixels(true);
         const { width, height } = this.scale;
 
 
