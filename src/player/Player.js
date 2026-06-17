@@ -61,12 +61,30 @@ export default class Player {
         }
 
         this.combat = new CombatSystem(scene, this);
-        this.health = new HealthSystem(scene, this);
+        const maxHp = this.character === 'p1' ? 130 : 100;
+        this.health = new HealthSystem(scene, this, maxHp);
 
         this.state = 'idle';
         this.isInvincible = false;
-        this.spellCooldown = 200;
+        // Knight (p1) has a 4-second cooldown for their Shield Block spell. Others have 200ms.
+        this.spellCooldown = this.character === 'p1' ? 4000 : 200;
         this.lastSpellTime = 0;
+
+        // Ability States & variables
+        this.isShieldActive = false;
+        this.shieldVisual = null;
+        
+        this.isRageActive = false;
+        this.hasHighJumpedInAir = false;
+        this.hasDoubleJumped = false;
+        this.speed = 10;
+        this.originalSpeed = 10;
+
+        // Dash charges & cooldown (0.7s recharge delay)
+        this.dashCooldown = 700;
+        this.maxDashCharges = this.character === 'p2' ? 2 : 1;
+        this.dashCharges = this.maxDashCharges;
+        this.lastDashChargeRegenTime = null;
 
         this.lastX = 0;
         this.lastY = 0;
@@ -128,6 +146,10 @@ export default class Player {
 
     update() {
         if (!this.sprite || !this.sprite.body) return;
+
+        // Run abilities visuals/status effects update for all clients/players
+        this.updateAbilitiesVisuals();
+
         if (this.state === 'dead') return;
 
         if (this.sprite.y > 3900) {
@@ -135,9 +157,20 @@ export default class Player {
             return;
         }
 
-        if (this.state === 'hurt' || this.state === 'dash') {
+        if (this.state === 'hurt') {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
+            }
+            return;
+        }
+
+        if (this.state === 'dash') {
+            if (this.health && typeof this.health.updateBar === 'function') {
+                this.health.updateBar();
+            }
+            // Allow chaining a double dash if player is Shadow (p2) and has a charge
+            if (this.controls && Phaser.Input.Keyboard.JustDown(this.controls.dash)) {
+                this.dash();
             }
             return;
         }
@@ -173,9 +206,15 @@ export default class Player {
             }
         }
 
-        const speed = this.speed || 10;
-        const jumpForce = this.jumpForce || -20;
-        const highJumpForce = this.highJumpForce || -36;
+        let speed = this.speed || 10;
+        let jumpForce = this.jumpForce || -20;
+        let highJumpForce = this.highJumpForce || -36;
+
+        if (this.isShieldActive) {
+            speed = speed * 1.5;
+            jumpForce = jumpForce * 1.4;
+            highJumpForce = highJumpForce * 1.3;
+        }
 
         if (this.health && typeof this.health.updateBar === 'function') {
             this.health.updateBar();
@@ -204,12 +243,27 @@ export default class Player {
 
         // 🦘 JUMP
         if (this.isOnGround()) {
+            this.hasHighJumpedInAir = false;
+            this.hasDoubleJumped = false;
             if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
                 this.playSound('sfx_highjump', 0.3);
                 this.sprite.setVelocityY(highJumpForce);
+                this.hasHighJumpedInAir = true;
             }
             else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
                 this.sprite.setVelocityY(jumpForce);
+            }
+        } else {
+            // Allow high jump mid-air after normal jump
+            if (Phaser.Input.Keyboard.JustDown(this.controls.highJump) && !this.hasHighJumpedInAir) {
+                this.playSound('sfx_highjump', 0.3);
+                this.sprite.setVelocityY(highJumpForce);
+                this.hasHighJumpedInAir = true;
+            }
+            // Allow double jump for p2 (Shadow) in mid-air
+            else if (this.character === 'p2' && Phaser.Input.Keyboard.JustDown(this.controls.jump) && !this.hasDoubleJumped) {
+                this.sprite.setVelocityY(jumpForce);
+                this.hasDoubleJumped = true;
             }
         }
 
@@ -354,15 +408,24 @@ export default class Player {
 
     // ⚡ DASH
     dash() {
-        if (this.state === 'dash') return;
+        if (this.dashCharges <= 0) return;
+        this.dashCharges--;
         this.state = 'dash';
 
         this.playSound('sfx_dash', 0.3);
 
         const dir = this.sprite.flipX ? -1 : 1;
-        this.sprite.setVelocityX(dir * 20.6);
-        this.scene.time.delayedCall(200, () => {
-            this.state = 'idle';
+        const dashSpeed = this.character === 'p2' ? 32 : 20.6;
+        this.sprite.setVelocityX(dir * dashSpeed);
+
+        if (this.dashTimer) {
+            this.dashTimer.destroy();
+        }
+
+        this.dashTimer = this.scene.time.delayedCall(200, () => {
+            if (this.state === 'dash') {
+                this.state = 'idle';
+            }
         });
     }
 
@@ -372,6 +435,18 @@ export default class Player {
             return;
         }
         this.lastSpellTime = this.scene.time.now;
+
+        // Knight Shield Block spell
+        if (this.character === 'p1') {
+            this.playSound('sfx_highjump', 0.5);
+            this.isShieldActive = true;
+            
+            if (this.shieldTimer) this.shieldTimer.destroy();
+            this.shieldTimer = this.scene.time.delayedCall(2000, () => {
+                this.isShieldActive = false;
+            });
+            return;
+        }
 
         this.playSound('sfx_spell', 0.4);
 
@@ -453,6 +528,19 @@ export default class Player {
         // ✅ Block ALL damage during invincibility
         if (this.isInvincible) return;
 
+        // Knight Shield Block damage reduction (100% reduction - no damage)
+        if (this.isShieldActive) {
+            amount = 0;
+            this.createHitParticles(this.sprite.x, this.sprite.y, 0x00ffff);
+            this.playSound('sfx_click', 0.5);
+            if (this.shieldVisual) {
+                this.shieldVisual.fillAlpha = 0.5;
+                this.scene.time.delayedCall(100, () => {
+                    if (this.shieldVisual) this.shieldVisual.fillAlpha = 0.15;
+                });
+            }
+        }
+
         this.health.current -= amount;
         const isFatal = this.health.current <= 0;
         if (isFatal) {
@@ -464,8 +552,8 @@ export default class Player {
             this.health.updateBar();
         }
 
-        // 1. Knockback force
-        if (attacker && attacker.sprite) {
+        // 1. Knockback force (ignored if shield is active - Iron Will)
+        if (attacker && attacker.sprite && !this.isShieldActive) {
             const pushDir = attacker.sprite.x < this.sprite.x ? 1 : -1;
             const forceX = this.isEnemy ? 8 : 12;
             this.sprite.setVelocity(pushDir * forceX, -4);
@@ -601,6 +689,12 @@ export default class Player {
         if (this.state === 'dead') return;
 
         this.state = 'dead';
+        this.isShieldActive = false;
+        if (this.shieldVisual) {
+            this.shieldVisual.destroy();
+            this.shieldVisual = null;
+        }
+        if (this.shieldTimer) this.shieldTimer.destroy();
 
         this.playSound('sfx_death', 0.5);
 
@@ -687,6 +781,179 @@ export default class Player {
                     if (p && p.active) p.destroy();
                 }
             });
+        }
+    }
+
+    updateAbilitiesVisuals() {
+        if (!this.sprite || !this.sprite.active) {
+            if (this.shieldVisual) {
+                this.shieldVisual.destroy();
+                this.shieldVisual = null;
+            }
+            return;
+        }
+
+        const time = this.scene.time.now;
+
+        // 1. Dash Charge Regeneration
+        if (this.dashCharges < this.maxDashCharges) {
+            if (!this.lastDashChargeRegenTime) {
+                this.lastDashChargeRegenTime = time;
+            }
+            if (time - this.lastDashChargeRegenTime >= this.dashCooldown) {
+                this.dashCharges++;
+                this.lastDashChargeRegenTime = (this.dashCharges < this.maxDashCharges) ? time : null;
+            }
+        } else {
+            this.lastDashChargeRegenTime = null;
+        }
+
+        // 2. Knight Shield Visual & Collider
+        if (this.isShieldActive && this.state !== 'dead') {
+            const shieldRadius = 90;
+            if (!this.shieldVisual) {
+                this.shieldVisual = this.scene.add.circle(this.sprite.x, this.sprite.y, shieldRadius, 0x00ffff, 0.15);
+                this.shieldVisual.setStrokeStyle(3, 0x00ffff, 0.7);
+                this.shieldVisual.setDepth(3);
+            } else {
+                this.shieldVisual.x = this.sprite.x;
+                this.shieldVisual.y = this.sprite.y;
+            }
+
+            // Act as a collider for enemies/opponents
+            let opponents = [];
+            if (this.isEnemy) {
+                opponents = this.scene.players || [];
+            } else {
+                if (this.scene.mode === 'multiplayer') {
+                    const allPlayers = [];
+                    if (this.scene.localPlayer) allPlayers.push(this.scene.localPlayer);
+                    if (this.scene.otherPlayerMap) {
+                        allPlayers.push(...Object.values(this.scene.otherPlayerMap));
+                    }
+                    opponents = allPlayers.filter(p => p && p !== this);
+                } else {
+                    opponents = this.scene.enemies || [];
+                }
+            }
+
+            opponents.forEach(opponent => {
+                if (!opponent || !opponent.sprite || !opponent.sprite.active) return;
+                if (opponent.state === 'dead') return;
+
+                const dx = opponent.sprite.x - this.sprite.x;
+                const dy = opponent.sprite.y - this.sprite.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < shieldRadius) {
+                    const angle = dist > 0 ? Math.atan2(dy, dx) : (this.sprite.flipX ? Math.PI : 0);
+                    
+                    // Push opponent to the boundary of the shield
+                    const targetX = this.sprite.x + Math.cos(angle) * shieldRadius;
+                    const targetY = this.sprite.y + Math.sin(angle) * shieldRadius;
+                    
+                    opponent.sprite.setPosition(targetX, targetY);
+
+                    // Apply outward velocity
+                    const pushForce = 3;
+                    opponent.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 1);
+                }
+            });
+
+            // Act as a collider for user-built blocks (platforms)
+            if (this.scene && this.scene.platforms) {
+                this.scene.platforms.forEach(platform => {
+                    if (platform.source !== 'user') return;
+
+                    const rx = platform.x;
+                    const ry = platform.y;
+                    const rw = platform.w;
+                    const rh = platform.h;
+
+                    const px = this.sprite.x;
+                    const py = this.sprite.y;
+
+                    // Closest point on the platform to the player's center
+                    const closestX = Math.max(rx, Math.min(px, rx + rw));
+                    const closestY = Math.max(ry, Math.min(py, ry + rh));
+
+                    const dx = px - closestX;
+                    const dy = py - closestY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < shieldRadius) {
+                        let pushAngle = dist > 0 ? Math.atan2(dy, dx) : 0;
+                        if (dist === 0) {
+                            const rcx = rx + rw / 2;
+                            const rcy = ry + rh / 2;
+                            pushAngle = Math.atan2(py - rcy, px - rcx);
+                        }
+
+                        const resolveDist = shieldRadius - dist;
+                        const targetX = px + Math.cos(pushAngle) * resolveDist;
+                        const targetY = py + Math.sin(pushAngle) * resolveDist;
+
+                        this.sprite.setPosition(targetX, targetY);
+
+                        // Push player's velocity slightly away from the block to simulate a bounce/slide
+                        const bounceForce = 1.5;
+                        if (this.sprite.body) {
+                            this.sprite.setVelocity(
+                                this.sprite.body.velocity.x + Math.cos(pushAngle) * bounceForce,
+                                this.sprite.body.velocity.y + Math.sin(pushAngle) * bounceForce
+                            );
+                        }
+                    }
+                });
+            }
+        } else {
+            if (this.shieldVisual) {
+                this.shieldVisual.destroy();
+                this.shieldVisual = null;
+            }
+        }
+
+        // 3. Berserker Rage Check & Visual
+        if (this.character === 'p3') {
+            const healthRatio = (this.health && this.health.max > 0) ? (this.health.current / this.health.max) : 1;
+            if (healthRatio <= 0.3 && this.health.current > 0 && this.state !== 'dead') {
+                if (!this.isRageActive) {
+                    this.isRageActive = true;
+                    this.speed = 12.5; // 25% speed buff
+                }
+                
+                // Emitting red rage particles
+                if (Math.random() < 0.25) {
+                    const offsetRange = 30;
+                    const rx = this.sprite.x + Phaser.Math.Between(-offsetRange, offsetRange);
+                    const ry = this.sprite.y + Phaser.Math.Between(-offsetRange, offsetRange);
+                    
+                    const p = this.scene.add.rectangle(rx, ry, 6, 6, 0xff0000, 0.8);
+                    p.setDepth(1);
+                    this.scene.tweens.add({
+                        targets: p,
+                        y: p.y - 40,
+                        alpha: 0,
+                        scale: 0.1,
+                        duration: 600,
+                        onComplete: () => {
+                            if (p && p.active) p.destroy();
+                        }
+                    });
+                }
+            } else {
+                if (this.isRageActive) {
+                    this.isRageActive = false;
+                    this.speed = this.originalSpeed;
+                }
+            }
+        }
+
+        // Apply scale/speed adjustments based on state
+        if (this.isRageActive) {
+            this.sprite.anims.timeScale = 1.6;
+        } else {
+            this.sprite.anims.timeScale = 1.0;
         }
     }
 }

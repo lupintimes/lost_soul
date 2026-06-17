@@ -128,16 +128,19 @@ io.on('connection', (socket) => {
 
         const spawn = getUniqueSpawn(rooms[roomId]);
 
+        const pChar = data.character || 'p1';
+        const startHealth = pChar === 'p1' ? 130 : 100;
+
         rooms[roomId].players[socket.id] = {
             playerId: socket.id,
             x: spawn.x,
             y: spawn.y,
             flipX: false,
             anim: 'idle_anim',
-            health: 100,
+            health: startHealth,
             kills: 0,
             deaths: 0,
-            character: data.character || 'p1',
+            character: pChar,
             isInvincible: true
         };
 
@@ -181,16 +184,19 @@ io.on('connection', (socket) => {
 
         const spawn = getUniqueSpawn(room);
 
+        const pChar = data.character || 'p1';
+        const startHealth = pChar === 'p1' ? 130 : 100;
+
         const playerObj = {
             playerId: socket.id,
             x: spawn.x,
             y: spawn.y,
             flipX: false,
             anim: 'idle_anim',
-            health: 100,
+            health: startHealth,
             kills: 0,
             deaths: 0,
-            character: data.character || 'p1',
+            character: pChar,
             isInvincible: true
         };
 
@@ -304,6 +310,8 @@ io.on('connection', (socket) => {
         player.y = movementData.y;
         player.flipX = movementData.flipX;
         player.anim = movementData.anim;
+        player.isShieldActive = movementData.isShieldActive || false;
+        player.isRageActive = movementData.isRageActive || false;
 
         // ✅ No console.log here — it slows down the server
         socket.to(roomId).emit('playerMoved', player);
@@ -323,7 +331,11 @@ io.on('connection', (socket) => {
         // ✅ Block damage if target is invincible
         if (target.isInvincible) return;
 
-        const damage = attackData.damage || 10;
+        let damage = attackData.damage || 10;
+        // Knight Shield Block damage reduction (100% reduction - no damage)
+        if (target.isShieldActive) {
+            damage = 0;
+        }
         target.health = Math.max(0, target.health - damage);
 
 
@@ -354,7 +366,8 @@ io.on('connection', (socket) => {
             setTimeout(() => {
                 if (rooms[roomId] && rooms[roomId].players[attackData.targetId]) {
                     const respawnPoint = getUniqueSpawn(room);
-                    target.health = 100;
+                    const maxHealth = target.character === 'p1' ? 130 : 100;
+                    target.health = maxHealth;
                     target.x = respawnPoint.x;
                     target.y = respawnPoint.y;
                     target.isInvincible = true;
@@ -374,7 +387,7 @@ io.on('connection', (socket) => {
                         playerId: attackData.targetId,
                         x: respawnPoint.x,
                         y: respawnPoint.y,
-                        health: 100
+                        health: maxHealth
                     });
                 }
             }, 3000);

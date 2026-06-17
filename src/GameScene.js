@@ -494,6 +494,8 @@ export default class GameScene extends Phaser.Scene {
             remote.targetX = playerInfo.x;
             remote.targetY = playerInfo.y;
             remote.sprite.flipX = playerInfo.flipX;
+            remote.isShieldActive = playerInfo.isShieldActive || false;
+            remote.isRageActive = playerInfo.isRageActive || false;
 
             if (playerInfo.anim) {
                 const currentAnim = remote.sprite.anims.currentAnim;
@@ -965,14 +967,25 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.lastX !== x ||
                     this.localPlayer.lastY !== y ||
                     this.localPlayer.lastFlip !== flipX ||
-                    this.localPlayer.lastAnim !== anim;
+                    this.localPlayer.lastAnim !== anim ||
+                    this.localPlayer.lastShieldActive !== this.localPlayer.isShieldActive ||
+                    this.localPlayer.lastRageActive !== this.localPlayer.isRageActive;
 
                 if (hasChanged && (now - this.lastEmitTime) > 50) {
-                    this.socket.emit('playerMovement', { x, y, flipX, anim });
+                    this.socket.emit('playerMovement', { 
+                        x, 
+                        y, 
+                        flipX, 
+                        anim,
+                        isShieldActive: this.localPlayer.isShieldActive,
+                        isRageActive: this.localPlayer.isRageActive
+                    });
                     this.localPlayer.lastX = x;
                     this.localPlayer.lastY = y;
                     this.localPlayer.lastFlip = flipX;
                     this.localPlayer.lastAnim = anim;
+                    this.localPlayer.lastShieldActive = this.localPlayer.isShieldActive;
+                    this.localPlayer.lastRageActive = this.localPlayer.isRageActive;
                     this.lastEmitTime = now;
                 }
             }
@@ -996,6 +1009,12 @@ export default class GameScene extends Phaser.Scene {
                     remote.sprite.x += dx * lerpSpeed;
                     remote.sprite.y += dy * lerpSpeed;
                 }
+            }
+
+            try {
+                remote.update();
+            } catch (err) {
+                // ignore
             }
         });
         this.checkTeleports();
@@ -1457,6 +1476,72 @@ export default class GameScene extends Phaser.Scene {
             id: id,
             creatorId: creatorId
         });
+
+        // Decay timer: start blinking after 12 seconds, disappear and refund after 15 seconds
+        const decayTime = 15000;
+        const blinkStartTime = 12000;
+
+        // Schedule blinking
+        this.time.delayedCall(blinkStartTime, () => {
+            const idx = this.platforms.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                const p = this.platforms[idx];
+                const components = [p.gameObject, p.outer, p.middle].filter(Boolean);
+                
+                this.tweens.add({
+                    targets: components,
+                    alpha: 0.2,
+                    duration: 250,
+                    yoyo: true,
+                    repeat: 11 // 12 cycles of 250ms = 3 seconds of blinking
+                });
+            }
+        });
+
+        // Schedule deletion & build points refund
+        this.time.delayedCall(decayTime, () => {
+            const idx = this.platforms.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                const p = this.platforms[idx];
+                const components = [p.gameObject, p.outer, p.middle].filter(Boolean);
+                
+                // Fade out smoothly over 500ms
+                this.tweens.add({
+                    targets: components,
+                    alpha: 0,
+                    duration: 500,
+                    onComplete: () => {
+                        const currentIdx = this.platforms.findIndex(pl => pl.id === id);
+                        if (currentIdx !== -1) {
+                            const pl = this.platforms[currentIdx];
+                            const isOwner = this.mode !== 'multiplayer' || !pl.creatorId || pl.creatorId === this.socket.id;
+                            
+                            if (isOwner) {
+                                // Authoritatively remove locally and sync to other clients
+                                if (this.mode === 'multiplayer' && this.socket && pl.id) {
+                                    this.socket.emit('removeObstacle', { id: pl.id });
+                                }
+                                
+                                if (pl.gameObject) pl.gameObject.destroy();
+                                if (pl.outer) pl.outer.destroy();
+                                if (pl.middle) pl.middle.destroy();
+                                
+                                this.platforms.splice(currentIdx, 1);
+                                this.updateBuildPointsUI();
+                            } else {
+                                // For non-owners, they can also clean up locally after fade-out completes
+                                if (pl.gameObject) pl.gameObject.destroy();
+                                if (pl.outer) pl.outer.destroy();
+                                if (pl.middle) pl.middle.destroy();
+                                
+                                this.platforms.splice(currentIdx, 1);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
         return true;
     }
 
@@ -1723,6 +1808,34 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
+        // 4. Dash Cooldown / Charges Panel (below Spell panel on the right side)
+        const dashX = width - 230;
+        const dashY = 106; // 10px below Spell panel (60 + 36 + 10)
+
+        this.hudDashBg = this.add.rectangle(dashX, dashY, 220, 36, 0x000000, 0.6)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.hudDashBg.setStrokeStyle(1.5, 0x333333);
+
+        this.hudDashTitle = this.add.text(dashX + 10, dashY + 6, 'DASH (SHIFT): READY', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#44ff44'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudDashBarBg = this.add.rectangle(dashX + 10, dashY + 20, 200, 8, 0x222222)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 20, 200, 8, 0x00bfff)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
         this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 70, 460, 60, 0x000000, 0.7)
             .setOrigin(0)
             .setScrollFactor(0)
@@ -1759,20 +1872,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     updateHUD() {
-        let currentHp = 0;
-        let maxHp = 100;
-        let playerObj = null;
+        const playerObj = this.mode === 'multiplayer' ? this.localPlayer : this.players[0];
+        if (!playerObj) return;
 
-        if (this.mode === 'multiplayer') {
-            playerObj = this.localPlayer;
-        } else {
-            playerObj = this.players[0];
-        }
-
-        if (playerObj && playerObj.health) {
-            currentHp = playerObj.health.current;
-            maxHp = playerObj.health.max;
-        }
+        const currentHp = playerObj.health ? playerObj.health.current : 0;
+        const maxHp = playerObj.health ? playerObj.health.max : 100;
 
         if (this.hudHealthBarFill && this.hudHealthText) {
             const pct = Math.max(0, Math.min(1, currentHp / maxHp));
@@ -1786,18 +1890,33 @@ export default class GameScene extends Phaser.Scene {
             }
             this.hudHealthBarFill.setFillStyle(color);
 
-            this.hudHealthText.setText(`HP: ${currentHp} / ${maxHp}`);
+            let tag = '';
+            if (playerObj.isRageActive) {
+                tag = '  [RAGE]';
+                this.hudHealthText.setColor('#ff3333');
+            } else if (playerObj.isShieldActive) {
+                tag = '  [SHIELD]';
+                this.hudHealthText.setColor('#00ffff');
+            } else {
+                this.hudHealthText.setColor('#ffffff');
+            }
+
+            this.hudHealthText.setText(`HP: ${currentHp} / ${maxHp}${tag}`);
         }
 
         if (this.hudKillsText) {
             this.hudKillsText.setText(`KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`);
         }
 
+        const now = this.time.now;
+
         if (this.hudSpellTitle && this.hudSpellBarFill && playerObj) {
-            const now = this.time.now;
             const lastCast = playerObj.lastSpellTime || 0;
             const cooldown = playerObj.spellCooldown || 200;
             const elapsed = now - lastCast;
+
+            const isKnight = playerObj.character === 'p1';
+            const spellName = isKnight ? 'SHIELD' : 'SPELL';
 
             const spellColors = {
                 'p1': 0x00ffff,
@@ -1806,21 +1925,57 @@ export default class GameScene extends Phaser.Scene {
             };
             const spellColor = spellColors[playerObj.character] || 0x00ffff;
 
-            if (elapsed < cooldown) {
+            if (playerObj.isShieldActive) {
+                const activeElapsed = now - lastCast;
+                const shieldDuration = 2000;
+                const activeRatio = Math.max(0, Math.min(1, 1 - (activeElapsed / shieldDuration)));
+                const activeRem = ((shieldDuration - activeElapsed) / 1000).toFixed(1);
+
+                this.hudSpellTitle.setText(`SHIELD: ACTIVE (${activeRem}s)`);
+                this.hudSpellTitle.setColor('#00ffff');
+                
+                this.hudSpellBarFill.width = 200 * activeRatio;
+                this.hudSpellBarFill.setFillStyle(0x00ffff);
+            } else if (elapsed < cooldown) {
                 const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
                 const rem = ((cooldown - elapsed) / 1000).toFixed(1);
                 
-                this.hudSpellTitle.setText(`SPELL (R): COOLDOWN (${rem}s)`);
+                this.hudSpellTitle.setText(`${spellName} (R): COOLDOWN (${rem}s)`);
                 this.hudSpellTitle.setColor('#ffaa00');
                 
                 this.hudSpellBarFill.width = 200 * ratio;
-                this.hudSpellBarFill.setFillStyle(0xffaa00); // Orange while cooling down
+                this.hudSpellBarFill.setFillStyle(0xffaa00);
             } else {
-                this.hudSpellTitle.setText('SPELL (R): READY');
+                this.hudSpellTitle.setText(`${spellName} (R): READY`);
                 this.hudSpellTitle.setColor('#44ff44');
                 
                 this.hudSpellBarFill.width = 200;
-                this.hudSpellBarFill.setFillStyle(spellColor); // Character-specific theme color when ready
+                this.hudSpellBarFill.setFillStyle(spellColor);
+            }
+        }
+
+        if (this.hudDashTitle && this.hudDashBarFill && playerObj) {
+            const maxCharges = playerObj.maxDashCharges || 1;
+            const currentCharges = playerObj.dashCharges !== undefined ? playerObj.dashCharges : maxCharges;
+            const bolts = '⚡'.repeat(currentCharges);
+            
+            if (currentCharges < maxCharges) {
+                const lastRegen = playerObj.lastDashChargeRegenTime || now;
+                const cooldown = playerObj.dashCooldown || 1500;
+                const elapsed = now - lastRegen;
+                const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
+                
+                this.hudDashTitle.setText(`DASH (SHIFT): RECHARGING [${bolts}]`);
+                this.hudDashTitle.setColor('#ffaa00');
+                
+                this.hudDashBarFill.width = 200 * ratio;
+                this.hudDashBarFill.setFillStyle(0xffaa00);
+            } else {
+                this.hudDashTitle.setText(`DASH (SHIFT): READY [${bolts}]`);
+                this.hudDashTitle.setColor('#44ff44');
+                
+                this.hudDashBarFill.width = 200;
+                this.hudDashBarFill.setFillStyle(0x00bfff);
             }
         }
     }
