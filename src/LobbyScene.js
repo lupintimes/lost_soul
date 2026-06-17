@@ -22,6 +22,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.setRoundPixels(true);
 
 
         const { width, height } = this.scale;
@@ -38,15 +39,15 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ─── Title ────────────────────────────────────────
         this.add.text(width / 2, 30, 'MULTIPLAYER LOBBY', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '20px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '26px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         // ─── Back Button ──────────────────────────────────
         const backBtn = this.add.text(20, 20, '← BACK', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '12px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '15px',
             color: '#ff4444',
             backgroundColor: '#222',
             padding: { x: 10, y: 6 }
@@ -82,26 +83,26 @@ export default class LobbyScene extends Phaser.Scene {
         ).setOrigin(0);
 
         this.add.text(panelLeft.x + 15, panelLeft.y + 12, 'AVAILABLE SERVERS', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '11px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '14px',
             color: '#aaaaaa'
         });
 
         const headerY = panelLeft.y + 40;
 
         this.add.text(panelLeft.x + 15, headerY, 'NAME', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '9px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#666666'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.5, headerY, 'PLAYERS', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '9px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#666666'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.75, headerY, 'STATUS', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '9px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#666666'
         });
 
@@ -115,7 +116,7 @@ export default class LobbyScene extends Phaser.Scene {
             x: panelLeft.x,
             startY: headerY + 30,
             w: panelLeft.w,
-            rowH: 36
+            rowH: 44
         };
 
         this.loadingText = this.add.text(
@@ -123,8 +124,8 @@ export default class LobbyScene extends Phaser.Scene {
             this.listConfig.startY + 60,
             'Connecting...',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '10px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '13px',
                 color: '#555555'
             }
         ).setOrigin(0.5);
@@ -148,8 +149,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 20,
             'CREATE\nSERVER',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '12px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '16px',
                 color: '#aaaaaa',
                 align: 'center'
             }
@@ -157,8 +158,8 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Server Name Input ─────────────────────────────
         this.add.text(panelRight.x + 15, panelRight.y + 80, 'SERVER NAME:', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
             color: '#888888'
         });
 
@@ -177,8 +178,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 107,
             this.serverNameValue,
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '9px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '12px',
                 color: '#ffffff'
             }
         );
@@ -194,8 +195,8 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Max Players Selector ──────────────────────────
         this.add.text(panelRight.x + 15, panelRight.y + 150, 'MAX PLAYERS:', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
             color: '#888888'
         });
 
@@ -206,8 +207,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 172,
             ' - ',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '12px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '15px',
                 color: '#ffffff',
                 backgroundColor: '#333',
                 padding: { x: 6, y: 4 }
@@ -220,8 +221,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 175,
             String(this.maxPlayers),
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '12px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '15px',
                 color: '#ffffff'
             }
         );
@@ -231,8 +232,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 172,
             ' + ',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '12px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '15px',
                 color: '#ffffff',
                 backgroundColor: '#333',
                 padding: { x: 6, y: 4 }
@@ -266,8 +267,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + panelRight.h - 60,
             'CREATE',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '14px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '18px',
                 color: '#ffffff',
                 backgroundColor: '#228B22',
                 padding: { x: 20, y: 12 }
@@ -296,8 +297,8 @@ export default class LobbyScene extends Phaser.Scene {
             panelLeft.y + panelLeft.h - 25,
             '↻ REFRESH',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '9px',
+                fontFamily: '"Silkscreen"',
+                fontSize: '12px',
                 color: '#4488ff',
                 backgroundColor: '#1a1a1a',
                 padding: { x: 10, y: 6 }
@@ -410,8 +411,8 @@ export default class LobbyScene extends Phaser.Scene {
                 startY + 60,
                 'No servers found.\nCreate one!',
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '9px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '12px',
                     color: '#555555',
                     align: 'center'
                 }
@@ -432,11 +433,11 @@ export default class LobbyScene extends Phaser.Scene {
                 .setInteractive({ useHandCursor: true });
 
             const nameText = this.add.text(
-                x + 15, rowY + 10,
+                x + 15, rowY + 14,
                 server.name || 'Unnamed',
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '9px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '12px',
                     color: '#ffffff'
                 }
             );
@@ -444,21 +445,21 @@ export default class LobbyScene extends Phaser.Scene {
             const isFull = server.players >= server.maxPlayers;
 
             const playersText = this.add.text(
-                x + w * 0.5, rowY + 10,
+                x + w * 0.5, rowY + 14,
                 `${server.players}/${server.maxPlayers}`,
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '9px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '12px',
                     color: isFull ? '#ff4444' : '#44ff44'
                 }
             );
 
             const statusText = this.add.text(
-                x + w * 0.75, rowY + 10,
+                x + w * 0.75, rowY + 14,
                 isFull ? 'FULL' : 'OPEN',
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '9px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '12px',
                     color: isFull ? '#ff4444' : '#44ff44'
                 }
             );
