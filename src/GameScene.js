@@ -661,6 +661,7 @@ export default class GameScene extends Phaser.Scene {
                 if (p.gameObject) p.gameObject.destroy();
                 if (p.outer) p.outer.destroy();
                 if (p.middle) p.middle.destroy();
+                if (p.jelly) p.jelly.destroy();
                 this.platforms.splice(index, 1);
             }
         });
@@ -1325,6 +1326,88 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    drawJelly(graphics, w, h, opacity, tint) {
+        graphics.clear();
+        const r = Math.min(w, h, 14);
+        
+        const baseColor = (tint !== null && tint !== undefined) ? tint : 0xffd700;
+        
+        // 1. Outer glow border
+        graphics.lineStyle(4, baseColor, opacity);
+        // 2. Jelly main body fill (semi-translucent custom tint color)
+        graphics.fillStyle(baseColor, 0.75 * opacity);
+        
+        // Drawing coordinates are relative to the graphics center (0,0)
+        graphics.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
+        graphics.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
+        
+        // 3. Inner glossy core shimmer
+        graphics.fillStyle(baseColor, 0.35 * opacity);
+        graphics.fillRoundedRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, Math.max(2, r - 4));
+        
+        // 4. Glare/reflection highlight (always white)
+        const glareH = Math.min(8, h * 0.2);
+        graphics.fillStyle(0xffffff, 0.45 * opacity);
+        graphics.fillRoundedRect(-w / 2 + 8, -h / 2 + 6, w - 16, glareH, Math.max(1, r - 6));
+        
+        // 5. Subtle Jelly bubbles (fewer, smaller, and lower opacity)
+        if (w > 45 && h > 45) {
+            // Bubble 1 (bottom left-ish)
+            graphics.lineStyle(1.0, 0xffffff, 0.3 * opacity);
+            graphics.strokeCircle(-w / 4, h / 4, 3);
+            graphics.fillStyle(0xffffff, 0.4 * opacity);
+            graphics.fillCircle(-w / 4 - 0.8, h / 4 - 0.8, 0.7);
+            
+            // Bubble 2 (top right-ish)
+            graphics.lineStyle(0.8, 0xffffff, 0.2 * opacity);
+            graphics.strokeCircle(w / 3, -h / 6, 2);
+            graphics.fillStyle(0xffffff, 0.3 * opacity);
+            graphics.fillCircle(w / 3 - 0.5, -h / 6 - 0.5, 0.5);
+        }
+    }
+
+    startJellyIdle(jellyVisual) {
+        if (!jellyVisual || !jellyVisual.active) return;
+        
+        this.tweens.add({
+            targets: jellyVisual,
+            scaleY: 1.03,
+            scaleX: 0.97,
+            duration: 1000 + Math.random() * 500,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
+    wobbleBlock(platform) {
+        if (!platform || !platform.jelly || platform.isWobbling) return;
+        
+        platform.isWobbling = true;
+        
+        // Kill the idle tween
+        this.tweens.killTweensOf(platform.jelly);
+        
+        // Apply immediate squish
+        platform.jelly.scaleY = 0.65;
+        platform.jelly.scaleX = 1.35;
+        
+        // Wobble back to 1.0
+        this.tweens.add({
+            targets: platform.jelly,
+            scaleY: 1.0,
+            scaleX: 1.0,
+            duration: 1200,
+            ease: 'Elastic.easeOut',
+            easeParams: [1.5, 0.3],
+            onComplete: () => {
+                platform.isWobbling = false;
+                // Restart idle breathing
+                this.startJellyIdle(platform.jelly);
+            }
+        });
+    }
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     //  🧱 PLATFORM SYSTEM
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1420,6 +1503,7 @@ export default class GameScene extends Phaser.Scene {
                     if (p.gameObject) p.gameObject.destroy();
                     if (p.outer) p.outer.destroy();
                     if (p.middle) p.middle.destroy();
+                    if (p.jelly) p.jelly.destroy();
                     this.platforms.splice(i, 1);
 
                     // Notify server to remove it
@@ -1435,10 +1519,10 @@ export default class GameScene extends Phaser.Scene {
                     pieces.forEach((piece, index) => {
                         const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
 
-                        this.createObstacle(piece, opacity, subId, p.creatorId, false, p.tint);
+                        this.createObstacle(piece, opacity, subId, p.creatorId, false, p.tint, p.blockType);
 
                         if (this.mode === 'multiplayer' && this.socket) {
-                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId, tint: p.tint });
+                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId, tint: p.tint, blockType: p.blockType });
                         }
                     });
                 }
@@ -1461,52 +1545,61 @@ export default class GameScene extends Phaser.Scene {
             rect.w,
             rect.h,
             0x000000,
-            opacity
+            blockType === 'bounce' ? 0 : opacity
         );
-        // Outer border color: blockType takes priority, then tint, then default slate
-        let outerColor;
+
+        let outer = null;
+        let middle = null;
+        let jelly = null;
+
         if (blockType === 'bounce') {
-            outerColor = 0xffd700; // Gold for bounce
-        } else if (blockType === 'slide') {
-            outerColor = 0x00e5ff; // Cyan for slide/ice
+            jelly = this.add.graphics({ x: cx, y: cy });
+            this.drawJelly(jelly, rect.w, rect.h, opacity, tint);
+            this.startJellyIdle(jelly);
         } else {
-            outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
+            // Outer border color: blockType takes priority, then tint, then default slate
+            let outerColor;
+            if (blockType === 'slide') {
+                outerColor = 0x00e5ff; // Cyan for slide/ice
+            } else {
+                outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
+            }
+            outer = this.add.rectangle(
+                cx,
+                cy,
+                rect.w - 12.5,
+                rect.h - 12.5,
+                outerColor,
+                opacity
+            );
+
+            // Inner black border (top layer - black by default)
+            middle = this.add.rectangle(
+                cx,
+                cy,
+                rect.w - 25,
+                rect.h - 25,
+                0x000000,
+                1
+            );
         }
-        const outer = this.add.rectangle(
-            cx,
-            cy,
-            rect.w - 12.5,
-            rect.h - 12.5,
-            outerColor,
-            opacity
-        );
-
-        // Inner black border (top layer - black by default)
-        const middle = this.add.rectangle(
-            cx,
-            cy,
-            rect.w - 25,
-            rect.h - 25,
-            0x000000,
-            1
-        );
-
 
         this.matter.add.gameObject(platform, {
             isStatic: true,
             friction: blockType === 'slide' ? 0.0 : 0.1
         });
 
-
         if (rotation !== 0) {
             platform.setAngle(rotation);
-            outer.setAngle(rotation);
-            middle.setAngle(rotation);
+            if (outer) outer.setAngle(rotation);
+            if (middle) middle.setAngle(rotation);
+            if (jelly) jelly.setAngle(rotation);
         }
         this.platforms.push({
             gameObject: platform,
             outer,
             middle,
+            jelly,
             tint,
             blockType: blockType || 'normal',
             ...rect,
@@ -1525,7 +1618,7 @@ export default class GameScene extends Phaser.Scene {
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
-                const components = [p.gameObject, p.outer, p.middle].filter(Boolean);
+                const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
                 
                 this.tweens.add({
                     targets: components,
@@ -1542,7 +1635,7 @@ export default class GameScene extends Phaser.Scene {
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
-                const components = [p.gameObject, p.outer, p.middle].filter(Boolean);
+                const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
                 
                 // Fade out smoothly over 500ms
                 this.tweens.add({
@@ -1564,6 +1657,7 @@ export default class GameScene extends Phaser.Scene {
                                 if (pl.gameObject) pl.gameObject.destroy();
                                 if (pl.outer) pl.outer.destroy();
                                 if (pl.middle) pl.middle.destroy();
+                                if (pl.jelly) pl.jelly.destroy();
                                 
                                 this.platforms.splice(currentIdx, 1);
                                 this.updateBuildPointsUI();
@@ -1572,6 +1666,7 @@ export default class GameScene extends Phaser.Scene {
                                 if (pl.gameObject) pl.gameObject.destroy();
                                 if (pl.outer) pl.outer.destroy();
                                 if (pl.middle) pl.middle.destroy();
+                                if (pl.jelly) pl.jelly.destroy();
                                 
                                 this.platforms.splice(currentIdx, 1);
                             }
@@ -1711,6 +1806,7 @@ export default class GameScene extends Phaser.Scene {
                 if (p.gameObject) p.gameObject.destroy();
                 if (p.outer) p.outer.destroy();
                 if (p.middle) p.middle.destroy();
+                if (p.jelly) p.jelly.destroy();
 
                 this.platforms.splice(i, 1);
                 return;
