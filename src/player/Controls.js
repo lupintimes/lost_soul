@@ -4,6 +4,7 @@ export default class Controls {
             left: 'A',
             right: 'D',
             jump: 'W',
+            down: 'S',
             attack: 'SPACE',
             highJump: 'Q',
             dash: 'SHIFT',
