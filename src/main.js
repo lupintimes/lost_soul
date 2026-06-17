@@ -22,4 +22,4 @@ const config = {
     scene: [PreloadScene, MenuScene, CustomizeScene, LobbyScene, GameScene]
 };
 
-new Phaser.Game(config);
+window.game = new Phaser.Game(config);

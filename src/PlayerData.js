@@ -1,8 +1,8 @@
 let savedCharacter = 'p1';
-let savedColor = 'default';
+let savedColor = 'slate';
 try {
     savedCharacter = localStorage.getItem('lost_soul_character') || 'p1';
-    savedColor = localStorage.getItem('lost_soul_color') || 'default';
+    savedColor = localStorage.getItem('lost_soul_color') || 'slate';
 } catch (e) {
     // Safe fallback if localStorage is not accessible
 }
@@ -19,10 +19,16 @@ const PlayerData = {
 
     colors: [
         { id: 'default', name: 'DEFAULT', tint: null },
-        { id: 'gold', name: 'GOLD', tint: 0xffd700 },
-        { id: 'ice', name: 'ICE', tint: 0x88ccff },
-        { id: 'dark', name: 'DARK', tint: 0x555555 },
-        { id: 'neon', name: 'NEON', tint: 0x00ff88 }
+        { id: 'rose', name: 'ROSE', tint: 0xe6909c },
+        { id: 'sage', name: 'SAGE', tint: 0xbce9bd },
+        { id: 'sand', name: 'SAND', tint: 0xf0d39a },
+        { id: 'lavender', name: 'LAVENDER', tint: 0xc19ad1 },
+        { id: 'slate', name: 'SLATE', tint: 0xc4c9ca },
+        { id: 'sky', name: 'SKY', tint: 0x9cc5f0 },
+        { id: 'peach', name: 'PEACH', tint: 0xf0b79c },
+        { id: 'mint', name: 'MINT', tint: 0x9ce8df },
+        { id: 'lilac', name: 'LILAC', tint: 0xe89ce3 },
+        { id: 'cream', name: 'CREAM', tint: 0xe8df9c }
     ],
 
     setCharacter(id) {

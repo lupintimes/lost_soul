@@ -273,7 +273,8 @@ io.on('connection', (socket) => {
             id: data.id,
             rect: data.rect,
             opacity: data.opacity,
-            creatorId: creatorId
+            creatorId: creatorId,
+            tint: data.tint
         };
 
         data.creatorId = creatorId;
@@ -395,6 +396,16 @@ io.on('connection', (socket) => {
         socket.emit('scoreboard', scoreboard);
     });
 
+    socket.on('chatMessage', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        socket.to(roomId).emit('chatMessage', {
+            senderId: socket.id,
+            message: data.message
+        });
+    });
+
     socket.on('leaveRoom', () => {
         leaveCurrentRoom(socket);
         broadcastServerList();
@@ -416,6 +427,17 @@ function leaveCurrentRoom(socket) {
     if (!roomId || !rooms[roomId]) return;
 
     const room = rooms[roomId];
+
+    // Remove client obstacles first
+    if (room.obstacles) {
+        Object.keys(room.obstacles).forEach(obsId => {
+            const obs = room.obstacles[obsId];
+            if (obs && obs.creatorId === socket.id) {
+                delete room.obstacles[obsId];
+                socket.to(roomId).emit('obstacleRemoved', { id: obsId });
+            }
+        });
+    }
 
     delete room.players[socket.id];
     socket.to(roomId).emit('disconnectUser', socket.id);

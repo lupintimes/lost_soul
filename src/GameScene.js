@@ -1,5 +1,6 @@
 import Player from './player/Player.js';
 import SocketManager from './SocketManager.js';
+import PlayerData from './PlayerData.js';
 
 export default class GameScene extends Phaser.Scene {
 
@@ -32,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
         this.roomId = null;
         this.localPlayer = null;
         this.otherPlayerMap = {};
+        this.isChatActive = false;
 
 
     }
@@ -137,9 +139,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-
-
-
+        // Clean up DOM chat elements on scene shutdown or destroy
+        this.events.on('shutdown', () => this.cleanupChat());
+        this.events.on('destroy', () => this.cleanupChat());
 
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
@@ -292,6 +294,7 @@ export default class GameScene extends Phaser.Scene {
                 .setDepth(999);
 
             this.setupMultiplayer();
+            this.initChat();
         }
 
         // ─── Obstacle Limit Configuration ────────────────
@@ -320,7 +323,7 @@ export default class GameScene extends Phaser.Scene {
         this.input.on('pointermove', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
-            
+
             // Limit dimensions to max area while dragging
             let dx = world.x - this.startPoint.x;
             let dy = world.y - this.startPoint.y;
@@ -350,7 +353,7 @@ export default class GameScene extends Phaser.Scene {
         this.input.on('pointerup', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
-            
+
             // Apply same limit clamping on pointer up
             let dx = world.x - this.startPoint.x;
             let dy = world.y - this.startPoint.y;
@@ -372,13 +375,14 @@ export default class GameScene extends Phaser.Scene {
             };
             const rect = this.getRect(this.startPoint, clampedWorld);
             const opacity = 0.9;
-            
+
             const id = this.mode === 'multiplayer' && this.socket ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}` : null;
             const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
-            const success = this.createObstacle(rect, opacity, id, creatorId, true);
+            const tint = PlayerData.getColorTint();
+            const success = this.createObstacle(rect, opacity, id, creatorId, true, tint);
 
             if (success && this.mode === 'multiplayer' && this.socket) {
-                this.socket.emit('createObstacle', { id, rect, opacity, creatorId });
+                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint });
             }
 
             this.preview.clear();
@@ -389,6 +393,7 @@ export default class GameScene extends Phaser.Scene {
 
 
         this.input.keyboard.on('keydown-ESC', () => {
+            if (this.isChatActive) return;
             if (this.mode === 'multiplayer') {
                 this.leaveMultiplayer();
             } else {
@@ -624,7 +629,7 @@ export default class GameScene extends Phaser.Scene {
         // 9. Obstacle sync events
         this.socket.on('obstacleCreated', (data) => {
             console.log('🧱 Remote obstacle created:', data.id);
-            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false);
+            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false, data.tint);
         });
 
         this.socket.on('obstacleRemoved', (data) => {
@@ -644,7 +649,7 @@ export default class GameScene extends Phaser.Scene {
             Object.keys(obstacles).forEach(id => {
                 const obs = obstacles[id];
                 if (!this.platforms.some(p => p.id === id)) {
-                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false);
+                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false, obs.tint);
                 }
             });
         });
@@ -875,6 +880,7 @@ export default class GameScene extends Phaser.Scene {
             this.teleporterSprites.forEach(tp => tp.destroy());
             this.teleporterSprites = [];
         }
+        this.cleanupChat();
         this.scene.start('LobbyScene');
     }
 
@@ -1112,7 +1118,7 @@ export default class GameScene extends Phaser.Scene {
         for (let i = 0; i < spawnCount; i++) {
             const spawn = shuffled[i];
             const randomChar = Phaser.Utils.Array.GetRandom(['p1', 'p2', 'p3']);
-            
+
             // Pass false for isControlled to avoid redundant controls classes
             const enemy = new Player(this, spawn.x, spawn.y, null, false, randomChar);
 
@@ -1305,7 +1311,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false) {
+    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false, tint = null) {
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
@@ -1347,7 +1353,7 @@ export default class GameScene extends Phaser.Scene {
                 if (!p.deletable) continue;
 
                 // Check overlap
-                const overlap = 
+                const overlap =
                     rect.x < p.x + p.w &&
                     rect.x + rect.w > p.x &&
                     rect.y < p.y + p.h &&
@@ -1355,7 +1361,7 @@ export default class GameScene extends Phaser.Scene {
 
                 if (overlap) {
                     console.log(`✂️ Overlap detected with enemy obstacle ${p.id || 'no-id'}. Performing subtraction.`);
-                    
+
                     // Remove old enemy obstacle locally
                     if (p.gameObject) p.gameObject.destroy();
                     if (p.outer) p.outer.destroy();
@@ -1374,11 +1380,11 @@ export default class GameScene extends Phaser.Scene {
                     // Create and emit split pieces under original creator's ownership
                     pieces.forEach((piece, index) => {
                         const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
-                        
-                        this.createObstacle(piece, opacity, subId, p.creatorId, false);
+
+                        this.createObstacle(piece, opacity, subId, p.creatorId, false, p.tint);
 
                         if (this.mode === 'multiplayer' && this.socket) {
-                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId });
+                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId, tint: p.tint });
                         }
                     });
                 }
@@ -1400,27 +1406,28 @@ export default class GameScene extends Phaser.Scene {
             cy,
             rect.w,
             rect.h,
-            0x0000000,
+            0x000000,
             opacity
         );
-        // Outer white border
+        // Outer border (middle layer - slate by default)
+        const outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
         const outer = this.add.rectangle(
             cx,
             cy,
             rect.w - 12.5,
             rect.h - 12.5,
-            0xffffff,
+            outerColor,
             opacity
         );
 
-        // Inner black border
+        // Inner black border (top layer - black by default)
         const middle = this.add.rectangle(
             cx,
             cy,
             rect.w - 25,
             rect.h - 25,
             0x000000,
-            opacity
+            1
         );
 
 
@@ -1439,6 +1446,7 @@ export default class GameScene extends Phaser.Scene {
             gameObject: platform,
             outer,
             middle,
+            tint,
             ...rect,
             deletable: true,
             source: 'user',
@@ -1530,7 +1538,7 @@ export default class GameScene extends Phaser.Scene {
 
             if (!p.deletable) continue;
 
-            const isInside = 
+            const isInside =
                 world.x > p.x &&
                 world.x < p.x + p.w &&
                 world.y > p.y &&
@@ -1569,7 +1577,7 @@ export default class GameScene extends Phaser.Scene {
 
     subtractRect(A, B) {
         // Check overlap
-        const noOverlap = 
+        const noOverlap =
             A.x >= B.x + B.w ||
             A.x + A.w <= B.x ||
             A.y >= B.y + B.h ||
@@ -1689,7 +1697,7 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(99);
         this.hudControlsBg.setStrokeStyle(1.5, 0x555555);
 
-        const controlsTextStr = 
+        const controlsTextStr =
             "CONTROLS HINT:\n" +
             "• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T\n" +
             "• Spell: R | Attack: SPACE\n" +
@@ -1751,6 +1759,257 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.hudKillsText) {
             this.hudKillsText.setText(`KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`);
+        }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  💬 CHAT SYSTEM
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    initChat() {
+        // 1. Create CSS style block dynamically
+        const style = document.createElement('style');
+        style.id = 'game-chat-styles';
+        style.textContent = `
+            #game-chat-container {
+                position: absolute;
+                bottom: 80px;
+                left: 20px;
+                width: 360px;
+                height: 200px;
+                display: flex;
+                flex-direction: column;
+                pointer-events: none;
+                z-index: 1000;
+                font-family: 'Press Start 2P', monospace;
+                font-size: 8px;
+            }
+            #game-chat-log {
+                flex-grow: 1;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                margin-bottom: 8px;
+                padding: 8px;
+                background: rgba(0, 0, 0, 0.4);
+                border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(4px);
+                scrollbar-width: none;
+            }
+            #game-chat-log::-webkit-scrollbar {
+                display: none;
+            }
+            .chat-message {
+                margin: 4px 0;
+                line-height: 1.4;
+                word-break: break-all;
+                animation: fadeInChat 0.2s ease-out forwards;
+                color: #ffffff;
+            }
+            .chat-message-system {
+                color: #ffff00;
+            }
+            .chat-message-me {
+                color: #44ff44;
+            }
+            .chat-message-other {
+                color: #88ccff;
+            }
+            @keyframes fadeInChat {
+                from { opacity: 0; transform: translateY(4px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            #game-chat-input-container {
+                display: none;
+                pointer-events: auto;
+            }
+            #game-chat-input {
+                width: 100%;
+                padding: 8px;
+                background: rgba(10, 10, 10, 0.9);
+                border: 1.5px solid #555;
+                border-radius: 4px;
+                color: #fff;
+                font-family: 'Press Start 2P', monospace;
+                font-size: 8px;
+                outline: none;
+                box-sizing: border-box;
+            }
+            #game-chat-input:focus {
+                border-color: #ffff00;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 2. Create DOM container
+        const container = document.createElement('div');
+        container.id = 'game-chat-container';
+
+        const log = document.createElement('div');
+        log.id = 'game-chat-log';
+        container.appendChild(log);
+
+        const inputContainer = document.createElement('div');
+        inputContainer.id = 'game-chat-input-container';
+
+        const input = document.createElement('input');
+        input.id = 'game-chat-input';
+        input.type = 'text';
+        input.placeholder = 'PRESS ENTER TO CHAT...';
+        input.maxLength = 50;
+        inputContainer.appendChild(input);
+
+        container.appendChild(inputContainer);
+        document.body.appendChild(container);
+
+        this.chatContainer = container;
+        this.chatLog = log;
+        this.chatInputContainer = inputContainer;
+        this.chatInput = input;
+        this.isChatActive = false;
+
+        // 3. Register input events and keyboard listeners
+        const closeChat = () => {
+            this.isChatActive = false;
+            this.chatInputContainer.style.display = 'none';
+            this.chatInput.value = '';
+            this.chatInput.blur();
+            if (this.localPlayer) {
+                this.localPlayer.isControlled = true;
+            }
+            // Re-enable Phaser's keyboard plugin
+            if (this.input && this.input.keyboard) {
+                this.input.keyboard.enabled = true;
+            }
+        };
+
+        input.addEventListener('blur', () => {
+            // Wait slightly to check if blur was caused by Enter/Esc closing it already,
+            // or if the user clicked away (which we want to trigger closeChat).
+            setTimeout(() => {
+                if (this.isChatActive) {
+                    closeChat();
+                }
+            }, 100);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            // Stop propagation so Phaser keyboard manager doesn't intercept keys
+            e.stopPropagation();
+
+            if (e.key === 'Enter') {
+                const message = this.chatInput.value.trim();
+                if (message.length > 0) {
+                    // Send to server
+                    this.socket.emit('chatMessage', { message });
+                    // Add local message immediately
+                    this.addChatMessage(this.socket.id, message);
+                }
+                closeChat();
+            } else if (e.key === 'Escape') {
+                closeChat();
+            }
+        });
+
+        input.addEventListener('keypress', (e) => {
+            e.stopPropagation();
+        });
+
+        input.addEventListener('keyup', (e) => {
+            e.stopPropagation();
+        });
+
+        // Register global ENTER key on Phaser input to focus the chat input when inactive
+        this.input.keyboard.on('keydown-ENTER', () => {
+            if (this.mode !== 'multiplayer') return;
+            if (!this.isChatActive) {
+                this.isChatActive = true;
+                this.chatInputContainer.style.display = 'block';
+
+                // Disable Phaser keyboard inputs from updating player
+                if (this.localPlayer) {
+                    this.localPlayer.isControlled = false;
+                    // Reset velocities so player doesn't slide endlessly while typing
+                    if (this.localPlayer.sprite && this.localPlayer.sprite.body) {
+                        this.localPlayer.sprite.setVelocityX(0);
+                        this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_idle_anim`, true);
+                    }
+                }
+
+                // Disable Phaser's keyboard plugin completely so it doesn't intercept keys!
+                if (this.input && this.input.keyboard) {
+                    this.input.keyboard.enabled = false;
+                }
+
+                // Focus the HTML input after a short tick to ensure it is visible first
+                setTimeout(() => {
+                    this.chatInput.focus();
+                }, 10);
+            }
+        });
+
+        // 4. Socket Listener
+        this.socket.on('chatMessage', (data) => {
+            this.addChatMessage(data.senderId, data.message);
+        });
+
+        this.addSystemMessage('SYSTEM: PRESS ENTER TO CHAT.');
+    }
+
+    addChatMessage(senderId, message) {
+        if (!this.chatLog) return;
+
+        const isMe = this.socket && senderId === this.socket.id;
+        const shortId = senderId.substring(0, 6);
+        const nameColorClass = isMe ? 'chat-message-me' : 'chat-message-other';
+        const displayName = isMe ? 'YOU' : shortId;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = nameColorClass;
+        nameSpan.textContent = `[${displayName}]: `;
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = message;
+
+        msgDiv.appendChild(nameSpan);
+        msgDiv.appendChild(textSpan);
+
+        this.chatLog.appendChild(msgDiv);
+        this.chatLog.scrollTop = this.chatLog.scrollHeight;
+    }
+
+    addSystemMessage(message) {
+        if (!this.chatLog) return;
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message chat-message-system';
+        msgDiv.textContent = message;
+
+        this.chatLog.appendChild(msgDiv);
+        this.chatLog.scrollTop = this.chatLog.scrollHeight;
+    }
+
+    cleanupChat() {
+        const style = document.getElementById('game-chat-styles');
+        if (style) style.remove();
+
+        const container = document.getElementById('game-chat-container');
+        if (container) container.remove();
+
+        this.chatContainer = null;
+        this.chatLog = null;
+        this.chatInputContainer = null;
+        this.chatInput = null;
+        this.isChatActive = false;
+
+        // Ensure Phaser's keyboard plugin is re-enabled on cleanup
+        if (this.input && this.input.keyboard) {
+            this.input.keyboard.enabled = true;
         }
     }
 }
