@@ -1423,6 +1423,96 @@ export default class GameScene extends Phaser.Scene {
         graphics.fillPath();
     }
 
+    drawNormal(graphics, w, h, opacity, tint) {
+        graphics.clear();
+        const r = Math.min(w, h, 4);
+        const baseColor = (tint !== null && tint !== undefined) ? tint : 0x475569;
+
+        // 1. Solid industrial background block
+        graphics.fillStyle(baseColor, 0.9 * opacity);
+        
+        // 2. Heavy outer plate outline
+        graphics.lineStyle(2.5, 0x0f172a, 1.0 * opacity);
+        graphics.strokeRoundedRect(-w / 2 + 1.25, -h / 2 + 1.25, w - 2.5, h - 2.5, r);
+        graphics.fillRoundedRect(-w / 2 + 1.25, -h / 2 + 1.25, w - 2.5, h - 2.5, r);
+
+        // 3. Bevel Highlights (Top and Left inner edges for metallic 3D feel)
+        graphics.lineStyle(1.5, 0xffffff, 0.25 * opacity);
+        graphics.beginPath();
+        graphics.moveTo(-w / 2 + 4, h / 2 - 4);
+        graphics.lineTo(-w / 2 + 4, -h / 2 + 4);
+        graphics.lineTo(w / 2 - 4, -h / 2 + 4);
+        graphics.strokePath();
+
+        // 4. Bevel Shadows (Bottom and Right inner edges)
+        graphics.lineStyle(1.5, 0x0f172a, 0.4 * opacity);
+        graphics.beginPath();
+        graphics.moveTo(-w / 2 + 4, h / 2 - 4);
+        graphics.lineTo(w / 2 - 4, h / 2 - 4);
+        graphics.lineTo(w / 2 - 4, -h / 2 + 4);
+        graphics.strokePath();
+
+        // 5. Inset armor plate panel border
+        graphics.lineStyle(1.5, 0x0f172a, 0.3 * opacity);
+        graphics.strokeRoundedRect(-w / 2 + 8, -h / 2 + 8, w - 16, h - 16, Math.max(1, r - 2));
+
+        // 6. Corner Rivets / Screws (if the block is large enough)
+        if (w >= 28 && h >= 28) {
+            const rivetOffset = 6;
+            const rivetRadius = 2.0;
+            const rivetPositions = [
+                { x: -w / 2 + rivetOffset, y: -h / 2 + rivetOffset },
+                { x: w / 2 - rivetOffset, y: -h / 2 + rivetOffset },
+                { x: -w / 2 + rivetOffset, y: h / 2 - rivetOffset },
+                { x: w / 2 - rivetOffset, y: h / 2 - rivetOffset }
+            ];
+            rivetPositions.forEach(pos => {
+                // Shadow base circle
+                graphics.fillStyle(0x0f172a, 0.5 * opacity);
+                graphics.fillCircle(pos.x, pos.y, rivetRadius);
+                // Highlight dot
+                graphics.fillStyle(0xffffff, 0.75 * opacity);
+                graphics.fillCircle(pos.x - 0.5, pos.y - 0.5, 0.5);
+            });
+        }
+
+        // 7. Armor plate horizontal / vertical divider grooves (for long/tall blocks)
+        if (w > 80) {
+            graphics.lineStyle(1.0, 0x0f172a, 0.25 * opacity);
+            for (let offset = -w / 2 + 50; offset < w / 2 - 25; offset += 50) {
+                graphics.beginPath();
+                graphics.moveTo(offset, -h / 2 + 8);
+                graphics.lineTo(offset, h / 2 - 8);
+                graphics.strokePath();
+                // Add highlight line next to the groove for depth
+                graphics.lineStyle(1.0, 0xffffff, 0.12 * opacity);
+                graphics.beginPath();
+                graphics.moveTo(offset + 1, -h / 2 + 8);
+                graphics.lineTo(offset + 1, h / 2 - 8);
+                graphics.strokePath();
+                // Reset lineStyle
+                graphics.lineStyle(1.0, 0x0f172a, 0.25 * opacity);
+            }
+        }
+        if (h > 80) {
+            graphics.lineStyle(1.0, 0x0f172a, 0.25 * opacity);
+            for (let offset = -h / 2 + 50; offset < h / 2 - 25; offset += 50) {
+                graphics.beginPath();
+                graphics.moveTo(-w / 2 + 8, offset);
+                graphics.lineTo(w / 2 - 8, offset);
+                graphics.strokePath();
+                // Add highlight line next to the groove for depth
+                graphics.lineStyle(1.0, 0xffffff, 0.12 * opacity);
+                graphics.beginPath();
+                graphics.moveTo(-w / 2 + 8, offset + 1);
+                graphics.lineTo(w / 2 - 8, offset + 1);
+                graphics.strokePath();
+                // Reset lineStyle
+                graphics.lineStyle(1.0, 0x0f172a, 0.25 * opacity);
+            }
+        }
+    }
+
 
     startJellyIdle(jellyVisual) {
         if (!jellyVisual || !jellyVisual.active) return;
@@ -1603,7 +1693,7 @@ export default class GameScene extends Phaser.Scene {
             rect.w,
             rect.h,
             0x000000,
-            (blockType === 'bounce' || blockType === 'slide') ? 0 : opacity
+            (blockType === 'bounce' || blockType === 'slide' || blockType === 'normal') ? 0 : opacity
         );
 
         let outer = null;
@@ -1618,26 +1708,8 @@ export default class GameScene extends Phaser.Scene {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawFrozen(jelly, rect.w, rect.h, opacity, tint);
         } else {
-            // Outer border color: blockType takes priority, then tint, then default slate
-            let outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
-            outer = this.add.rectangle(
-                cx,
-                cy,
-                rect.w - 12.5,
-                rect.h - 12.5,
-                outerColor,
-                opacity
-            );
-
-            // Inner black border (top layer - black by default)
-            middle = this.add.rectangle(
-                cx,
-                cy,
-                rect.w - 25,
-                rect.h - 25,
-                0x000000,
-                1
-            );
+            jelly = this.add.graphics({ x: cx, y: cy });
+            this.drawNormal(jelly, rect.w, rect.h, opacity, tint);
         }
 
         this.matter.add.gameObject(platform, {
