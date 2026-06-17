@@ -88,6 +88,7 @@ export default class PreloadScene extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.setRoundPixels(true);
         const characters = ['p1', 'p2', 'p3'];
 
         characters.forEach(char => {
