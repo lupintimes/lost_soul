@@ -19,20 +19,30 @@ export default class Player {
 
     getDamage() {
         const charDamage = this.damageTable[this.character] || this.damageTable['p1'];
+        let baseDamage = charDamage.attack_1;
         const currentAnim = this.sprite.anims.currentAnim;
 
         if (currentAnim) {
-            if (currentAnim.key === `${this.character}_attack_1`) return charDamage.attack_1;
-            if (currentAnim.key === `${this.character}_attack_2`) return charDamage.attack_2;
-            if (currentAnim.key === `${this.character}_attack_3`) return charDamage.attack_3;
+            if (currentAnim.key === `${this.character}_attack_1`) baseDamage = charDamage.attack_1;
+            if (currentAnim.key === `${this.character}_attack_2`) baseDamage = charDamage.attack_2;
+            if (currentAnim.key === `${this.character}_attack_3`) baseDamage = charDamage.attack_3;
         }
 
-        return charDamage.attack_1;
+        // 50% damage boost during Rage Mode
+        if (this.isRageActive) {
+            baseDamage = Math.round(baseDamage * 1.5);
+        }
+
+        return baseDamage;
     }
 
     getSpellDamage() {
         const charDamage = this.damageTable[this.character] || this.damageTable['p1'];
-        return charDamage.spell;
+        let damage = charDamage.spell;
+        if (this.isRageActive) {
+            damage = Math.round(damage * 1.5);
+        }
+        return damage;
     }
 
 
@@ -77,6 +87,8 @@ export default class Player {
         this.isRageActive = false;
         this.hasHighJumpedInAir = false;
         this.hasDoubleJumped = false;
+        this.hasTriggeredUndyingRage = false;
+        this.lastRageDrainTime = null;
         this.speed = 10;
         this.originalSpeed = 10;
 
@@ -581,6 +593,24 @@ export default class Player {
 
         // Fatal hit handling: play hurt hitstun first, then trigger die()
         if (isFatal) {
+            // For p3 (Berserker), trigger Undying Rage instead of dying on the first fatal hit (solo mode player only, not enemies)
+            if (this.character === 'p3' && !this.hasTriggeredUndyingRage && this.scene.mode === 'solo' && !this.isEnemy) {
+                this.hasTriggeredUndyingRage = true;
+                this.isRageActive = true;
+                this.health.current = this.health.max;
+                
+                this.sprite.clearTint();
+                this.state = 'idle';
+                
+                this.playSound('sfx_highjump', 0.8);
+                this.createHitParticles(this.sprite.x, this.sprite.y, 0xff0000);
+                
+                if (this.health && typeof this.health.updateBar === 'function') {
+                    this.health.updateBar();
+                }
+                return;
+            }
+
             this.state = 'hurt';
             this.isInvincible = true;
 
@@ -690,6 +720,8 @@ export default class Player {
 
         this.state = 'dead';
         this.isShieldActive = false;
+        this.isRageActive = false;
+        this.hasTriggeredUndyingRage = false;
         if (this.shieldVisual) {
             this.shieldVisual.destroy();
             this.shieldVisual = null;
@@ -915,12 +947,36 @@ export default class Player {
 
         // 3. Berserker Rage Check & Visual
         if (this.character === 'p3') {
+            const time = this.scene.time.now;
+            
+            // Rage hp decay over time when undying rage is active
+            if (this.isRageActive && this.hasTriggeredUndyingRage && this.state !== 'dead') {
+                if (!this.lastRageDrainTime) {
+                    this.lastRageDrainTime = time;
+                }
+                const elapsed = time - this.lastRageDrainTime;
+                if (elapsed >= 100) {
+                    const drainAmount = (10 * elapsed) / 1000; // 10 HP per second
+                    this.health.current = Math.max(0, this.health.current - drainAmount);
+                    this.lastRageDrainTime = time;
+
+                    if (this.health.current <= 0 && this.state !== 'dead') {
+                        this.die();
+                    }
+                }
+            } else {
+                this.lastRageDrainTime = null;
+            }
+
             const healthRatio = (this.health && this.health.max > 0) ? (this.health.current / this.health.max) : 1;
-            if (healthRatio <= 0.3 && this.health.current > 0 && this.state !== 'dead') {
+            const shouldBeRaging = (healthRatio <= 0.3 || this.hasTriggeredUndyingRage) && this.health.current > 0 && this.state !== 'dead';
+            
+            if (shouldBeRaging) {
                 if (!this.isRageActive) {
                     this.isRageActive = true;
-                    this.speed = 12.5; // 25% speed buff
                 }
+                // Under normal rage, speed is 13. Under undying rage, speed is 15.
+                this.speed = this.hasTriggeredUndyingRage ? 15 : 13;
                 
                 // Emitting red rage particles
                 if (Math.random() < 0.25) {

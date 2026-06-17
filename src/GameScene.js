@@ -515,6 +515,11 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.health.current = data.remainingHealth;
                 }
 
+                if (data.hasTriggeredUndyingRage) {
+                    this.localPlayer.hasTriggeredUndyingRage = true;
+                    this.localPlayer.isRageActive = true;
+                }
+
                 this.safePlaySound('sfx_hurt', 0.4);
 
                 if (this.localPlayer.sprite && this.localPlayer.sprite.active) {
@@ -532,6 +537,11 @@ export default class GameScene extends Phaser.Scene {
             if (remote && remote.sprite && remote.sprite.active) {
                 if (remote.health && typeof remote.health === 'object') {
                     remote.health.current = data.remainingHealth;
+                }
+
+                if (data.hasTriggeredUndyingRage) {
+                    remote.hasTriggeredUndyingRage = true;
+                    remote.isRageActive = true;
                 }
 
                 this.safePlaySound('sfx_hurt', 0.2);

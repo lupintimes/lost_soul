@@ -338,8 +338,6 @@ io.on('connection', (socket) => {
         }
         target.health = Math.max(0, target.health - damage);
 
-
-
         console.log(`⚔️ ${socket.id} hit ${attackData.targetId} for ${damage} dmg (HP: ${target.health})`);
 
         io.to(roomId).emit('playerDamaged', {
