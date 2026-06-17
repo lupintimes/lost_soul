@@ -305,9 +305,10 @@ export default class GameScene extends Phaser.Scene {
         this.OBSTACLE_MAX_AREA = 250000;
         this.MAX_BUILD_POINTS = 300000;
 
-        // ─── Draw Tool ───────────────────────────────────
+        // ─── Draw & Deletion Tool ────────────────────────
         this.preview = this.add.graphics();
         this.isDrawing = false;
+        this.isDeletingByRegion = false;
         this.startPoint = null;
         this.keyX = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
         this.selectedBlockType = 'normal'; // 'normal', 'bounce', 'slide'
@@ -316,86 +317,147 @@ export default class GameScene extends Phaser.Scene {
         this.key3 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
 
         this.input.on('pointerdown', (pointer) => {
-            if (this.keyX.isDown) {
-                this.removeobstacle(pointer);
-                return;
-            }
             const world = pointer.positionToCamera(this.cameras.main);
             this.startPoint = world;
             this.isDrawing = true;
+            this.isDeletingByRegion = this.keyX.isDown;
         });
 
         this.input.on('pointermove', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
 
-            // Limit dimensions to max area while dragging
-            let dx = world.x - this.startPoint.x;
-            let dy = world.y - this.startPoint.y;
-            let w = Math.abs(dx);
-            let h = Math.abs(dy);
-            let area = w * h;
+            if (this.isDeletingByRegion) {
+                const rect = this.getRect(this.startPoint, world);
+                this.preview.clear();
+                this.preview.lineStyle(2, 0xff0000, 1);
+                this.preview.fillStyle(0xff0000, 0.25);
+                this.preview.fillRect(rect.x, rect.y, rect.w, rect.h);
+                this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
+            } else {
+                // Limit dimensions to max area while dragging
+                let dx = world.x - this.startPoint.x;
+                let dy = world.y - this.startPoint.y;
+                let w = Math.abs(dx);
+                let h = Math.abs(dy);
+                let area = w * h;
 
-            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
-            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
-            if (area > maxAllowedArea) {
-                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
-                dx *= scale;
-                dy *= scale;
+                const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+                const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+                if (area > maxAllowedArea) {
+                    const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
+                    dx *= scale;
+                    dy *= scale;
+                }
+
+                const clampedWorld = {
+                    x: this.startPoint.x + dx,
+                    y: this.startPoint.y + dy
+                };
+                const rect = this.getRect(this.startPoint, clampedWorld);
+
+                this.preview.clear();
+                this.preview.lineStyle(2, 0xffff00, 1);
+                this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
             }
-
-            const clampedWorld = {
-                x: this.startPoint.x + dx,
-                y: this.startPoint.y + dy
-            };
-            const rect = this.getRect(this.startPoint, clampedWorld);
-
-            this.preview.clear();
-            this.preview.lineStyle(2, 0xffff00, 1);
-            this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
         });
 
         this.input.on('pointerup', (pointer) => {
             if (!this.isDrawing) return;
             const world = pointer.positionToCamera(this.cameras.main);
 
-            // Apply same limit clamping on pointer up
-            let dx = world.x - this.startPoint.x;
-            let dy = world.y - this.startPoint.y;
-            let w = Math.abs(dx);
-            let h = Math.abs(dy);
-            let area = w * h;
+            if (this.isDeletingByRegion) {
+                const rect = this.getRect(this.startPoint, world);
+                
+                // If the selection rectangle is extremely small, treat it as a single point deletion
+                if (rect.w < 5 && rect.h < 5) {
+                    this.removeobstacle(pointer);
+                } else {
+                    // Region deletion
+                    let deletedCount = 0;
+                    let hasAttemptedForeignDelete = false;
 
-            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
-            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
-            if (area > maxAllowedArea) {
-                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
-                dx *= scale;
-                dy *= scale;
+                    for (let i = this.platforms.length - 1; i >= 0; i--) {
+                        const p = this.platforms[i];
+                        if (!p.deletable) continue;
+
+                        // Bounding box overlap check between selection rect and platform p
+                        const overlap =
+                            rect.x < p.x + p.w &&
+                            rect.x + rect.w > p.x &&
+                            rect.y < p.y + p.h &&
+                            rect.y + rect.h > p.y;
+
+                        if (overlap) {
+                            const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
+                            if (isOwner) {
+                                if (this.mode === 'multiplayer' && this.socket && p.id) {
+                                    this.socket.emit('removeObstacle', { id: p.id });
+                                }
+
+                                if (p.gameObject) p.gameObject.destroy();
+                                if (p.outer) p.outer.destroy();
+                                if (p.middle) p.middle.destroy();
+                                if (p.jelly) p.jelly.destroy();
+
+                                this.platforms.splice(i, 1);
+                                deletedCount++;
+                            } else {
+                                hasAttemptedForeignDelete = true;
+                            }
+                        }
+                    }
+
+                    if (deletedCount > 0) {
+                        this.showKillMessage(`REMOVED ${deletedCount} OBSTACLES!`, '#44ff44');
+                        this.updateBuildPointsUI();
+                    } else if (hasAttemptedForeignDelete) {
+                        this.showKillMessage("CANNOT REMOVE OTHER PLAYERS' OBSTACLES!", '#ff4444');
+                    }
+                }
+
+                this.preview.clear();
+                this.isDrawing = false;
+                this.isDeletingByRegion = false;
+            } else {
+                // Apply same limit clamping on pointer up
+                let dx = world.x - this.startPoint.x;
+                let dy = world.y - this.startPoint.y;
+                let w = Math.abs(dx);
+                let h = Math.abs(dy);
+                let area = w * h;
+
+                const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+                const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+                if (area > maxAllowedArea) {
+                    const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
+                    dx *= scale;
+                    dy *= scale;
+                }
+
+                const clampedWorld = {
+                    x: this.startPoint.x + dx,
+                    y: this.startPoint.y + dy
+                };
+                const rect = this.getRect(this.startPoint, clampedWorld);
+                const opacity = 0.9;
+
+                // Always generate a unique ID (even in solo) so decay timers target the correct block
+                const id = this.mode === 'multiplayer' && this.socket
+                    ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+                    : `solo_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+                const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
+                const tint = PlayerData.getColorTint();
+                const blockType = this.selectedBlockType || 'normal';
+                const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
+
+                if (success && this.mode === 'multiplayer' && this.socket) {
+                    this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
+                }
+
+                this.preview.clear();
+                this.isDrawing = false;
             }
-
-            const clampedWorld = {
-                x: this.startPoint.x + dx,
-                y: this.startPoint.y + dy
-            };
-            const rect = this.getRect(this.startPoint, clampedWorld);
-            const opacity = 0.9;
-
-            // Always generate a unique ID (even in solo) so decay timers target the correct block
-            const id = this.mode === 'multiplayer' && this.socket
-                ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
-                : `solo_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-            const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
-            const tint = PlayerData.getColorTint();
-            const blockType = this.selectedBlockType || 'normal';
-            const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
-
-            if (success && this.mode === 'multiplayer' && this.socket) {
-                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
-            }
-
-            this.preview.clear();
-            this.isDrawing = false;
         });
 
 
