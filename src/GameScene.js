@@ -139,6 +139,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.cameras.main.setRoundPixels(true);
         // Clean up DOM chat elements on scene shutdown or destroy
         this.events.on('shutdown', () => this.cleanupChat());
         this.events.on('destroy', () => this.cleanupChat());
@@ -284,8 +285,8 @@ export default class GameScene extends Phaser.Scene {
                 this.scale.height / 2,
                 'JOINING MATCH...',
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '14px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '18px',
                     color: '#ffff00'
                 }
             )
@@ -309,6 +310,10 @@ export default class GameScene extends Phaser.Scene {
         this.isDrawing = false;
         this.startPoint = null;
         this.keyX = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X);
+        this.selectedBlockType = 'normal'; // 'normal', 'bounce', 'slide'
+        this.key1 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE);
+        this.key2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        this.key3 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
 
         this.input.on('pointerdown', (pointer) => {
             if (this.keyX.isDown) {
@@ -376,13 +381,17 @@ export default class GameScene extends Phaser.Scene {
             const rect = this.getRect(this.startPoint, clampedWorld);
             const opacity = 0.9;
 
-            const id = this.mode === 'multiplayer' && this.socket ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}` : null;
+            // Always generate a unique ID (even in solo) so decay timers target the correct block
+            const id = this.mode === 'multiplayer' && this.socket
+                ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+                : `solo_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
             const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
             const tint = PlayerData.getColorTint();
-            const success = this.createObstacle(rect, opacity, id, creatorId, true, tint);
+            const blockType = this.selectedBlockType || 'normal';
+            const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
 
             if (success && this.mode === 'multiplayer' && this.socket) {
-                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint });
+                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
             }
 
             this.preview.clear();
@@ -641,7 +650,7 @@ export default class GameScene extends Phaser.Scene {
         // 9. Obstacle sync events
         this.socket.on('obstacleCreated', (data) => {
             console.log('🧱 Remote obstacle created:', data.id);
-            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false, data.tint);
+            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false, data.tint, data.blockType || 'normal');
         });
 
         this.socket.on('obstacleRemoved', (data) => {
@@ -661,7 +670,7 @@ export default class GameScene extends Phaser.Scene {
             Object.keys(obstacles).forEach(id => {
                 const obs = obstacles[id];
                 if (!this.platforms.some(p => p.id === id)) {
-                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false, obs.tint);
+                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false, obs.tint, obs.blockType || 'normal');
                 }
             });
         });
@@ -803,17 +812,17 @@ export default class GameScene extends Phaser.Scene {
         this.scoreboardElements = [];
 
         const startX = 10;
-        const startY = 102;
+        const startY = 120;
 
-        const bg = this.add.rectangle(startX, startY, 200, 16 + scores.length * 14 + 4, 0x000000, 0.6)
+        const bg = this.add.rectangle(startX, startY, 240, 22 + scores.length * 18 + 6, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.scoreboardElements.push(bg);
 
-        const header = this.add.text(startX + 5, startY + 2, 'SCOREBOARD', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+        const header = this.add.text(startX + 10, startY + 4, 'SCOREBOARD', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
             color: '#ffff00'
         })
             .setScrollFactor(0)
@@ -827,12 +836,12 @@ export default class GameScene extends Phaser.Scene {
             const shortId = entry.playerId.substring(0, 6);
 
             const row = this.add.text(
-                startX + 5,
-                startY + 16 + (index * 14),
+                startX + 10,
+                startY + 24 + (index * 18),
                 `${prefix}${shortId}  K:${entry.kills}  D:${entry.deaths}`,
                 {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '7px',
+                    fontFamily: '"Silkscreen"',
+                    fontSize: '11px',
                     color: color
                 }
             )
@@ -851,8 +860,8 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         const msg = this.add.text(width / 2, height * 0.3, text, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '20px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '26px',
             color: color,
             stroke: '#000000',
             strokeThickness: 4
@@ -903,6 +912,18 @@ export default class GameScene extends Phaser.Scene {
     update() {
         this.updateBuildPointsUI();
         this.updateHUD();
+
+        // ─── Block Type Selection Keys ────────────────────
+        if (Phaser.Input.Keyboard.JustDown(this.key1)) {
+            this.selectedBlockType = 'normal';
+            this.showKillMessage('BLOCK: NORMAL', '#c4c9ca');
+        } else if (Phaser.Input.Keyboard.JustDown(this.key2)) {
+            this.selectedBlockType = 'bounce';
+            this.showKillMessage('BLOCK: BOUNCE', '#ffd700');
+        } else if (Phaser.Input.Keyboard.JustDown(this.key3)) {
+            this.selectedBlockType = 'slide';
+            this.showKillMessage('BLOCK: SLIDE', '#00ffff');
+        }
 
         if (this.mode === 'solo') {
             this.updateSolo();
@@ -1344,7 +1365,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false, tint = null) {
+    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false, tint = null, blockType = 'normal') {
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
@@ -1442,8 +1463,15 @@ export default class GameScene extends Phaser.Scene {
             0x000000,
             opacity
         );
-        // Outer border (middle layer - slate by default)
-        const outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
+        // Outer border color: blockType takes priority, then tint, then default slate
+        let outerColor;
+        if (blockType === 'bounce') {
+            outerColor = 0xffd700; // Gold for bounce
+        } else if (blockType === 'slide') {
+            outerColor = 0x00e5ff; // Cyan for slide/ice
+        } else {
+            outerColor = (tint !== null && tint !== undefined) ? tint : 0xc4c9ca;
+        }
         const outer = this.add.rectangle(
             cx,
             cy,
@@ -1466,7 +1494,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.matter.add.gameObject(platform, {
             isStatic: true,
-            friction: 0.1
+            friction: blockType === 'slide' ? 0.0 : 0.1
         });
 
 
@@ -1480,6 +1508,7 @@ export default class GameScene extends Phaser.Scene {
             outer,
             middle,
             tint,
+            blockType: blockType || 'normal',
             ...rect,
             deletable: true,
             source: 'user',
@@ -1570,7 +1599,7 @@ export default class GameScene extends Phaser.Scene {
         const startX = width - 230;
         const startY = 10;
         const panelW = 220;
-        const panelH = 45;
+        const panelH = 68; // Expanded to fit block type row and larger text
 
         this.buildUIBg = this.add.rectangle(startX, startY, panelW, panelH, 0x000000, 0.6)
             .setOrigin(0)
@@ -1579,8 +1608,8 @@ export default class GameScene extends Phaser.Scene {
         this.buildUIBg.setStrokeStyle(1.5, 0x333333);
 
         this.buildUITitle = this.add.text(startX + 10, startY + 6, 'BUILD POINTS', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
             color: '#ffff00'
         })
             .setScrollFactor(0)
@@ -1597,9 +1626,18 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100);
 
         this.buildUIText = this.add.text(startX + 10, startY + 34, '300,000 / 300,000', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '7px',
+            fontFamily: '"Silkscreen"',
+            fontSize: '10px',
             color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        // Block type indicator (1=Normal, 2=Bounce, 3=Slide)
+        this.buildBlockTypeText = this.add.text(startX + 10, startY + 46, '[ 1 ] NORMAL', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '10px',
+            color: '#c4c9ca'
         })
             .setScrollFactor(0)
             .setDepth(100);
@@ -1627,6 +1665,21 @@ export default class GameScene extends Phaser.Scene {
         // Format numbers with commas (e.g. 150,000)
         const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         this.buildUIText.setText(`${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`);
+
+        // Update block type indicator
+        if (this.buildBlockTypeText) {
+            const bt = this.selectedBlockType || 'normal';
+            if (bt === 'bounce') {
+                this.buildBlockTypeText.setText('[ 2 ] BOUNCE ↑');
+                this.buildBlockTypeText.setColor('#ffd700');
+            } else if (bt === 'slide') {
+                this.buildBlockTypeText.setText('[ 3 ] SLIDE ⟶');
+                this.buildBlockTypeText.setColor('#00e5ff');
+            } else {
+                this.buildBlockTypeText.setText('[ 1 ] NORMAL');
+                this.buildBlockTypeText.setColor('#c4c9ca');
+            }
+        }
     }
 
     removeobstacle(pointer) {
@@ -1743,110 +1796,110 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // 1. Health Panel (top-left)
-        this.hudHealthBg = this.add.rectangle(10, 10, 220, 48, 0x000000, 0.6)
+        this.hudHealthBg = this.add.rectangle(10, 10, 240, 58, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudHealthBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudHealthTitle = this.add.text(20, 16, 'PLAYER HP', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+        this.hudHealthTitle = this.add.text(20, 15, 'PLAYER HP', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#ff4444'
         })
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudHealthBarBg = this.add.rectangle(20, 28, 200, 10, 0x222222)
+        this.hudHealthBarBg = this.add.rectangle(20, 31, 220, 12, 0x222222)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudHealthBarFill = this.add.rectangle(20, 28, 200, 10, 0x2ecc71)
+        this.hudHealthBarFill = this.add.rectangle(20, 31, 220, 12, 0x2ecc71)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudHealthText = this.add.text(20, 41, 'HP: 100 / 100', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '7px',
+        this.hudHealthText = this.add.text(20, 46, 'HP: 100 / 100', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
             color: '#ffffff'
         })
             .setScrollFactor(0)
             .setDepth(100);
 
         // 2. Stats Panel (below Health panel)
-        this.hudKillsBg = this.add.rectangle(10, 68, 220, 24, 0x000000, 0.6)
+        this.hudKillsBg = this.add.rectangle(10, 78, 240, 32, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudKillsBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudKillsText = this.add.text(20, 75, 'KILLS: 0   DEATHS: 0', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+        this.hudKillsText = this.add.text(20, 85, 'KILLS: 0   DEATHS: 0', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#ffffff'
         })
             .setScrollFactor(0)
             .setDepth(100);
 
         // 3. Spell Cooldown Panel (below Build Points panel on the right side)
-        const spellX = width - 230;
-        const spellY = 60; // 10px below Build Points panel (10 + 45 = 55)
+        const spellX = width - 250;
+        const spellY = 100; // 10px below Build Points panel (10 + 80 = 90)
 
-        this.hudSpellBg = this.add.rectangle(spellX, spellY, 220, 36, 0x000000, 0.6)
+        this.hudSpellBg = this.add.rectangle(spellX, spellY, 240, 44, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudSpellBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 6, 'SPELL (R): READY', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 8, 'SPELL (R): READY', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#44ff44'
         })
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudSpellBarBg = this.add.rectangle(spellX + 10, spellY + 20, 200, 8, 0x222222)
+        this.hudSpellBarBg = this.add.rectangle(spellX + 10, spellY + 24, 220, 10, 0x222222)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 20, 200, 8, 0x9b30ff)
+        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 24, 220, 10, 0x9b30ff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
         // 4. Dash Cooldown / Charges Panel (below Spell panel on the right side)
-        const dashX = width - 230;
-        const dashY = 106; // 10px below Spell panel (60 + 36 + 10)
+        const dashX = width - 250;
+        const dashY = 154; // 10px below Spell panel (100 + 44 + 10)
 
-        this.hudDashBg = this.add.rectangle(dashX, dashY, 220, 36, 0x000000, 0.6)
+        this.hudDashBg = this.add.rectangle(dashX, dashY, 240, 44, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudDashBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudDashTitle = this.add.text(dashX + 10, dashY + 6, 'DASH (SHIFT): READY', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
+        this.hudDashTitle = this.add.text(dashX + 10, dashY + 8, 'DASH (SHIFT): READY', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#44ff44'
         })
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudDashBarBg = this.add.rectangle(dashX + 10, dashY + 20, 200, 8, 0x222222)
+        this.hudDashBarBg = this.add.rectangle(dashX + 10, dashY + 24, 220, 10, 0x222222)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 20, 200, 8, 0x00bfff)
+        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 24, 220, 10, 0x00bfff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 70, 460, 60, 0x000000, 0.7)
+        this.hudControlsBg = this.add.rectangle((width - 540) / 2, height - 105, 540, 95, 0x000000, 0.7)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
@@ -1858,9 +1911,9 @@ export default class GameScene extends Phaser.Scene {
             "• Spell: R | Attack: SPACE\n" +
             "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
 
-        this.hudControlsText = this.add.text((width - 460) / 2 + 15, height - 63, controlsTextStr, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '7px',
+        this.hudControlsText = this.add.text((width - 540) / 2 + 15, height - 98, controlsTextStr, {
+            fontFamily: '"Silkscreen"',
+            fontSize: '12px',
             color: '#cccccc',
             lineSpacing: 5
         })
@@ -2009,7 +2062,7 @@ export default class GameScene extends Phaser.Scene {
                 flex-direction: column;
                 pointer-events: none;
                 z-index: 1000;
-                font-family: 'Press Start 2P', monospace;
+                font-family: 'Silkscreen', monospace;
                 font-size: 8px;
             }
             #game-chat-log {
@@ -2060,7 +2113,7 @@ export default class GameScene extends Phaser.Scene {
                 border: 1.5px solid #555;
                 border-radius: 4px;
                 color: #fff;
-                font-family: 'Press Start 2P', monospace;
+                font-family: 'Silkscreen', monospace;
                 font-size: 8px;
                 outline: none;
                 box-sizing: border-box;
