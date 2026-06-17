@@ -65,6 +65,8 @@ export default class Player {
 
         this.state = 'idle';
         this.isInvincible = false;
+        this.spellCooldown = 200;
+        this.lastSpellTime = 0;
 
         this.lastX = 0;
         this.lastY = 0;
@@ -366,6 +368,11 @@ export default class Player {
 
     // 🔮 SPELL
     castSpell() {
+        if (this.scene.time.now < this.lastSpellTime + this.spellCooldown) {
+            return;
+        }
+        this.lastSpellTime = this.scene.time.now;
+
         this.playSound('sfx_spell', 0.4);
 
         const dir = this.sprite.flipX ? -1 : 1;
@@ -386,6 +393,7 @@ export default class Player {
             this.sprite.y,
             15
         );
+        spell.setDepth(10);
         this.scene.matter.add.gameObject(spell);
         spell.setCircle(15, {
             isSensor: true,
@@ -656,7 +664,7 @@ export default class Player {
     }
 
     createHitParticles(x, y, color = 0xffffff) {
-        const particleCount = 24;
+        const particleCount = 8;
         for (let i = 0; i < particleCount; i++) {
             const size = Phaser.Math.Between(12, 24);
             const p = this.scene.add.rectangle(x, y, size, size, color)

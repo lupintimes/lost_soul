@@ -17,7 +17,7 @@ export default class CombatSystem {
             isSensor: true,
             ignoreGravity: true
         });
-        hitbox.setFillStyle(0xff0000, 0.3);
+        hitbox.setFillStyle(0xff0000, 0);
 
         const targets = this.player.isEnemy
             ? this.scene.players

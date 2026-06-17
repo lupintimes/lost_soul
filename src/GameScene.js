@@ -267,7 +267,7 @@ export default class GameScene extends Phaser.Scene {
 
         // ─── Mode Setup ──────────────────────────────────
         if (this.mode === 'solo') {
-            this.maxEnemies = this.spawnPoints.length - 2;
+            this.maxEnemies = 6;
             const playerSpawn = this.spawnPlayer();
             this.spawnInitialEnemies(playerSpawn);
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
@@ -921,7 +921,7 @@ export default class GameScene extends Phaser.Scene {
         // Dead players still need to play death animation before being removed
         this.players = this.players.filter(p => p && p.sprite && p.sprite.active);
 
-        this.maxEnemies = this.spawnPoints.length - 2;
+        this.maxEnemies = 6;
 
         if (this.enemies.length < this.maxEnemies && !this.isSpawningEnemies) {
             this.isSpawningEnemies = true;
@@ -1035,10 +1035,14 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnInitialEnemies(playerSpawn) {
-        this.spawnPoints.forEach(spawn => {
-            if (playerSpawn && spawn.x === playerSpawn.x && spawn.y === playerSpawn.y) {
-                return;
-            }
+        const candidates = this.spawnPoints.filter(spawn => 
+            !(playerSpawn && spawn.x === playerSpawn.x && spawn.y === playerSpawn.y)
+        );
+        const shuffled = Phaser.Utils.Array.Shuffle(candidates);
+        const spawnCount = Math.min(this.maxEnemies, shuffled.length);
+
+        for (let i = 0; i < spawnCount; i++) {
+            const spawn = shuffled[i];
             const randomChar = Phaser.Utils.Array.GetRandom(['p1', 'p2', 'p3']);
             const enemy = new Player(this, spawn.x, spawn.y, null, false, randomChar);
 
@@ -1062,7 +1066,7 @@ export default class GameScene extends Phaser.Scene {
             }
 
             this.enemies.push(enemy);
-        });
+        }
     }
 
     spawnEnemyWave(count = 3) {
@@ -1691,6 +1695,31 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
+        // 3. Spell Cooldown Panel (below Stats panel)
+        this.hudSpellBg = this.add.rectangle(10, 100, 220, 36, 0x000000, 0.6)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(99);
+        this.hudSpellBg.setStrokeStyle(1.5, 0x333333);
+
+        this.hudSpellTitle = this.add.text(20, 106, 'SPELL (R): READY', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            color: '#44ff44'
+        })
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudSpellBarBg = this.add.rectangle(20, 120, 200, 8, 0x222222)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudSpellBarFill = this.add.rectangle(20, 120, 200, 8, 0x9b30ff)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
         this.hudControlsBg = this.add.rectangle((width - 460) / 2, height - 70, 460, 60, 0x000000, 0.7)
             .setOrigin(0)
             .setScrollFactor(0)
@@ -1759,6 +1788,37 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.hudKillsText) {
             this.hudKillsText.setText(`KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`);
+        }
+
+        if (this.hudSpellTitle && this.hudSpellBarFill && playerObj) {
+            const now = this.time.now;
+            const lastCast = playerObj.lastSpellTime || 0;
+            const cooldown = playerObj.spellCooldown || 200;
+            const elapsed = now - lastCast;
+
+            const spellColors = {
+                'p1': 0x00ffff,
+                'p2': 0xff8c00,
+                'p3': 0x9b30ff
+            };
+            const spellColor = spellColors[playerObj.character] || 0x00ffff;
+
+            if (elapsed < cooldown) {
+                const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
+                const rem = ((cooldown - elapsed) / 1000).toFixed(1);
+                
+                this.hudSpellTitle.setText(`SPELL (R): COOLDOWN (${rem}s)`);
+                this.hudSpellTitle.setColor('#ffaa00');
+                
+                this.hudSpellBarFill.width = 200 * ratio;
+                this.hudSpellBarFill.setFillStyle(0xffaa00); // Orange while cooling down
+            } else {
+                this.hudSpellTitle.setText('SPELL (R): READY');
+                this.hudSpellTitle.setColor('#44ff44');
+                
+                this.hudSpellBarFill.width = 200;
+                this.hudSpellBarFill.setFillStyle(spellColor); // Character-specific theme color when ready
+            }
         }
     }
 
