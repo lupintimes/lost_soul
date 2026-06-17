@@ -193,9 +193,22 @@ export default class Player {
 
                 if (isOverlappingX && isStandingOnTop) {
                     if (platform.blockType === 'bounce') {
-                        this.sprite.setVelocityY(-40);
-                        this.playSound('sfx_highjump', 0.5);
-                        this.createHitParticles(this.sprite.x, py + 76, 0xffff00);
+                        const area = (platform.w || 30) * (platform.h || 30);
+                        const minArea = 900;
+                        const maxAreaThreshold = 15000;
+                        const factor = Phaser.Math.Clamp((area - minArea) / (maxAreaThreshold - minArea), 0, 1);
+                        
+                        const jumpVelocity = -9 - (22 * factor);
+                        
+                        this.sprite.setVelocityY(jumpVelocity);
+                        this.playSound('sfx_highjump', 0.3 + 0.4 * factor);
+                        
+                        const particleColor = (platform.tint !== null && platform.tint !== undefined) ? platform.tint : 0xffd700;
+                        this.createHitParticles(this.sprite.x, py + 76, particleColor);
+                        
+                        if (this.scene && typeof this.scene.wobbleBlock === 'function') {
+                            this.scene.wobbleBlock(platform);
+                        }
                     } else if (platform.blockType === 'slide') {
                         this.isStandingOnSlideBlock = true;
                     }
