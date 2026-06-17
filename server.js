@@ -280,7 +280,8 @@ io.on('connection', (socket) => {
             rect: data.rect,
             opacity: data.opacity,
             creatorId: creatorId,
-            tint: data.tint
+            tint: data.tint,
+            blockType: data.blockType || 'normal'
         };
 
         data.creatorId = creatorId;
