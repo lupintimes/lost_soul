@@ -391,16 +391,39 @@ export default class GameScene extends Phaser.Scene {
                         if (overlap) {
                             const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
                             if (isOwner) {
-                                if (this.mode === 'multiplayer' && this.socket && p.id) {
-                                    this.socket.emit('removeObstacle', { id: p.id });
-                                }
-
+                                // Remove old obstacle locally
                                 if (p.gameObject) p.gameObject.destroy();
                                 if (p.outer) p.outer.destroy();
                                 if (p.middle) p.middle.destroy();
                                 if (p.jelly) p.jelly.destroy();
 
                                 this.platforms.splice(i, 1);
+                                
+                                // Notify server of deletion
+                                if (this.mode === 'multiplayer' && this.socket && p.id) {
+                                    this.socket.emit('removeObstacle', { id: p.id });
+                                }
+
+                                // Compute remaining pieces of the obstacle outside the selection rectangle
+                                const pieces = this.subtractRect(p, rect);
+                                
+                                // Create and sync remaining split pieces
+                                pieces.forEach((piece, index) => {
+                                    const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
+                                    this.createObstacle(piece, p.opacity || 0.9, subId, p.creatorId, false, p.tint, p.blockType);
+
+                                    if (this.mode === 'multiplayer' && this.socket) {
+                                        this.socket.emit('createObstacle', { 
+                                            id: subId, 
+                                            rect: piece, 
+                                            opacity: p.opacity || 0.9, 
+                                            creatorId: p.creatorId, 
+                                            tint: p.tint, 
+                                            blockType: p.blockType 
+                                        });
+                                    }
+                                });
+
                                 deletedCount++;
                             } else {
                                 hasAttemptedForeignDelete = true;
