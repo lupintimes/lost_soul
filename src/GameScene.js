@@ -1695,14 +1695,17 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
-        // 3. Spell Cooldown Panel (below Stats panel)
-        this.hudSpellBg = this.add.rectangle(10, 100, 220, 36, 0x000000, 0.6)
+        // 3. Spell Cooldown Panel (below Build Points panel on the right side)
+        const spellX = width - 230;
+        const spellY = 60; // 10px below Build Points panel (10 + 45 = 55)
+
+        this.hudSpellBg = this.add.rectangle(spellX, spellY, 220, 36, 0x000000, 0.6)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(99);
         this.hudSpellBg.setStrokeStyle(1.5, 0x333333);
 
-        this.hudSpellTitle = this.add.text(20, 106, 'SPELL (R): READY', {
+        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 6, 'SPELL (R): READY', {
             fontFamily: '"Press Start 2P"',
             fontSize: '8px',
             color: '#44ff44'
@@ -1710,12 +1713,12 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudSpellBarBg = this.add.rectangle(20, 120, 200, 8, 0x222222)
+        this.hudSpellBarBg = this.add.rectangle(spellX + 10, spellY + 20, 200, 8, 0x222222)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudSpellBarFill = this.add.rectangle(20, 120, 200, 8, 0x9b30ff)
+        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 20, 200, 8, 0x9b30ff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
