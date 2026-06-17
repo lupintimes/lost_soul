@@ -289,61 +289,138 @@ export default class Player {
 
         if (!this.controls) return;
 
-        // 🏃 MOVE
-        let moveSpeed = speed;
-        if (this.isStandingOnSlideBlock) {
-            moveSpeed = speed * 2.5; // Boosted slide speed
+        // Slide block wall climbing logic
+        let isTouchingLeftSide = false;
+        let isTouchingRightSide = false;
+        
+        if (this.scene && this.scene.platforms) {
+            this.scene.platforms.forEach(platform => {
+                if (platform.blockType !== 'slide' || !platform.gameObject || !platform.gameObject.active) return;
+
+                const rx = platform.x;
+                const ry = platform.y;
+                const rw = platform.w;
+                const rh = platform.h;
+
+                const px = this.sprite.x;
+                const py = this.sprite.y;
+
+                // Vertical bounds overlap: player must be vertically aligned with the slide block
+                const isOverlappingY = (py + 74 >= ry) && (py - 74 <= ry + rh);
+
+                if (isOverlappingY) {
+                    // Left side of block (player is on the left, pushing right)
+                    const distToLeft = Math.abs((px + 32) - rx);
+                    if (distToLeft < 15 && px < rx) {
+                        isTouchingLeftSide = true;
+                    }
+
+                    // Right side of block (player is on the right, pushing left)
+                    const distToRight = Math.abs((px - 32) - (rx + rw));
+                    if (distToRight < 15 && px > rx + rw) {
+                        isTouchingRightSide = true;
+                    }
+                }
+            });
         }
 
-        if (this.controls.left.isDown) {
-            this.sprite.setVelocityX(-moveSpeed);
-            this.sprite.setFlipX(true);
-            if (this.state !== 'attack')
-                this.sprite.anims.play(`${this.character}_walk_anim`, true);
+        // Check if player is holding directional keys away from the block
+        let isMovingAway = false;
+        if (isTouchingLeftSide && this.controls.left.isDown) {
+            isMovingAway = true;
         }
-        else if (this.controls.right.isDown) {
-            this.sprite.setVelocityX(moveSpeed);
-            this.sprite.setFlipX(false);
-            if (this.state !== 'attack')
-                this.sprite.anims.play(`${this.character}_walk_anim`, true);
+        if (isTouchingRightSide && this.controls.right.isDown) {
+            isMovingAway = true;
         }
-        else {
-            if (this.isStandingOnSlideBlock) {
-                // Decay velocity slowly while still on ice
-                this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.97);
-            } else if (this.slideCoastFrames > 0) {
-                // Continue coasting with friction after leaving slide block
-                this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.92);
+
+        const isClimbingKeysDown = (this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown) || (this.controls.down && this.controls.down.isDown));
+        const isClimbing = (isTouchingLeftSide || isTouchingRightSide) && isClimbingKeysDown && !isMovingAway;
+
+        if (isClimbing) {
+            const climbSpeed = speed * 2.5;
+            
+            // Gently push horizontal velocity to keep player locked against the block
+            if (isTouchingLeftSide) {
+                this.sprite.setVelocityX(1.5);
             } else {
-                this.sprite.setVelocityX(0);
+                this.sprite.setVelocityX(-1.5);
             }
-            if (this.state !== 'attack')
-                this.sprite.anims.play(`${this.character}_idle_anim`, true);
+            
+            if (this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown)) {
+                this.sprite.setVelocityY(-climbSpeed); // Move UP
+                if (this.state !== 'attack') {
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
+                }
+            } else if (this.controls.down && this.controls.down.isDown) {
+                this.sprite.setVelocityY(climbSpeed); // Move DOWN
+                if (this.state !== 'attack') {
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
+                }
+            } else {
+                this.sprite.setVelocityY(0); // Cling still
+                if (this.state !== 'attack') {
+                    this.sprite.anims.play(`${this.character}_idle_anim`, true);
+                }
+            }
         }
 
-        // 🦘 JUMP
-        if (this.isOnGround()) {
-            this.hasHighJumpedInAir = false;
-            this.hasDoubleJumped = false;
-            if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
-                this.playSound('sfx_highjump', 0.3);
-                this.sprite.setVelocityY(highJumpForce);
-                this.hasHighJumpedInAir = true;
+        if (!isClimbing) {
+            // 🏃 MOVE
+            let moveSpeed = speed;
+            if (this.isStandingOnSlideBlock) {
+                moveSpeed = speed * 2.5; // Boosted slide speed
             }
-            else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
-                this.sprite.setVelocityY(jumpForce);
+
+            if (this.controls.left.isDown) {
+                this.sprite.setVelocityX(-moveSpeed);
+                this.sprite.setFlipX(true);
+                if (this.state !== 'attack')
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
             }
-        } else {
-            // Allow high jump mid-air after normal jump
-            if (Phaser.Input.Keyboard.JustDown(this.controls.highJump) && !this.hasHighJumpedInAir) {
-                this.playSound('sfx_highjump', 0.3);
-                this.sprite.setVelocityY(highJumpForce);
-                this.hasHighJumpedInAir = true;
+            else if (this.controls.right.isDown) {
+                this.sprite.setVelocityX(moveSpeed);
+                this.sprite.setFlipX(false);
+                if (this.state !== 'attack')
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
             }
-            // Allow double jump for p2 (Shadow) in mid-air
-            else if (this.character === 'p2' && Phaser.Input.Keyboard.JustDown(this.controls.jump) && !this.hasDoubleJumped) {
-                this.sprite.setVelocityY(jumpForce);
-                this.hasDoubleJumped = true;
+            else {
+                if (this.isStandingOnSlideBlock) {
+                    // Decay velocity slowly while still on ice
+                    this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.97);
+                } else if (this.slideCoastFrames > 0) {
+                    // Continue coasting with friction after leaving slide block
+                    this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.92);
+                } else {
+                    this.sprite.setVelocityX(0);
+                }
+                if (this.state !== 'attack')
+                    this.sprite.anims.play(`${this.character}_idle_anim`, true);
+            }
+
+            // 🦘 JUMP
+            if (this.isOnGround()) {
+                this.hasHighJumpedInAir = false;
+                this.hasDoubleJumped = false;
+                if (Phaser.Input.Keyboard.JustDown(this.controls.highJump)) {
+                    this.playSound('sfx_highjump', 0.3);
+                    this.sprite.setVelocityY(highJumpForce);
+                    this.hasHighJumpedInAir = true;
+                }
+                else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
+                    this.sprite.setVelocityY(jumpForce);
+                }
+            } else {
+                // Allow high jump mid-air after normal jump
+                if (Phaser.Input.Keyboard.JustDown(this.controls.highJump) && !this.hasHighJumpedInAir) {
+                    this.playSound('sfx_highjump', 0.3);
+                    this.sprite.setVelocityY(highJumpForce);
+                    this.hasHighJumpedInAir = true;
+                }
+                // Allow double jump for p2 (Shadow) in mid-air
+                else if (this.character === 'p2' && Phaser.Input.Keyboard.JustDown(this.controls.jump) && !this.hasDoubleJumped) {
+                    this.sprite.setVelocityY(jumpForce);
+                    this.hasDoubleJumped = true;
+                }
             }
         }
 
