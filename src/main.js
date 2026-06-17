@@ -15,6 +15,12 @@ const config = {
             debug: false // set debug to true initially to see slope boundaries
         }
     },
+    render: {
+        pixelArt: true,
+        antialias: false,
+        antialiasGL: false,
+        roundPixels: true
+    },
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
