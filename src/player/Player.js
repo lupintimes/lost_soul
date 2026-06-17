@@ -92,6 +92,10 @@ export default class Player {
         this.speed = 10;
         this.originalSpeed = 10;
 
+        // Knight Taunt Fortress Buff
+        this.isTauntedDefenseBuffActive = false;
+        this.lastTauntBuffTime = -Infinity; // Allow immediate first use
+
         // Dash charges & cooldown (0.7s recharge delay)
         this.dashCooldown = 700;
         this.maxDashCharges = this.character === 'p2' ? 2 : 1;
@@ -169,6 +173,44 @@ export default class Player {
             return;
         }
 
+        // Check if player is standing on bounce/slide blocks
+        const wasOnSlide = this.isStandingOnSlideBlock;
+        this.isStandingOnSlideBlock = false;
+        if (this.scene && this.scene.platforms) {
+            this.scene.platforms.forEach(platform => {
+                if (!platform.gameObject || !platform.gameObject.active) return;
+
+                const rx = platform.x;
+                const ry = platform.y;
+                const rw = platform.w;
+                const rh = platform.h;
+
+                const px = this.sprite.x;
+                const py = this.sprite.y;
+
+                const isOverlappingX = (px + 20 >= rx) && (px - 20 <= rx + rw);
+                const isStandingOnTop = Math.abs((py + 76) - ry) < 10;
+
+                if (isOverlappingX && isStandingOnTop) {
+                    if (platform.blockType === 'bounce') {
+                        this.sprite.setVelocityY(-40);
+                        this.playSound('sfx_highjump', 0.5);
+                        this.createHitParticles(this.sprite.x, py + 76, 0xffff00);
+                    } else if (platform.blockType === 'slide') {
+                        this.isStandingOnSlideBlock = true;
+                    }
+                }
+            });
+        }
+
+        // Track slide-off coasting: preserve momentum for a moment after leaving slide
+        if (!this.isStandingOnSlideBlock && wasOnSlide) {
+            this.slideCoastFrames = 18; // ~18 frames (~300ms at 60fps) of coast momentum
+        }
+        if (this.slideCoastFrames > 0) {
+            this.slideCoastFrames--;
+        }
+
         if (this.state === 'hurt') {
             if (this.health && typeof this.health.updateBar === 'function') {
                 this.health.updateBar();
@@ -235,20 +277,33 @@ export default class Player {
         if (!this.controls) return;
 
         // 🏃 MOVE
+        let moveSpeed = speed;
+        if (this.isStandingOnSlideBlock) {
+            moveSpeed = speed * 2.5; // Boosted slide speed
+        }
+
         if (this.controls.left.isDown) {
-            this.sprite.setVelocityX(-speed);
+            this.sprite.setVelocityX(-moveSpeed);
             this.sprite.setFlipX(true);
             if (this.state !== 'attack')
                 this.sprite.anims.play(`${this.character}_walk_anim`, true);
         }
         else if (this.controls.right.isDown) {
-            this.sprite.setVelocityX(speed);
+            this.sprite.setVelocityX(moveSpeed);
             this.sprite.setFlipX(false);
             if (this.state !== 'attack')
                 this.sprite.anims.play(`${this.character}_walk_anim`, true);
         }
         else {
-            this.sprite.setVelocityX(0);
+            if (this.isStandingOnSlideBlock) {
+                // Decay velocity slowly while still on ice
+                this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.97);
+            } else if (this.slideCoastFrames > 0) {
+                // Continue coasting with friction after leaving slide block
+                this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.92);
+            } else {
+                this.sprite.setVelocityX(0);
+            }
             if (this.state !== 'attack')
                 this.sprite.anims.play(`${this.character}_idle_anim`, true);
         }
@@ -471,23 +526,51 @@ export default class Player {
         };
 
         const spellColor = spellColors[this.character] || 0x00ffff;
-
-        // ✅ Use character-specific spell damage
         const damage = this.getSpellDamage();
+
+        // Shadow (p2) gets a larger, faster projectile
+        const isP2 = this.character === 'p2';
+        const radius = isP2 ? 22 : 15;
+        const velocityX = isP2 ? dir * 14.4 : dir * 8;
 
         const spell = this.scene.add.circle(
             this.sprite.x + dir * 50,
             this.sprite.y,
-            15
+            radius
         );
         spell.setDepth(10);
         this.scene.matter.add.gameObject(spell);
-        spell.setCircle(15, {
+        spell.setCircle(radius, {
             isSensor: true,
             ignoreGravity: true
         });
         spell.setFillStyle(spellColor);
-        spell.setVelocityX(dir * 8);
+        spell.setVelocityX(velocityX);
+
+        // 🔶 Shadow trail: spawn orange fading dots along trajectory
+        let trailTimer = null;
+        if (isP2) {
+            trailTimer = this.scene.time.addEvent({
+                delay: 40,
+                repeat: 24, // ~1 second of trail (25 ticks * 40ms)
+                callback: () => {
+                    if (!spell || !spell.active) {
+                        if (trailTimer) trailTimer.destroy();
+                        return;
+                    }
+                    const dot = this.scene.add.circle(spell.x, spell.y, Phaser.Math.Between(5, 10), 0xff6600, 0.75);
+                    dot.setDepth(9);
+                    this.scene.tweens.add({
+                        targets: dot,
+                        alpha: 0,
+                        scale: 0.1,
+                        duration: 280,
+                        ease: 'Power2',
+                        onComplete: () => { if (dot && dot.active) dot.destroy(); }
+                    });
+                }
+            });
+        }
 
         spell.setOnCollide(pair => {
             const otherBody = pair.bodyA === spell.body ? pair.bodyB : pair.bodyA;
@@ -500,6 +583,7 @@ export default class Player {
                     if (remote && remote.sprite === otherGO) {
                         this.scene.sendAttackToServer(id, damage);
                         spell.destroy();
+                        if (trailTimer) trailTimer.destroy();
                     }
                 });
             } else {
@@ -512,6 +596,7 @@ export default class Player {
                     if (target.sprite === otherGO) {
                         target.takeDamage(damage, this);
                         spell.destroy();
+                        if (trailTimer) trailTimer.destroy();
                     }
                 });
             }
@@ -519,6 +604,7 @@ export default class Player {
 
         this.scene.time.delayedCall(1000, () => {
             if (spell.active) spell.destroy();
+            if (trailTimer) trailTimer.destroy();
         });
     }
 
@@ -526,6 +612,38 @@ export default class Player {
         if (this.state === 'attack' || this.state === 'dead' || this.state === 'dash') return;
         this.state = 'taunt';
         this.sprite.anims.play(`${this.character}_taunt_anim`);
+
+        // 🛡️ Knight Fortress Buff: press T to gain 50% damage reduction for 5 seconds (15s cooldown)
+        if (this.character === 'p1' && this.isControlled) {
+            const now = this.scene.time.now;
+            const BUFF_COOLDOWN = 15000;
+            const BUFF_DURATION = 5000;
+
+            if (now - this.lastTauntBuffTime >= BUFF_COOLDOWN) {
+                this.lastTauntBuffTime = now;
+                this.isTauntedDefenseBuffActive = true;
+
+                // Visual + sound feedback
+                this.createHitParticles(this.sprite.x, this.sprite.y, 0xffd700);
+                this.createHitParticles(this.sprite.x, this.sprite.y - 50, 0xffaa00);
+                this.playSound('sfx_highjump', 0.6);
+
+                // Show FORTRESS ACTIVE banner
+                if (this.scene && typeof this.scene.showKillMessage === 'function') {
+                    this.scene.showKillMessage('FORTRESS ACTIVE!', '#ffd700');
+                }
+
+                // Expire after 5 seconds
+                if (this.tauntBuffTimer) this.tauntBuffTimer.destroy();
+                this.tauntBuffTimer = this.scene.time.delayedCall(BUFF_DURATION, () => {
+                    this.isTauntedDefenseBuffActive = false;
+                    if (this.scene && typeof this.scene.showKillMessage === 'function') {
+                        this.scene.showKillMessage('FORTRESS ENDED', '#888888');
+                    }
+                });
+            }
+        }
+
         this.sprite.once('animationcomplete', () => {
             if (this.state === 'taunt') {
                 this.state = 'idle';
@@ -551,6 +669,12 @@ export default class Player {
                     if (this.shieldVisual) this.shieldVisual.fillAlpha = 0.15;
                 });
             }
+        }
+
+        // 🛡️ Knight Fortress Taunt Buff: 50% damage reduction
+        if (this.isTauntedDefenseBuffActive && amount > 0) {
+            amount = Math.ceil(amount * 0.5);
+            this.createHitParticles(this.sprite.x, this.sprite.y, 0xffd700);
         }
 
         this.health.current -= amount;
@@ -599,11 +723,17 @@ export default class Player {
                 this.isRageActive = true;
                 this.health.current = this.health.max;
                 
+                // Trigger visual effects immediately (can't rely on updateAbilitiesVisuals transition check)
+                this.sprite.setScale(0.48);
+                if (this.scene && this.scene.cameras && this.scene.cameras.main) {
+                    this.scene.cameras.main.shake(250, 0.008);
+                }
                 this.sprite.clearTint();
                 this.state = 'idle';
                 
                 this.playSound('sfx_highjump', 0.8);
                 this.createHitParticles(this.sprite.x, this.sprite.y, 0xff0000);
+                this.createHitParticles(this.sprite.x, this.sprite.y - 40, 0xff4400);
                 
                 if (this.health && typeof this.health.updateBar === 'function') {
                     this.health.updateBar();
@@ -947,7 +1077,7 @@ export default class Player {
 
         // 3. Berserker Rage Check & Visual
         if (this.character === 'p3') {
-            const time = this.scene.time.now;
+            // (uses outer `time` from line 879 — no re-declaration)
             
             // Rage hp decay over time when undying rage is active
             if (this.isRageActive && this.hasTriggeredUndyingRage && this.state !== 'dead') {
@@ -972,26 +1102,43 @@ export default class Player {
             const shouldBeRaging = (healthRatio <= 0.3 || this.hasTriggeredUndyingRage) && this.health.current > 0 && this.state !== 'dead';
             
             if (shouldBeRaging) {
+                // Trigger rage initiation visuals (only for the normal low-HP path;
+                // the undying rage path triggers these directly in takeDamage)
                 if (!this.isRageActive) {
                     this.isRageActive = true;
+                    if (this.scene && this.scene.cameras && this.scene.cameras.main) {
+                        this.scene.cameras.main.shake(200, 0.005);
+                    }
                 }
+                // Enforce enlarged scale every frame so other code can't reset it
+                this.sprite.setScale(0.48);
                 // Under normal rage, speed is 13. Under undying rage, speed is 15.
                 this.speed = this.hasTriggeredUndyingRage ? 15 : 13;
                 
-                // Emitting red rage particles
-                if (Math.random() < 0.25) {
-                    const offsetRange = 30;
+                // Pulsing red tint using sin wave
+                const sinVal = Math.sin(time / 120) * 0.5 + 0.5; // 0..1
+                // Interpolate between 0xff6666 (mild) and 0xff0000 (full red)
+                const red = 0xff;
+                const gb = Math.round((1 - sinVal) * 0x66);
+                const pulseColor = (red << 16) | (gb << 8) | gb;
+                this.sprite.setTint(pulseColor);
+
+                // Emitting rage particles (larger + denser than normal)
+                const particleChance = this.hasTriggeredUndyingRage ? 0.45 : 0.3;
+                if (Math.random() < particleChance) {
+                    const offsetRange = 35;
                     const rx = this.sprite.x + Phaser.Math.Between(-offsetRange, offsetRange);
                     const ry = this.sprite.y + Phaser.Math.Between(-offsetRange, offsetRange);
+                    const particleSize = this.hasTriggeredUndyingRage ? Phaser.Math.Between(8, 16) : Phaser.Math.Between(5, 10);
                     
-                    const p = this.scene.add.rectangle(rx, ry, 6, 6, 0xff0000, 0.8);
+                    const p = this.scene.add.rectangle(rx, ry, particleSize, particleSize, 0xff0000, 0.9);
                     p.setDepth(1);
                     this.scene.tweens.add({
                         targets: p,
-                        y: p.y - 40,
+                        y: p.y - 50,
                         alpha: 0,
                         scale: 0.1,
-                        duration: 600,
+                        duration: this.hasTriggeredUndyingRage ? 450 : 600,
                         onComplete: () => {
                             if (p && p.active) p.destroy();
                         }
@@ -1001,11 +1148,49 @@ export default class Player {
                 if (this.isRageActive) {
                     this.isRageActive = false;
                     this.speed = this.originalSpeed;
+                    // Reset scale and tint when rage ends
+                    this.sprite.setScale(0.4);
+                    this.sprite.clearTint();
                 }
             }
         }
 
-        // Apply scale/speed adjustments based on state
+        // 4. Knight Fortress Taunt Buff Visual
+        if (this.character === 'p1' && this.isTauntedDefenseBuffActive && this.state !== 'dead') {
+            // Pulsing gold tint using sin wave
+            const goldSin = Math.sin(time / 150) * 0.5 + 0.5; // 0..1
+            // Interpolate between warm gold 0xffaa00 and bright yellow 0xffee44
+            const r = 0xff;
+            const g = Math.round(0xaa + goldSin * (0xee - 0xaa));
+            const b = Math.round(goldSin * 0x44);
+            const goldColor = (r << 16) | (g << 8) | b;
+            this.sprite.setTint(goldColor);
+
+            // Occasional gold particles rising upward
+            if (Math.random() < 0.2) {
+                const gx = this.sprite.x + Phaser.Math.Between(-25, 25);
+                const gy = this.sprite.y + Phaser.Math.Between(-30, 20);
+                const gp = this.scene.add.rectangle(gx, gy, Phaser.Math.Between(4, 8), Phaser.Math.Between(4, 8), 0xffd700, 0.85);
+                gp.setDepth(4);
+                this.scene.tweens.add({
+                    targets: gp,
+                    y: gp.y - 45,
+                    alpha: 0,
+                    scale: 0.1,
+                    duration: Phaser.Math.Between(500, 800),
+                    ease: 'Power2',
+                    onComplete: () => { if (gp && gp.active) gp.destroy(); }
+                });
+            }
+        } else if (this.character === 'p1' && !this.isTauntedDefenseBuffActive && !this.isShieldActive) {
+            // Only clear tint if neither buff is active (avoid overriding hurt tint handled elsewhere)
+            if (this.sprite.tintTopLeft !== 0xffffff && !this.isRageActive) {
+                // Let hurt/spawn-protection tints manage themselves; only clear gold tint on buff end
+                // (sprite.clearTint() would be too aggressive — instead check stored tint)
+            }
+        }
+
+        // Apply anim speed adjustments based on state
         if (this.isRageActive) {
             this.sprite.anims.timeScale = 1.6;
         } else {
