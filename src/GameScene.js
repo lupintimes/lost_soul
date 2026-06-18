@@ -1816,53 +1816,30 @@ export default class GameScene extends Phaser.Scene {
             const shard = this.add.rectangle(px, py, sw, sh, color, 0.85).setDepth(90);
             shard.setAngle(Phaser.Math.Between(0, 360));
 
-            const vx = Phaser.Math.Between(-12, 12); // minimal horizontal scattering
-            const vy = Phaser.Math.Between(15, 65);  // downward initial push
+            // Turn it into a Matter physics body to collide with map geometry
+            this.matter.add.gameObject(shard, {
+                restitution: 0.05, // low bounce so it lays down cleanly
+                friction: 0.8,     // high friction to stop on platforms
+                frictionAir: 0.02,
+                density: 0.001
+            });
 
-            let curX = px;
-            let curY = py;
-            let curVx = vx;
-            let curVy = vy;
-            const gravity = 280; // Gravity acceleration
+            // Set a random initial nudge/spin
+            const vx = Phaser.Math.Between(-1.5, 1.5);
+            const vy = Phaser.Math.Between(0.5, 3.0);
+            shard.setVelocity(vx, vy);
+            shard.setAngularVelocity(Phaser.Math.Between(-5, 5) / 100);
 
-            const fallDuration = Phaser.Math.Between(1200, 1600);
-            let elapsed = 0;
-
-            const timer = this.time.addEvent({
-                delay: 16, // ~60fps
-                loop: true,
-                callback: () => {
-                    const dt = 0.016; // 16ms step
-                    elapsed += 16;
-
-                    curVx *= 0.97;
-                    curVy += gravity * dt;
-
-                    curX += curVx * dt * 60;
-                    curY += curVy * dt * 60;
-
-                    if (shard && shard.active) {
-                        shard.setPosition(curX, curY);
-                        shard.setAngle(shard.angle + curVx * dt * 2.5 * 60);
-                    }
-
-                    if (elapsed >= fallDuration) {
-                        timer.destroy();
-                        if (shard && shard.active) {
-                            // Keep on ground/low for 3 seconds, then fade out and destroy
-                            this.tweens.add({
-                                targets: shard,
-                                alpha: 0,
-                                scale: 0.15,
-                                delay: 3000,
-                                duration: 500,
-                                ease: 'Cubic.easeOut',
-                                onComplete: () => {
-                                    if (shard && shard.active) shard.destroy();
-                                }
-                            });
-                        }
-                    }
+            // Shards remain for 3 seconds, then fade out and destroy
+            this.tweens.add({
+                targets: shard,
+                alpha: 0,
+                scale: 0.15,
+                delay: 3000,
+                duration: 500,
+                ease: 'Cubic.easeOut',
+                onComplete: () => {
+                    if (shard && shard.active) shard.destroy();
                 }
             });
         }
