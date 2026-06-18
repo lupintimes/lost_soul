@@ -1476,7 +1476,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    drawJelly(graphics, w, h, opacity, tint) {
+    drawJelly(graphics, w, h, opacity, tint, warnRedProgress = 0) {
         graphics.clear();
         const r = Math.min(w, h, 14);
         
@@ -1513,6 +1513,15 @@ export default class GameScene extends Phaser.Scene {
             graphics.strokeCircle(w / 3, -h / 6, 2);
             graphics.fillStyle(0xffffff, 0.3 * opacity);
             graphics.fillCircle(w / 3 - 0.5, -h / 6 - 0.5, 0.5);
+        }
+
+        // 6. Red warning overlay (applied at 0.05 max opacity)
+        if (warnRedProgress > 0) {
+            const overlayOpacity = 0.05 * warnRedProgress * opacity;
+            graphics.fillStyle(0xff0000, overlayOpacity);
+            graphics.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
+            graphics.lineStyle(4, 0xff0000, overlayOpacity);
+            graphics.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
         }
     }
 
@@ -1929,14 +1938,9 @@ export default class GameScene extends Phaser.Scene {
                         p.jelly.setPosition(cx + offsetX, cy + offsetY);
                         p.jelly.setScale(scale);
 
-                        // Interpolate gold 0xffd700 to danger red 0xff2200
+                        // Pass progress to drawJelly warning red overlay (up to 0.05 opacity)
                         const progress = (age - 12000) / 3000; // 0.0 to 1.0
-                        const redVal = 255;
-                        const greenVal = Math.floor(215 * (1 - progress));
-                        const blueVal = 0;
-                        const warnTint = (redVal << 16) + (greenVal << 8) + blueVal;
-
-                        this.drawJelly(p.jelly, p.w, p.h, p.opacity || 0.9, warnTint);
+                        this.drawJelly(p.jelly, p.w, p.h, p.opacity || 0.9, p.tint, progress);
                     }
                 }
             }
