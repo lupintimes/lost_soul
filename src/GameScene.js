@@ -735,16 +735,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.socket.on('obstacleRemoved', (data) => {
             console.log('🗑️ Remote obstacle removed:', data.id);
-            const index = this.platforms.findIndex(p => p.id === data.id);
-            if (index !== -1) {
-                const p = this.platforms[index];
-                if (p.gameObject) p.gameObject.destroy();
-                if (p.outer) p.outer.destroy();
-                if (p.middle) p.middle.destroy();
-                if (p.jelly) p.jelly.destroy();
-                this.platforms.splice(index, 1);
-                this.updateBuildPointsUI();
-            }
+            this.destroyObstacleLocally(data.id, true);
         });
 
         this.socket.on('currentObstacles', (obstacles) => {
@@ -993,6 +984,7 @@ export default class GameScene extends Phaser.Scene {
 
     update() {
         this.updateHUD();
+        this.updateDecayingPlatforms();
 
         // ─── Block Type Selection Keys ────────────────────
         if (Phaser.Input.Keyboard.JustDown(this.key1)) {
@@ -1524,7 +1516,7 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
-    drawFrozen(graphics, w, h, opacity, tint) {
+    drawFrozen(graphics, w, h, opacity, tint, crackRatio = 0.35) {
         graphics.clear();
         const r = Math.min(w, h, 6);
         const baseColor = (tint !== null && tint !== undefined) ? tint : 0x00e5ff;
@@ -1546,9 +1538,9 @@ export default class GameScene extends Phaser.Scene {
         graphics.fillStyle(0xffffff, 0.4 * opacity);
         graphics.fillRoundedRect(-w / 2 + 5, -h / 2 + 4, w - 10, glareH, Math.max(1, r - 3));
 
-        // 5. Crystalline Frost Cracks (Internal ice fractures)
-        if (w > 30 && h > 30) {
-            graphics.lineStyle(1.0, 0xffffff, 0.35 * opacity);
+        // 5. Crystalline Frost Cracks (Internal ice fractures based on crackRatio)
+        if (w > 30 && h > 30 && crackRatio > 0) {
+            graphics.lineStyle(1.0, 0xffffff, 0.65 * opacity); // Higher opacity/brightness for cracks
             
             // Crack 1: Top-Left to Center-Right
             graphics.beginPath();
@@ -1557,17 +1549,30 @@ export default class GameScene extends Phaser.Scene {
             graphics.lineTo(w / 4, -h / 12);
             graphics.strokePath();
 
-            // Branch from Crack 1
-            graphics.beginPath();
-            graphics.moveTo(-w / 8, h / 8);
-            graphics.lineTo(-w / 6, h / 3);
-            graphics.strokePath();
+            // Branch from Crack 1 (drawn if crackRatio > 0.4)
+            if (crackRatio > 0.4) {
+                graphics.beginPath();
+                graphics.moveTo(-w / 8, h / 8);
+                graphics.lineTo(-w / 6, h / 3);
+                graphics.strokePath();
+            }
 
-            // Crack 2: Bottom-Right small crack
-            graphics.beginPath();
-            graphics.moveTo(w / 3, h / 3);
-            graphics.lineTo(w / 6, h / 4);
-            graphics.strokePath();
+            // Crack 2: Bottom-Right small crack (drawn if crackRatio > 0.7)
+            if (crackRatio > 0.7) {
+                graphics.beginPath();
+                graphics.moveTo(w / 3, h / 3);
+                graphics.lineTo(w / 6, h / 4);
+                graphics.strokePath();
+            }
+
+            // Crack 3: Cross-cutting fracture (drawn if crackRatio >= 1.0)
+            if (crackRatio >= 1.0) {
+                graphics.beginPath();
+                graphics.moveTo(w / 3, -h / 3);
+                graphics.lineTo(0, -h / 8);
+                graphics.lineTo(-w / 4, -h / 4);
+                graphics.strokePath();
+            }
         }
 
         // 6. Diagonal Ice shine (subtle glass reflection)
@@ -1710,6 +1715,230 @@ export default class GameScene extends Phaser.Scene {
                 platform.isWobbling = false;
                 // Restart idle breathing
                 this.startJellyIdle(platform.jelly);
+            }
+        });
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  ✨ BLOCK DISAPPEAR & PARTICLES
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    destroyObstacleLocally(id, triggerEffects = true) {
+        const idx = this.platforms.findIndex(p => p.id === id);
+        if (idx !== -1) {
+            const p = this.platforms[idx];
+            if (triggerEffects) {
+                this.triggerObstacleDisappearEffects(p);
+            }
+            if (p.gameObject) p.gameObject.destroy();
+            if (p.outer) p.outer.destroy();
+            if (p.middle) p.middle.destroy();
+            if (p.jelly) p.jelly.destroy();
+            this.platforms.splice(idx, 1);
+            this.updateBuildPointsUI();
+            return true;
+        }
+        return false;
+    }
+
+    triggerObstacleDisappearEffects(p) {
+        if (!p) return;
+        const cx = p.x + p.w / 2;
+        const cy = p.y + p.h / 2;
+
+        if (p.blockType === 'bounce') {
+            this.createBubbleBlastParticles(cx, cy, p.w, p.h, p.tint || 0xffd700);
+            this.cameras.main.shake(150, 0.005);
+        } else if (p.blockType === 'slide') {
+            this.createIceShatterParticles(cx, cy, p.w, p.h, p.tint || 0x00e5ff);
+        } else {
+            this.createNormalDissolveParticles(cx, cy, p.w, p.h, p.tint || 0x475569);
+        }
+    }
+
+    createBubbleBlastParticles(cx, cy, w, h, tint) {
+        const area = w * h;
+        const count = Math.min(45, Math.max(12, Math.floor(area / 1000)));
+
+        for (let i = 0; i < count; i++) {
+            const px = cx + Phaser.Math.Between(-w / 2, w / 2);
+            const py = cy + Phaser.Math.Between(-h / 2, h / 2);
+            const radius = Phaser.Math.Between(4, 16);
+
+            const bubble = this.add.graphics().setDepth(90);
+            bubble.fillStyle(tint, 0.55);
+            bubble.fillCircle(0, 0, radius);
+            bubble.lineStyle(1.5, 0xffffff, 0.8);
+            bubble.strokeCircle(0, 0, radius);
+            bubble.setPosition(px, py);
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Phaser.Math.Between(100, 260);
+            const targetX = px + Math.cos(angle) * speed;
+            const targetY = py + Math.sin(angle) * speed;
+
+            this.tweens.add({
+                targets: bubble,
+                x: targetX,
+                y: targetY,
+                scale: 0.1,
+                alpha: 0,
+                duration: Phaser.Math.Between(600, 1100),
+                ease: 'Cubic.easeOut',
+                onComplete: () => {
+                    if (bubble && bubble.active) bubble.destroy();
+                }
+            });
+        }
+    }
+
+    createIceShatterParticles(cx, cy, w, h, tint) {
+        const area = w * h;
+        const count = Math.min(35, Math.max(10, Math.floor(area / 1200)));
+
+        for (let i = 0; i < count; i++) {
+            const px = cx + Phaser.Math.Between(-w / 2, w / 2);
+            const py = cy + Phaser.Math.Between(-h / 2, h / 2);
+
+            const sw = Phaser.Math.Between(6, 14);
+            const sh = Phaser.Math.Between(4, 10);
+            const color = Phaser.Math.RND.pick([tint, 0xffffff, 0xa5f3fc]);
+
+            const shard = this.add.rectangle(px, py, sw, sh, color, 0.85).setDepth(90);
+            shard.setAngle(Phaser.Math.Between(0, 360));
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Phaser.Math.Between(60, 180);
+
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed - 60; // Upward burst initial push
+
+            let curX = px;
+            let curY = py;
+            let curVx = vx;
+            let curVy = vy;
+            const gravity = 280; // Gravity acceleration
+
+            this.tweens.addCounter({
+                from: 0,
+                to: 1,
+                duration: Phaser.Math.Between(700, 1200),
+                ease: 'Linear',
+                onUpdate: (tween) => {
+                    const dt = tween.delta / 1000; // time step in seconds
+                    curVx *= 0.97; // air resistance
+                    curVy += gravity * dt;
+
+                    curX += curVx;
+                    curY += curVy;
+
+                    if (shard && shard.active) {
+                        shard.setPosition(curX, curY);
+                        shard.setAngle(shard.angle + curVx * dt * 2.5);
+                        shard.setAlpha(1 - tween.progress);
+                        shard.setScale(1 - tween.progress * 0.4);
+                    }
+                },
+                onComplete: () => {
+                    if (shard && shard.active) shard.destroy();
+                }
+            });
+        }
+    }
+
+    createNormalDissolveParticles(cx, cy, w, h, tint) {
+        const area = w * h;
+        const count = Math.min(25, Math.max(8, Math.floor(area / 1500)));
+
+        for (let i = 0; i < count; i++) {
+            const px = cx + Phaser.Math.Between(-w / 2, w / 2);
+            const py = cy + Phaser.Math.Between(-h / 2, h / 2);
+            const size = Phaser.Math.Between(5, 9);
+            const color = Phaser.Math.RND.pick([tint, 0x1e293b, 0x64748b, 0x334155]);
+
+            const dust = this.add.rectangle(px, py, size, size, color, 0.9).setDepth(90);
+            const targetX = px + Phaser.Math.Between(-30, 30);
+            const targetY = py + Phaser.Math.Between(25, 65);
+
+            this.tweens.add({
+                targets: dust,
+                x: targetX,
+                y: targetY,
+                scale: 0.15,
+                alpha: 0,
+                angle: Phaser.Math.Between(-120, 120),
+                duration: Phaser.Math.Between(500, 800),
+                ease: 'Quad.easeOut',
+                onComplete: () => {
+                    if (dust && dust.active) dust.destroy();
+                }
+            });
+        }
+    }
+
+    updateDecayingPlatforms() {
+        const now = this.time.now;
+        const totalLife = 15000;
+
+        this.platforms.forEach(p => {
+            if (!p.deletable || p.source !== 'user' || !p.createdAt) return;
+
+            const age = now - p.createdAt;
+
+            if (p.blockType === 'slide') {
+                // Ice cracks advance step-by-step
+                let stage = 0;
+                if (age > 11250) {
+                    stage = 3;
+                } else if (age > 7500) {
+                    stage = 2;
+                } else if (age > 3750) {
+                    stage = 1;
+                }
+
+                if (p.crackStage !== stage) {
+                    p.crackStage = stage;
+                    if (p.jelly) {
+                        this.drawFrozen(p.jelly, p.w, p.h, p.opacity || 0.9, p.tint, stage / 3);
+                    }
+                }
+
+                // Shake slightly in final 1 second of decay
+                if (age > 14000 && p.jelly) {
+                    const shakeOffsetX = Phaser.Math.Between(-1, 1);
+                    const shakeOffsetY = Phaser.Math.Between(-1, 1);
+                    const cx = p.x + p.w / 2;
+                    const cy = p.y + p.h / 2;
+                    p.jelly.setPosition(cx + shakeOffsetX, cy + shakeOffsetY);
+                }
+            } else if (p.blockType === 'bounce') {
+                // Bubble blocks shake, pulse, and turn increasingly red in the final 3 seconds
+                if (age > 12000) {
+                    const remaining = totalLife - age;
+                    const pulseSpeed = remaining > 1000 ? 15 : 30;
+                    const scale = 1 + 0.08 * Math.sin((now / 1000) * pulseSpeed);
+                    
+                    const shake = remaining > 1000 ? 1 : 2.5;
+                    const offsetX = Phaser.Math.Between(-shake, shake);
+                    const offsetY = Phaser.Math.Between(-shake, shake);
+
+                    const cx = p.x + p.w / 2;
+                    const cy = p.y + p.h / 2;
+
+                    if (p.jelly) {
+                        p.jelly.setPosition(cx + offsetX, cy + offsetY);
+                        p.jelly.setScale(scale);
+
+                        // Interpolate gold 0xffd700 to danger red 0xff2200
+                        const progress = (age - 12000) / 3000; // 0.0 to 1.0
+                        const redVal = 255;
+                        const greenVal = Math.floor(215 * (1 - progress));
+                        const blueVal = 0;
+                        const warnTint = (redVal << 16) + (greenVal << 8) + blueVal;
+
+                        this.drawJelly(p.jelly, p.w, p.h, p.opacity || 0.9, warnTint);
+                    }
+                }
             }
         });
     }
@@ -1865,7 +2094,7 @@ export default class GameScene extends Phaser.Scene {
             this.startJellyIdle(jelly);
         } else if (blockType === 'slide') {
             jelly = this.add.graphics({ x: cx, y: cy });
-            this.drawFrozen(jelly, rect.w, rect.h, opacity, tint);
+            this.drawFrozen(jelly, rect.w, rect.h, opacity, tint, 0); // Start with 0 crackRatio (clean ice)
         } else {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawNormal(jelly, rect.w, rect.h, opacity, tint);
@@ -1893,28 +2122,31 @@ export default class GameScene extends Phaser.Scene {
             deletable: true,
             source: 'user',
             id: id,
-            creatorId: creatorId
+            creatorId: creatorId,
+            createdAt: this.time.now,
+            crackStage: 0
         });
         this.updateBuildPointsUI();
 
-        // Decay timer: start blinking after 12 seconds, disappear and refund after 15 seconds
+        // Decay timer: start warning/blinking after 12 seconds, disappear and refund after 15 seconds
         const decayTime = 15000;
         const blinkStartTime = 12000;
 
-        // Schedule blinking
+        // Schedule warning blink ONLY for normal blocks (bounce and slide have custom warning updates)
         this.time.delayedCall(blinkStartTime, () => {
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
-                const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
-                
-                this.tweens.add({
-                    targets: components,
-                    alpha: 0.2,
-                    duration: 250,
-                    yoyo: true,
-                    repeat: 11 // 12 cycles of 250ms = 3 seconds of blinking
-                });
+                if (p.blockType === 'normal') {
+                    const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
+                    this.tweens.add({
+                        targets: components,
+                        alpha: 0.2,
+                        duration: 250,
+                        yoyo: true,
+                        repeat: 11 // 12 cycles of 250ms = 3 seconds
+                    });
+                }
             }
         });
 
@@ -1923,44 +2155,17 @@ export default class GameScene extends Phaser.Scene {
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
-                const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
+                const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
                 
-                // Fade out smoothly over 500ms
-                this.tweens.add({
-                    targets: components,
-                    alpha: 0,
-                    duration: 500,
-                    onComplete: () => {
-                        const currentIdx = this.platforms.findIndex(pl => pl.id === id);
-                        if (currentIdx !== -1) {
-                            const pl = this.platforms[currentIdx];
-                            const isOwner = this.mode !== 'multiplayer' || !pl.creatorId || pl.creatorId === this.socket.id;
-                            
-                            if (isOwner) {
-                                // Authoritatively remove locally and sync to other clients
-                                if (this.mode === 'multiplayer' && this.socket && pl.id) {
-                                    this.socket.emit('removeObstacle', { id: pl.id });
-                                }
-                                
-                                if (pl.gameObject) pl.gameObject.destroy();
-                                if (pl.outer) pl.outer.destroy();
-                                if (pl.middle) pl.middle.destroy();
-                                if (pl.jelly) pl.jelly.destroy();
-                                
-                                this.platforms.splice(currentIdx, 1);
-                                this.updateBuildPointsUI();
-                            } else {
-                                // For non-owners, they can also clean up locally after fade-out completes
-                                if (pl.gameObject) pl.gameObject.destroy();
-                                if (pl.outer) pl.outer.destroy();
-                                if (pl.middle) pl.middle.destroy();
-                                if (pl.jelly) pl.jelly.destroy();
-                                
-                                this.platforms.splice(currentIdx, 1);
-                            }
-                        }
+                if (isOwner) {
+                    // Authoritatively remove locally and sync to other clients
+                    if (this.mode === 'multiplayer' && this.socket && p.id) {
+                        this.socket.emit('removeObstacle', { id: p.id });
                     }
-                });
+                    this.destroyObstacleLocally(id, true);
+                } else {
+                    this.destroyObstacleLocally(id, true);
+                }
             }
         });
 
@@ -2102,13 +2307,7 @@ export default class GameScene extends Phaser.Scene {
                     this.socket.emit('removeObstacle', { id: p.id });
                 }
 
-                if (p.gameObject) p.gameObject.destroy();
-                if (p.outer) p.outer.destroy();
-                if (p.middle) p.middle.destroy();
-                if (p.jelly) p.jelly.destroy();
-
-                this.platforms.splice(i, 1);
-                this.updateBuildPointsUI();
+                this.destroyObstacleLocally(p.id, true);
                 return;
             }
         }
