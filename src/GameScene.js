@@ -1772,7 +1772,7 @@ export default class GameScene extends Phaser.Scene {
         for (let i = 0; i < count; i++) {
             const px = cx + Phaser.Math.Between(-w / 2, w / 2);
             const py = cy + Phaser.Math.Between(-h / 2, h / 2);
-            const radius = Phaser.Math.Between(4, 16);
+            const radius = Phaser.Math.Between(2, 8);
 
             const bubble = this.add.graphics().setDepth(90);
             bubble.fillStyle(tint, 0.55);
@@ -1925,7 +1925,7 @@ export default class GameScene extends Phaser.Scene {
                 if (age > 12000) {
                     const remaining = totalLife - age;
                     const pulseSpeed = remaining > 1000 ? 15 : 30;
-                    const scale = 1 + 0.08 * Math.sin((now / 1000) * pulseSpeed);
+                    const scale = 1 + 0.03 * Math.sin((now / 1000) * pulseSpeed);
                     
                     const shake = remaining > 1000 ? 1 : 2.5;
                     const offsetX = Phaser.Math.Between(-shake, shake);
