@@ -95,6 +95,7 @@ export default class Player {
         // Knight Taunt Fortress Buff
         this.isTauntedDefenseBuffActive = false;
         this.lastTauntBuffTime = -Infinity; // Allow immediate first use
+        this.fortressVisual = null;
 
         // Dash charges & cooldown (0.7s recharge delay)
         this.dashCooldown = 700;
@@ -1026,11 +1027,17 @@ export default class Player {
         this.isShieldActive = false;
         this.isRageActive = false;
         this.hasTriggeredUndyingRage = false;
+        this.isTauntedDefenseBuffActive = false;
         if (this.shieldVisual) {
             this.shieldVisual.destroy();
             this.shieldVisual = null;
         }
+        if (this.fortressVisual) {
+            this.fortressVisual.destroy();
+            this.fortressVisual = null;
+        }
         if (this.shieldTimer) this.shieldTimer.destroy();
+        if (this.tauntBuffTimer) this.tauntBuffTimer.destroy();
 
         this.playSound('sfx_death', 0.5);
 
@@ -1347,34 +1354,51 @@ export default class Player {
         if (this.character === 'p1' && this.isTauntedDefenseBuffActive && this.state !== 'dead') {
             // Pulsing gold tint using sin wave
             const goldSin = Math.sin(time / 150) * 0.5 + 0.5; // 0..1
-            // Interpolate between warm gold 0xffaa00 and bright yellow 0xffee44
             const r = 0xff;
             const g = Math.round(0xaa + goldSin * (0xee - 0xaa));
             const b = Math.round(goldSin * 0x44);
             const goldColor = (r << 16) | (g << 8) | b;
             this.sprite.setTint(goldColor);
 
-            // Occasional gold particles rising upward
-            if (Math.random() < 0.2) {
-                const gx = this.sprite.x + Phaser.Math.Between(-25, 25);
-                const gy = this.sprite.y + Phaser.Math.Between(-30, 20);
-                const gp = this.scene.add.rectangle(gx, gy, Phaser.Math.Between(4, 8), Phaser.Math.Between(4, 8), 0xffd700, 0.85);
+            // Pulsing golden aura dome
+            const auraRadius = 80;
+            if (!this.fortressVisual) {
+                this.fortressVisual = this.scene.add.circle(this.sprite.x, this.sprite.y, auraRadius, 0xffd700, 0.08);
+                this.fortressVisual.setStrokeStyle(2.5, 0xffaa00, 0.65);
+                this.fortressVisual.setDepth(3);
+            } else {
+                this.fortressVisual.x = this.sprite.x;
+                this.fortressVisual.y = this.sprite.y;
+                const pulseScale = 1 + Math.sin(time / 120) * 0.04;
+                this.fortressVisual.setScale(pulseScale);
+            }
+
+            // Occasional gold shield dust rising upward and drifting
+            if (Math.random() < 0.25) {
+                const startX = this.sprite.x + Phaser.Math.Between(-30, 30);
+                const gp = this.scene.add.circle(startX, this.sprite.y + 20, Phaser.Math.Between(3, 6), 0xffd700, 0.85);
                 gp.setDepth(4);
                 this.scene.tweens.add({
                     targets: gp,
-                    y: gp.y - 45,
+                    x: startX + Phaser.Math.Between(-20, 20),
+                    y: gp.y - 65,
                     alpha: 0,
                     scale: 0.1,
-                    duration: Phaser.Math.Between(500, 800),
-                    ease: 'Power2',
+                    duration: Phaser.Math.Between(600, 950),
+                    ease: 'Sine.easeOut',
                     onComplete: () => { if (gp && gp.active) gp.destroy(); }
                 });
             }
-        } else if (this.character === 'p1' && !this.isTauntedDefenseBuffActive && !this.isShieldActive) {
-            // Only clear tint if neither buff is active (avoid overriding hurt tint handled elsewhere)
-            if (this.sprite.tintTopLeft !== 0xffffff && !this.isRageActive) {
-                // Let hurt/spawn-protection tints manage themselves; only clear gold tint on buff end
-                // (sprite.clearTint() would be too aggressive — instead check stored tint)
+        } else {
+            if (this.fortressVisual) {
+                this.fortressVisual.destroy();
+                this.fortressVisual = null;
+            }
+            if (this.character === 'p1' && !this.isTauntedDefenseBuffActive && !this.isShieldActive) {
+                // Only clear tint if neither buff is active (avoid overriding hurt tint handled elsewhere)
+                if (this.sprite.tintTopLeft !== 0xffffff && !this.isRageActive) {
+                    // Let hurt/spawn-protection tints manage themselves; only clear gold tint on buff end
+                }
             }
         }
 
