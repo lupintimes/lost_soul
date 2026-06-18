@@ -403,7 +403,7 @@ export default class Player {
             } else {
                 // Fast fall when pressing S in mid-air
                 if (this.controls.down.isDown) {
-                    this.sprite.setVelocityY(Math.max(this.sprite.body.velocity.y, 22));
+                    this.sprite.setVelocityY(Math.max(this.sprite.body.velocity.y, 16));
                 }
 
                 // Allow high jump mid-air after normal jump
