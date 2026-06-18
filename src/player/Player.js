@@ -400,6 +400,12 @@ export default class Player {
                 else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
                     this.sprite.setVelocityY(jumpForce);
                 }
+            } else {
+                // Fast fall when pressing S in mid-air
+                if (this.controls.down.isDown) {
+                    this.sprite.setVelocityY(Math.max(this.sprite.body.velocity.y, 22));
+                }
+
                 // Allow high jump mid-air after normal jump
                 if (Phaser.Input.Keyboard.JustDown(this.controls.highJump) && !this.hasHighJumpedInAir) {
                     this.playSound('sfx_highjump', 0.3);
@@ -652,34 +658,15 @@ export default class Player {
             });
         }
 
-        spell.setOnCollide(pair => {
-            const otherBody = pair.bodyA === spell.body ? pair.bodyB : pair.bodyA;
-            const otherGO = otherBody.gameObject;
-            if (!otherGO) return;
-
-            if (this.isControlled && this.scene.mode === 'multiplayer') {
-                Object.keys(this.scene.otherPlayerMap).forEach(id => {
-                    const remote = this.scene.otherPlayerMap[id];
-                    if (remote && remote.sprite === otherGO) {
-                        this.scene.sendAttackToServer(id, damage);
-                        spell.destroy();
-                        if (trailTimer) trailTimer.destroy();
-                    }
-                });
-            } else {
-                const targets = this.isEnemy
-                    ? this.scene.players
-                    : this.scene.enemies;
-
-                targets.forEach(target => {
-                    if (target === this) return;
-                    if (target.sprite === otherGO) {
-                        target.takeDamage(damage, this);
-                        spell.destroy();
-                        if (trailTimer) trailTimer.destroy();
-                    }
-                });
-            }
+        if (!this.scene.spells) {
+            this.scene.spells = [];
+        }
+        this.scene.spells.push({
+            gameObject: spell,
+            damage: damage,
+            owner: this,
+            trailTimer: trailTimer,
+            radius: radius
         });
 
         this.scene.time.delayedCall(1000, () => {
@@ -854,7 +841,6 @@ export default class Player {
         }
 
         this.state = 'hurt';
-        this.isInvincible = true;
 
         this.playSound('sfx_hurt', 0.4);
 
@@ -870,10 +856,6 @@ export default class Player {
                 }
                 this.state = 'idle';
             }
-        });
-
-        this.scene.time.delayedCall(1000, () => {
-            this.isInvincible = false;
         });
     }
 

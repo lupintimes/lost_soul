@@ -307,6 +307,7 @@ export default class GameScene extends Phaser.Scene {
         this.platforms = [];
         this.otherPlayerMap = {};
         this.localPlayer = null;
+        this.spells = [];
         this.killCount = 0;
         this.deathCount = 0;
         this.maxEnemies = 12;
@@ -1014,6 +1015,81 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.mode === 'multiplayer') {
             this.updateMultiplayer();
+        }
+
+        this.updateSpells();
+    }
+
+    updateSpells() {
+        if (!this.spells || this.spells.length === 0) return;
+
+        for (let i = this.spells.length - 1; i >= 0; i--) {
+            const s = this.spells[i];
+            if (!s.gameObject || !s.gameObject.active) {
+                this.spells.splice(i, 1);
+                continue;
+            }
+
+            const sx = s.gameObject.x;
+            const sy = s.gameObject.y;
+            const sr = s.radius;
+
+            if (s.owner.isControlled && this.mode === 'multiplayer') {
+                // Multiplayer: check against remote players
+                for (const id in this.otherPlayerMap) {
+                    if (Object.prototype.hasOwnProperty.call(this.otherPlayerMap, id)) {
+                        const remote = this.otherPlayerMap[id];
+                        if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
+
+                        const rx = remote.sprite.x;
+                        const ry = remote.sprite.y;
+                        const rw = 64;
+                        const rh = 152;
+
+                        // Circular to AABB overlap
+                        const closestX = Math.max(rx - rw / 2, Math.min(sx, rx + rw / 2));
+                        const closestY = Math.max(ry - rh / 2, Math.min(sy, ry + rh / 2));
+                        const dx = sx - closestX;
+                        const dy = sy - closestY;
+                        const distSq = dx * dx + dy * dy;
+
+                        if (distSq < sr * sr) {
+                            this.sendAttackToServer(id, s.damage);
+                            s.gameObject.destroy();
+                            if (s.trailTimer) s.trailTimer.destroy();
+                            this.spells.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Solo or enemy casting: check against enemies or players
+                const targets = s.owner.isEnemy ? this.players : this.enemies;
+                const tarLen = targets.length;
+                for (let j = 0; j < tarLen; j++) {
+                    const target = targets[j];
+                    if (!target || !target.sprite || !target.sprite.active || target.state === 'dead' || target.isInvincible || target === s.owner) continue;
+
+                    const tx = target.sprite.x;
+                    const ty = target.sprite.y;
+                    const tw = 64;
+                    const th = 152;
+
+                    const closestX = Math.max(tx - tw / 2, Math.min(sx, tx + tw / 2));
+                    const closestY = Math.max(ty - th / 2, Math.min(sy, ty + th / 2));
+                    const dx = sx - closestX;
+                    const dy = sy - closestY;
+                    const distSq = dx * dx + dy * dy;
+
+                    if (distSq < sr * sr) {
+                        target.takeDamage(s.damage, s.owner);
+                        s.gameObject.destroy();
+                        if (s.trailTimer) s.trailTimer.destroy();
+                        this.spells.splice(i, 1);
+                        break;
+                    }
+                }
+            }
         }
     }
 
