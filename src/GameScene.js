@@ -209,7 +209,8 @@ export default class GameScene extends Phaser.Scene {
                                 opacity: p.opacity || 0.9, 
                                 creatorId: p.creatorId, 
                                 tint: p.tint, 
-                                blockType: p.blockType 
+                                blockType: p.blockType,
+                                createdAt: Date.now()
                             });
                         }
                     });
@@ -279,7 +280,7 @@ export default class GameScene extends Phaser.Scene {
             const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
 
             if (success && this.mode === 'multiplayer' && this.socket) {
-                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
+                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType, createdAt: Date.now() });
             }
 
             this.preview.clear();
@@ -730,7 +731,7 @@ export default class GameScene extends Phaser.Scene {
         // 9. Obstacle sync events
         this.socket.on('obstacleCreated', (data) => {
             console.log('🧱 Remote obstacle created:', data.id);
-            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false, data.tint, data.blockType || 'normal');
+            this.createObstacle(data.rect, data.opacity, data.id, data.creatorId, false, data.tint, data.blockType || 'normal', data.createdAt);
         });
 
         this.socket.on('obstacleRemoved', (data) => {
@@ -743,7 +744,7 @@ export default class GameScene extends Phaser.Scene {
             Object.keys(obstacles).forEach(id => {
                 const obs = obstacles[id];
                 if (!this.platforms.some(p => p.id === id)) {
-                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false, obs.tint, obs.blockType || 'normal');
+                    this.createObstacle(obs.rect, obs.opacity, id, obs.creatorId, false, obs.tint, obs.blockType || 'normal', obs.createdAt);
                 }
             });
         });
@@ -1977,7 +1978,7 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false, tint = null, blockType = 'normal') {
+    createObstacle(rect, opacity, id = null, creatorId = null, isLocalInit = false, tint = null, blockType = 'normal', createdAtServer = null) {
         const minW = this.OBSTACLE_MIN_WIDTH || 30;
         const minH = this.OBSTACLE_MIN_HEIGHT || 30;
         const minArea = this.OBSTACLE_MIN_AREA || 900;
@@ -2052,7 +2053,7 @@ export default class GameScene extends Phaser.Scene {
                         this.createObstacle(piece, opacity, subId, p.creatorId, false, p.tint, p.blockType);
 
                         if (this.mode === 'multiplayer' && this.socket) {
-                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId, tint: p.tint, blockType: p.blockType });
+                            this.socket.emit('createObstacle', { id: subId, rect: piece, opacity, creatorId: p.creatorId, tint: p.tint, blockType: p.blockType, createdAt: Date.now() });
                         }
                     });
                 }
@@ -2105,6 +2106,12 @@ export default class GameScene extends Phaser.Scene {
             if (middle) middle.setAngle(rotation);
             if (jelly) jelly.setAngle(rotation);
         }
+
+        let obstacleAge = 0;
+        if (createdAtServer) {
+            obstacleAge = Date.now() - createdAtServer;
+        }
+
         this.platforms.push({
             gameObject: platform,
             outer,
@@ -2117,7 +2124,7 @@ export default class GameScene extends Phaser.Scene {
             source: 'user',
             id: id,
             creatorId: creatorId,
-            createdAt: this.time.now,
+            createdAt: this.time.now - obstacleAge,
             crackStage: 0
         });
         this.updateBuildPointsUI();
@@ -2126,8 +2133,11 @@ export default class GameScene extends Phaser.Scene {
         const decayTime = 15000;
         const blinkStartTime = 12000;
 
+        const remainingBlinkTime = Math.max(0, blinkStartTime - obstacleAge);
+        const remainingDecayTime = Math.max(0, decayTime - obstacleAge);
+
         // Schedule warning blink ONLY for normal blocks (bounce and slide have custom warning updates)
-        this.time.delayedCall(blinkStartTime, () => {
+        this.time.delayedCall(remainingBlinkTime, () => {
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
@@ -2144,24 +2154,22 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        // Schedule deletion & build points refund
-        this.time.delayedCall(decayTime, () => {
-            const idx = this.platforms.findIndex(p => p.id === id);
-            if (idx !== -1) {
-                const p = this.platforms[idx];
-                const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
-                
-                if (isOwner) {
+        // Schedule deletion & build points refund ONLY if this client is the OWNER
+        const isOwner = this.mode !== 'multiplayer' || !creatorId || creatorId === this.socket.id;
+
+        if (isOwner) {
+            this.time.delayedCall(remainingDecayTime, () => {
+                const idx = this.platforms.findIndex(p => p.id === id);
+                if (idx !== -1) {
+                    const p = this.platforms[idx];
                     // Authoritatively remove locally and sync to other clients
                     if (this.mode === 'multiplayer' && this.socket && p.id) {
                         this.socket.emit('removeObstacle', { id: p.id });
                     }
                     this.destroyObstacleLocally(id, true);
-                } else {
-                    this.destroyObstacleLocally(id, true);
                 }
-            }
-        });
+            });
+        }
 
         return true;
     }

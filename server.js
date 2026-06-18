@@ -281,10 +281,12 @@ io.on('connection', (socket) => {
             opacity: data.opacity,
             creatorId: creatorId,
             tint: data.tint,
-            blockType: data.blockType || 'normal'
+            blockType: data.blockType || 'normal',
+            createdAt: data.createdAt || Date.now()
         };
 
         data.creatorId = creatorId;
+        data.createdAt = rooms[roomId].obstacles[data.id].createdAt;
         socket.to(roomId).emit('obstacleCreated', data);
     });
 

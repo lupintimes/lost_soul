@@ -20,21 +20,6 @@ export default class CustomizeScene extends Phaser.Scene {
         this.cameras.main.setRoundPixels(true);
         const { width, height } = this.scale;
 
-        // Initialize graphics for glass panels
-        this.customGraphics = this.add.graphics().setDepth(1);
-
-        const drawGlassPanel = (graphics, x, y, w, h, strokeColor, radius = 6) => {
-            // Drop shadow
-            graphics.fillStyle(0x000000, 0.35);
-            graphics.fillRoundedRect(x + 3, y + 3, w, h, radius);
-            // Glass background
-            graphics.fillStyle(0x0a0f19, 0.85);
-            graphics.fillRoundedRect(x, y, w, h, radius);
-            // Neon stroke
-            graphics.lineStyle(1.5, strokeColor, 0.85);
-            graphics.strokeRoundedRect(x, y, w, h, radius);
-        };
-
         // 🖼️ Background
         this.add.image(0, 0, 'menu_bg')
             .setOrigin(0)
@@ -46,73 +31,50 @@ export default class CustomizeScene extends Phaser.Scene {
         this.add.text(width / 2, 20, 'CUSTOMIZE', {
             fontFamily: '"Silkscreen"',
             fontSize: '26px',
-            color: '#00ffcc'
-        })
-            .setOrigin(0.5)
-            .setShadow(2, 2, '#000000', 4);
+            color: '#ffffff'
+        }).setOrigin(0.5);
 
-        // ← BACK button (Sleek red neon pill button)
-        const backBtnText = this.add.text(60, 25, '← BACK', {
+        // ← BACK button
+        const backBtn = this.add.text(20, 15, '← BACK', {
             fontFamily: '"Silkscreen"',
-            fontSize: '12px',
-            color: '#ff4444'
+            fontSize: '13px',
+            color: '#ff4444',
+            backgroundColor: '#222',
+            padding: { x: 8, y: 5 }
         })
-            .setOrigin(0.5)
-            .setDepth(3)
-            .setShadow(1, 1, '#000000', 2);
+            .setInteractive({ useHandCursor: true });
 
-        const backGraphics = this.add.graphics().setDepth(2);
-        const drawBackBtn = (isHover) => {
-            backGraphics.clear();
-            backGraphics.fillStyle(isHover ? 0x2e1414 : 0x190a0a, 0.85);
-            backGraphics.fillRoundedRect(20, 10, 80, 30, 4);
-            backGraphics.lineStyle(1.5, isHover ? 0xff4444 : 0x882222, 0.85);
-            backGraphics.strokeRoundedRect(20, 10, 80, 30, 4);
-        };
-        drawBackBtn(false);
-
-        const backHitbox = this.add.rectangle(60, 25, 80, 30, 0x000000, 0)
-            .setInteractive({ useHandCursor: true })
-            .setDepth(4);
-
-        backHitbox.on('pointerover', () => {
-            drawBackBtn(true);
-            backBtnText.setScale(1.05);
+        backBtn.on('pointerover', () => {
+            backBtn.setStyle({ backgroundColor: '#555' });
+            backBtn.setScale(1.05);
         });
-        backHitbox.on('pointerout', () => {
-            drawBackBtn(false);
-            backBtnText.setScale(1);
+        backBtn.on('pointerout', () => {
+            backBtn.setStyle({ backgroundColor: '#222' });
+            backBtn.setScale(1);
         });
-        backHitbox.on('pointerdown', () => {
+        backBtn.on('pointerdown', () => {
             this.playClick(); 
             this.scene.start('MenuScene');
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  LEFT SIDE — CHARACTER PREVIEW CARD
+        //  LEFT SIDE — CHARACTER PREVIEW
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const previewX = width * 0.2;
         const previewY = height * 0.5;
 
-        // Preview border color matches character's color theme
-        const charColorMap = { p1: 0x4488ff, p2: 0x9944ff, p3: 0xff4444 };
-        const previewStroke = charColorMap[PlayerData.character] || 0x00e5ff;
+        this.add.rectangle(previewX, previewY, 180, 300, 0x111111, 0.8)
+            .setStrokeStyle(2, 0x333333);
 
-        drawGlassPanel(this.customGraphics, previewX - 90, previewY - 150, 180, 310, previewStroke, 8);
-
-        this.add.text(previewX, previewY - 130, 'PREVIEW', {
+        this.add.text(previewX, previewY - 135, 'PREVIEW', {
             fontFamily: '"Silkscreen"',
-            fontSize: '11px',
+            fontSize: '12px',
             color: '#888888'
-        })
-            .setOrigin(0.5)
-            .setDepth(2)
-            .setShadow(1, 1, '#000000', 2);
+        }).setOrigin(0.5);
 
-        // Character preview sprite
-        this.previewSprite = this.add.sprite(previewX, previewY - 20, `${PlayerData.character}_idle`)
-            .setDepth(2);
+        // Character preview sprite — plays idle + blink
+        this.previewSprite = this.add.sprite(previewX, previewY - 20, `${PlayerData.character}_idle`);
         this.previewSprite.setScale(0.45);
         this.previewSprite.anims.play(`${PlayerData.character}_preview`, true);
 
@@ -124,22 +86,16 @@ export default class CustomizeScene extends Phaser.Scene {
             fontFamily: '"Silkscreen"',
             fontSize: '14px',
             color: '#ffffff'
-        })
-            .setOrigin(0.5)
-            .setDepth(2)
-            .setShadow(1.5, 1.5, '#000000', 3);
+        }).setOrigin(0.5);
 
-        this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
+        this.colorLabel = this.add.text(previewX, previewY + 100, `COLOR: ${PlayerData.color.toUpperCase()}`, {
             fontFamily: '"Silkscreen"',
             fontSize: '10px',
             color: '#888888'
-        })
-            .setOrigin(0.5)
-            .setDepth(2)
-            .setShadow(1, 1, '#000000', 2);
+        }).setOrigin(0.5);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  RIGHT SIDE — TABS + OPTIONS CONTAINER
+        //  RIGHT SIDE — TABS + OPTIONS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const panelX = width * 0.42;
@@ -147,11 +103,11 @@ export default class CustomizeScene extends Phaser.Scene {
         const panelW = width * 0.53;
         const panelH = height - 70;
 
-        // Draw Right glass card panel (Silver/Cyan border)
-        drawGlassPanel(this.customGraphics, panelX, panelY, panelW, panelH, 0x00ffcc, 8);
+        this.add.rectangle(panelX + panelW / 2, panelY + panelH / 2, panelW, panelH, 0x111111, 0.8)
+            .setStrokeStyle(1, 0x333333);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  TABS — CHARACTER, COLOR, INSTRUCTIONS
+        //  TABS — Only CHARACTER and COLOR
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const tabs = ['CHARACTER', 'COLOR', 'INSTRUCTIONS'];
@@ -159,81 +115,50 @@ export default class CustomizeScene extends Phaser.Scene {
         const tabW = panelW / tabs.length;
 
         this.tabButtons = [];
-        this.tabGraphics = this.add.graphics().setDepth(2);
-
-        const drawTabButton = (index, isActive, isHover) => {
-            const tx = panelX + index * tabW;
-            const ty = panelY + 5;
-            const tw = tabW - 4;
-            const th = 34;
-
-            // Draw a rounded glass tab bar button
-            this.tabGraphics.fillStyle(isActive ? 0x223344 : (isHover ? 0x1c2333 : 0x0a101d), 0.9);
-            this.tabGraphics.fillRoundedRect(tx + 2, ty, tw, th, 4);
-            this.tabGraphics.lineStyle(1.5, isActive ? 0x00ffcc : (isHover ? 0x475569 : 0x2a3649), 0.85);
-            this.tabGraphics.strokeRoundedRect(tx + 2, ty, tw, th, 4);
-        };
-
-        const redrawTabs = () => {
-            this.tabGraphics.clear();
-            tabKeys.forEach((key, idx) => {
-                drawTabButton(idx, key === this.activeTab, false);
-            });
-        };
-        redrawTabs();
 
         tabs.forEach((tabName, i) => {
             const tx = panelX + i * tabW + tabW / 2;
-            const ty = panelY + 22;
+            const ty = panelY + 15;
             const isActive = tabKeys[i] === this.activeTab;
 
-            const tabBtnText = this.add.text(tx, ty, tabName, {
+            const tabBtn = this.add.text(tx, ty, tabName, {
                 fontFamily: '"Silkscreen"',
-                fontSize: '11px',
-                color: isActive ? '#00ffcc' : '#666666'
+                fontSize: '14px',
+                color: isActive ? '#ffff00' : '#666666',
+                backgroundColor: isActive ? '#333' : '#1a1a1a',
+                padding: { x: 12, y: 8 }
             })
                 .setOrigin(0.5)
-                .setDepth(3)
-                .setShadow(1, 1, '#000000', 2);
+                .setInteractive({ useHandCursor: true });
 
-            const tabHitbox = this.add.rectangle(tx, ty, tabW - 4, 34, 0x000000, 0)
-                .setInteractive({ useHandCursor: true })
-                .setDepth(4);
+            tabBtn.tabKey = tabKeys[i];
 
-            tabHitbox.tabKey = tabKeys[i];
-            tabHitbox.tabIndex = i;
-
-            tabHitbox.on('pointerover', () => {
-                if (this.activeTab !== tabHitbox.tabKey) {
-                    drawTabButton(tabHitbox.tabIndex, false, true);
-                    tabBtnText.setColor('#ffffff');
+            tabBtn.on('pointerover', () => {
+                if (this.activeTab !== tabBtn.tabKey) {
+                    tabBtn.setStyle({ backgroundColor: '#2a2a2a' });
+                }
+            });
+            tabBtn.on('pointerout', () => {
+                if (this.activeTab !== tabBtn.tabKey) {
+                    tabBtn.setStyle({ backgroundColor: '#1a1a1a' });
                 }
             });
 
-            tabHitbox.on('pointerout', () => {
-                if (this.activeTab !== tabHitbox.tabKey) {
-                    drawTabButton(tabHitbox.tabIndex, false, false);
-                    tabBtnText.setColor('#666666');
-                }
-            });
-
-            tabHitbox.on('pointerdown', () => {
+            tabBtn.on('pointerdown', () => {
                 this.playClick(); 
-                this.activeTab = tabHitbox.tabKey;
+                this.activeTab = tabBtn.tabKey;
                 this.renderOptions();
-                redrawTabs();
 
                 this.tabButtons.forEach(tb => {
-                    if (tb.textObj.tabKey === this.activeTab) {
-                        tb.textObj.setColor('#00ffcc');
+                    if (tb.tabKey === this.activeTab) {
+                        tb.setStyle({ color: '#ffff00', backgroundColor: '#333' });
                     } else {
-                        tb.textObj.setColor('#666666');
+                        tb.setStyle({ color: '#666666', backgroundColor: '#1a1a1a' });
                     }
                 });
             });
 
-            tabBtnText.tabKey = tabKeys[i];
-            this.tabButtons.push({ hitBox: tabHitbox, textObj: tabBtnText });
+            this.tabButtons.push(tabBtn);
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -242,7 +167,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
         this.optionsConfig = {
             x: panelX + 15,
-            y: panelY + 50,
+            y: panelY + 45,
             w: panelW - 30,
             itemH: 50
         };
@@ -288,55 +213,37 @@ export default class CustomizeScene extends Phaser.Scene {
             const iy = y + index * itemH;
             const isSelected = item.id === currentSelection;
 
-            // Draw a rounded glass selection item card
-            const itemBgGraphics = this.add.graphics().setDepth(2);
-            this.optionElements.push(itemBgGraphics);
-
-            const drawItemBg = (isHover) => {
-                itemBgGraphics.clear();
-                // Drop shadow
-                itemBgGraphics.fillStyle(0x000000, 0.2);
-                itemBgGraphics.fillRoundedRect(x + 2, iy + 2, w, itemH - 5, 6);
-                // Glass background
-                itemBgGraphics.fillStyle(isSelected ? 0x142017 : (isHover ? 0x222230 : 0x0c1322), 0.9);
-                itemBgGraphics.fillRoundedRect(x, iy, w, itemH - 5, 6);
-                // Outline
-                const strokeCol = isSelected ? 0x44ff44 : (isHover ? 0x00ffff : 0x2e3c54);
-                const strokeW = isSelected ? 2 : 1;
-                itemBgGraphics.lineStyle(strokeW, strokeCol, 0.85);
-                itemBgGraphics.strokeRoundedRect(x, iy, w, itemH - 5, 6);
-            };
-            drawItemBg(false);
-
-            const itemHitbox = this.add.rectangle(x + w / 2, iy + (itemH - 5) / 2, w, itemH - 5, 0x000000, 0)
-                .setInteractive({ useHandCursor: true })
-                .setDepth(4);
-            this.optionElements.push(itemHitbox);
+            // Item background
+            const itemBg = this.add.rectangle(
+                x, iy,
+                w, itemH - 5,
+                isSelected ? 0x2a2a2a : 0x1a1a1a
+            )
+                .setOrigin(0)
+                .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0x44ff44 : 0x333333)
+                .setInteractive({ useHandCursor: true });
+            this.optionElements.push(itemBg);
 
             // Color indicator dot
             const dotColor = item.color || item.tint || 0x888888;
-            const dot = this.add.circle(x + 20, iy + (itemH - 5) / 2, 8, dotColor).setDepth(3);
+            const dot = this.add.circle(x + 20, iy + (itemH - 5) / 2, 8, dotColor);
             this.optionElements.push(dot);
 
             // Item name
             const nameText = this.add.text(x + 40, iy + 6, item.name, {
                 fontFamily: '"Silkscreen"',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: isSelected ? '#44ff44' : '#ffffff'
-            })
-                .setDepth(3)
-                .setShadow(1, 1, '#000000', 2);
+            });
             this.optionElements.push(nameText);
 
             // Description (for characters)
             if (item.desc) {
-                const descText = this.add.text(x + 40, iy + 26, item.desc, {
+                const descText = this.add.text(x + 40, iy + 28, item.desc, {
                     fontFamily: '"Silkscreen"',
-                    fontSize: '10px',
-                    color: '#888888'
-                })
-                    .setDepth(3)
-                    .setShadow(1, 1, '#000000', 1);
+                    fontSize: '11px',
+                    color: '#666666'
+                });
                 this.optionElements.push(descText);
             }
 
@@ -344,18 +251,15 @@ export default class CustomizeScene extends Phaser.Scene {
             if (isSelected) {
                 const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2 - 8, '✓', {
                     fontFamily: '"Silkscreen"',
-                    fontSize: '18px',
+                    fontSize: '20px',
                     color: '#44ff44'
-                })
-                    .setDepth(3)
-                    .setShadow(1, 1, '#000000', 2);
+                });
                 this.optionElements.push(check);
             }
 
             // Character preview sprite (only for character tab)
             if (this.activeTab === 'character') {
-                const miniSprite = this.add.sprite(x + w - 70, iy + (itemH - 5) / 2, `${item.id}_idle`)
-                    .setDepth(3);
+                const miniSprite = this.add.sprite(x + w - 70, iy + (itemH - 5) / 2, `${item.id}_idle`);
                 miniSprite.setScale(0.15);
                 miniSprite.anims.play(`${item.id}_preview`, true);
                 this.optionElements.push(miniSprite);
@@ -366,31 +270,29 @@ export default class CustomizeScene extends Phaser.Scene {
                 const previewBox = this.add.rectangle(
                     x + w - 70,
                     iy + (itemH - 5) / 2,
-                    28, 28,
+                    30, 30,
                     item.tint || 0xffffff
-                )
-                    .setStrokeStyle(1.5, 0x556677)
-                    .setDepth(3);
+                ).setStrokeStyle(1, 0x444444);
                 this.optionElements.push(previewBox);
             }
 
-            // Hover interactions
-            itemHitbox.on('pointerover', () => {
-                drawItemBg(true);
+            // Hover
+            itemBg.on('pointerover', () => {
                 if (!isSelected) {
+                    itemBg.setFillStyle(0x222222);
                     nameText.setColor('#ffff00');
                 }
             });
 
-            itemHitbox.on('pointerout', () => {
-                drawItemBg(false);
+            itemBg.on('pointerout', () => {
                 if (!isSelected) {
+                    itemBg.setFillStyle(0x1a1a1a);
                     nameText.setColor('#ffffff');
                 }
             });
 
             // Click to select
-            itemHitbox.on('pointerdown', () => {
+            itemBg.on('pointerdown', () => {
                 this.playClick(); 
                 switch (this.activeTab) {
                     case 'character':
@@ -421,7 +323,7 @@ export default class CustomizeScene extends Phaser.Scene {
                         '       4s cooldown.',
                         'T  — FORTRESS TAUNT',
                         '       5s / 50% damage reduction.',
-                        '       Silhouette aura glow. 15s cooldown.',
+                        '       Pulsing gold tint. 15s cooldown.',
                     ]
                 },
                 p2: {
@@ -460,53 +362,38 @@ export default class CustomizeScene extends Phaser.Scene {
                 const cardH = 22 + data.lines.length * lineH + 10;
                 const hexCol = '#' + data.color.toString(16).padStart(6, '0');
 
-                // Card background graphics (glassmorphic style)
-                const cardGraphics = this.add.graphics().setDepth(2);
-                this.optionElements.push(cardGraphics);
+                // Card background
+                const cardBg = this.add.rectangle(x, cardY, w, cardH, 0x141428).setOrigin(0);
+                cardBg.setStrokeStyle(2, data.color);
+                this.optionElements.push(cardBg);
 
-                // Shadow
-                cardGraphics.fillStyle(0x000000, 0.2);
-                cardGraphics.fillRoundedRect(x + 2, cardY + 2, w, cardH, 8);
-                // Glass background
-                cardGraphics.fillStyle(0x0a0f1d, 0.95);
-                cardGraphics.fillRoundedRect(x, cardY, w, cardH, 8);
-                // Header highlight
-                cardGraphics.fillStyle(data.color, 0.15);
-                cardGraphics.fillRoundedRect(x, cardY, w, 22, { tl: 8, tr: 8, bl: 0, br: 0 });
-                // Neon outline
-                cardGraphics.lineStyle(1.5, data.color, 0.85);
-                cardGraphics.strokeRoundedRect(x, cardY, w, cardH, 8);
+                // Header row: colored bar
+                const headerBg = this.add.rectangle(x, cardY, w, 20, data.color, 0.15).setOrigin(0);
+                this.optionElements.push(headerBg);
 
                 // Character name + HP badge
                 const nameT = this.add.text(x + 10, cardY + 4, `${data.label}  ABILITIES`, {
                     fontFamily: '"Silkscreen"',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     color: hexCol
-                })
-                    .setDepth(3)
-                    .setShadow(1, 1, '#000000', 2);
+                });
                 this.optionElements.push(nameT);
 
                 const hpT = this.add.text(x + w - 10, cardY + 4, `HP  ${data.hp}`, {
                     fontFamily: '"Silkscreen"',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     color: '#44ff44'
-                })
-                    .setDepth(3)
-                    .setOrigin(1, 0)
-                    .setShadow(1, 1, '#000000', 2);
+                }).setOrigin(1, 0);
                 this.optionElements.push(hpT);
 
                 // Ability lines
                 data.lines.forEach((line, li) => {
                     const isKey = !line.startsWith(' ');
-                    const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
+                    const lt = this.add.text(x + 12, cardY + 24 + li * lineH, line, {
                         fontFamily: '"Silkscreen"',
-                        fontSize: '11px',
+                        fontSize: '12px',
                         color: isKey ? '#ffffff' : '#888888'
-                    })
-                        .setDepth(3)
-                        .setShadow(1, 1, '#000000', 1);
+                    });
                     this.optionElements.push(lt);
                 });
             }
@@ -549,40 +436,33 @@ export default class CustomizeScene extends Phaser.Scene {
         const addSection = (title, color, lines) => {
             const hexColor = '#' + color.toString(16).padStart(6, '0');
 
-            // Draw a rounded header box on a custom Graphics object
-            const headerG = this.make.graphics().setDepth(2);
-            headerG.fillStyle(0x0a101d, 0.9);
-            headerG.fillRoundedRect(x, curY, w, 24, 4);
-            headerG.lineStyle(1.5, color, 0.85);
-            headerG.strokeRoundedRect(x, curY, w, 24, 4);
-            this.instrContainer.add(headerG);
+            // Section header
+            const headerBg = this.add.rectangle(x, curY, w, 24, 0x1e1e2e).setOrigin(0);
+            headerBg.setStrokeStyle(1, color);
+            this.instrContainer.add(headerBg);
 
-            const headerText = this.add.text(x + 10, curY + 5, title, {
+            const headerText = this.add.text(x + 10, curY + 4, title, {
                 fontFamily: '"Silkscreen"',
-                fontSize: '12px',
+                fontSize: '13px',
                 color: hexColor
-            })
-                .setDepth(3)
-                .setShadow(1, 1, '#000000', 2);
+            });
             this.instrContainer.add(headerText);
 
-            curY += 30;
+            curY += 28;
 
             lines.forEach(line => {
                 const isBullet = line.startsWith('•');
                 const lineText = this.add.text(x + (isBullet ? 14 : 8), curY, line, {
                     fontFamily: '"Silkscreen"',
-                    fontSize: '10px',
+                    fontSize: '11px',
                     color: isBullet ? '#cccccc' : hexColor,
                     wordWrap: { width: w - 24 }
-                })
-                    .setDepth(3)
-                    .setShadow(1, 1, '#000000', 1);
+                });
                 this.instrContainer.add(lineText);
                 curY += lineText.height + 6;
             });
 
-            curY += 12; // gap between sections
+            curY += 10; // gap between sections
         };
 
         // ── CONTROLS ───────────────────────────────────────────
@@ -650,14 +530,14 @@ export default class CustomizeScene extends Phaser.Scene {
         if (totalHeight > maskH) {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
-            const track = this.add.rectangle(trackX, maskY, 6, maskH, 0x1a1a1a).setOrigin(0).setDepth(2);
+            const track = this.add.rectangle(trackX, maskY, 6, maskH, 0x1a1a1a).setOrigin(0);
             track.setStrokeStyle(1, 0x333333);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / totalHeight) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x555555).setOrigin(0).setDepth(3);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x555555).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
