@@ -1831,7 +1831,7 @@ export default class GameScene extends Phaser.Scene {
             this.tweens.addCounter({
                 from: 0,
                 to: 1,
-                duration: Phaser.Math.Between(700, 1200),
+                duration: Phaser.Math.Between(1200, 1600), // Extended falling phase
                 ease: 'Linear',
                 onUpdate: (tween) => {
                     const dt = tween.delta / 1000; // time step in seconds
@@ -1844,12 +1844,23 @@ export default class GameScene extends Phaser.Scene {
                     if (shard && shard.active) {
                         shard.setPosition(curX, curY);
                         shard.setAngle(shard.angle + curVx * dt * 2.5);
-                        shard.setAlpha(1 - tween.progress);
-                        shard.setScale(1 - tween.progress * 0.4);
                     }
                 },
                 onComplete: () => {
-                    if (shard && shard.active) shard.destroy();
+                    if (shard && shard.active) {
+                        // Keep on ground/low for 3 seconds, then fade out and destroy
+                        this.tweens.add({
+                            targets: shard,
+                            alpha: 0,
+                            scale: 0.15,
+                            delay: 3000,
+                            duration: 500,
+                            ease: 'Cubic.easeOut',
+                            onComplete: () => {
+                                if (shard && shard.active) shard.destroy();
+                            }
+                        });
+                    }
                 }
             });
         }
