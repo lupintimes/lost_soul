@@ -2,6 +2,12 @@ import Player from './player/Player.js';
 import SocketManager from './SocketManager.js';
 import PlayerData from './PlayerData.js';
 
+const SPELL_COLORS = {
+    'p1': 0x00ffff,
+    'p2': 0xff8c00,
+    'p3': 0x9b30ff
+};
+
 export default class GameScene extends Phaser.Scene {
 
     // Add this method to GameScene class
@@ -38,19 +44,29 @@ export default class GameScene extends Phaser.Scene {
 
     }
 
-    preload() {
-        this.load.image('bg', '../assets/background.webp');
+    preload() {}
 
-        const characters = ['p1', 'p2', 'p3'];
+    createTeleporters() {
+        const portalKeys = ['portal_gold', 'portal_pink', 'portal_teal', 'portal_purple', 'portal_gray'];
+        this.teleports.forEach((tp, i) => {
+            const portalKey = portalKeys[i % portalKeys.length];
+            const teleporter = this.add.sprite(tp.x, tp.y, portalKey)
+                .setDepth(1)
+                .setAlpha(1)
+                .setScale(0.4);
 
-        characters.forEach(char => {
-            this.load.spritesheet(`${char}_idle`, `../assets/${char}/idle.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_walk`, `../assets/${char}/walk.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_attack`, `../assets/${char}/attack.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_blink`, `../assets/${char}/blink.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_taunt`, `../assets/${char}/taunt.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_hurt`, `../assets/${char}/hurt.png`, { frameWidth: 520, frameHeight: 420 });
-            this.load.spritesheet(`${char}_death`, `../assets/${char}/death.png`, { frameWidth: 520, frameHeight: 420 });
+            // Pulsing animation
+            this.tweens.add({
+                targets: teleporter,
+                alpha: 0.8,
+                scale: 0.45,
+                duration: 1200,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+            this.teleporterSprites.push(teleporter);
         });
     }
 
@@ -67,48 +83,11 @@ export default class GameScene extends Phaser.Scene {
 
         if (!this.canTeleport || !player) return;
 
-        // ✅ Teleport configuration
-        const teleports = [
-            { x: 375, y: 2900, tx: 2350, ty: 2244 },
-            { x: 2293, y: 2244, tx: 3000, ty: 226 },
-            { x: 2937, y: 226, tx: 3450, ty: 219 },
-            { x: 3356, y: 219, tx: 5600, ty: 3542 },
-            { x: 5510, y: 3542, tx: 450, ty: 2900 }
-        ];
-
-        // ✅ Create teleporter sprites once
-        if (!this.teleporterSprites || this.teleporterSprites.length === 0) {
-            this.teleporterSprites = [];
-
-            const portalKeys = ['portal_gold', 'portal_pink', 'portal_teal', 'portal_purple', 'portal_gray'];
-
-            // Source portals (full portal sprite, one per teleport)
-            teleports.forEach((tp, i) => {
-                const portalKey = portalKeys[i % portalKeys.length];
-                const teleporter = this.add.sprite(tp.x, tp.y, portalKey)
-                    .setDepth(1)
-                    .setAlpha(1)
-                    .setScale(0.4);
-
-                // Pulsing animation
-                this.tweens.add({
-                    targets: teleporter,
-                    alpha: 0.8,
-                    scale: 0.45,
-                    duration: 1200,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: 'Sine.easeInOut'
-                });
-
-                this.teleporterSprites.push(teleporter);
-            });
-
-
-        }
+        const teleports = this.teleports;
+        const len = teleports.length;
 
         // ✅ Check each teleporter
-        for (let i = 0; i < teleports.length; i++) {
+        for (let i = 0; i < len; i++) {
             const tp = teleports[i];
 
             const dist = Phaser.Math.Distance.Between(
@@ -135,6 +114,176 @@ export default class GameScene extends Phaser.Scene {
 
                 break; // Only teleport once per check
             }
+        }
+    }
+
+    handlePointerDown(pointer) {
+        const world = pointer.positionToCamera(this.cameras.main);
+        this.startPoint = world;
+        this.isDrawing = true;
+        this.isDeletingByRegion = this.keyX.isDown;
+    }
+
+    handlePointerMove(pointer) {
+        if (!this.isDrawing) return;
+        const world = pointer.positionToCamera(this.cameras.main);
+
+        if (this.isDeletingByRegion) {
+            const rect = this.getRect(this.startPoint, world);
+            this.preview.clear();
+            this.preview.lineStyle(2, 0xff0000, 1);
+            this.preview.fillStyle(0xff0000, 0.25);
+            this.preview.fillRect(rect.x, rect.y, rect.w, rect.h);
+            this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
+        } else {
+            // Limit dimensions to max area while dragging
+            let dx = world.x - this.startPoint.x;
+            let dy = world.y - this.startPoint.y;
+            let w = Math.abs(dx);
+            let h = Math.abs(dy);
+            let area = w * h;
+
+            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+            if (area > maxAllowedArea) {
+                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
+                dx *= scale;
+                dy *= scale;
+            }
+
+            const clampedWorld = {
+                x: this.startPoint.x + dx,
+                y: this.startPoint.y + dy
+            };
+            const rect = this.getRect(this.startPoint, clampedWorld);
+
+            this.preview.clear();
+            this.preview.lineStyle(2, 0xffff00, 1);
+            this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
+        }
+    }
+
+    performRegionDeletion(rect, pointer) {
+        let deletedCount = 0;
+        let hasAttemptedForeignDelete = false;
+
+        for (let i = this.platforms.length - 1; i >= 0; i--) {
+            const p = this.platforms[i];
+            if (!p.deletable) continue;
+
+            // Bounding box overlap check between selection rect and platform p
+            const overlap =
+                rect.x < p.x + p.w &&
+                rect.x + rect.w > p.x &&
+                rect.y < p.y + p.h &&
+                rect.y + rect.h > p.y;
+
+            if (overlap) {
+                const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
+                if (isOwner) {
+                    // Remove old obstacle locally
+                    if (p.gameObject) p.gameObject.destroy();
+                    if (p.outer) p.outer.destroy();
+                    if (p.middle) p.middle.destroy();
+                    if (p.jelly) p.jelly.destroy();
+
+                    this.platforms.splice(i, 1);
+                    
+                    // Notify server of deletion
+                    if (this.mode === 'multiplayer' && this.socket && p.id) {
+                        this.socket.emit('removeObstacle', { id: p.id });
+                    }
+
+                    // Compute remaining pieces of the obstacle outside the selection rectangle
+                    const pieces = this.subtractRect(p, rect);
+                    
+                    // Create and sync remaining split pieces
+                    pieces.forEach((piece, index) => {
+                        const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
+                        this.createObstacle(piece, p.opacity || 0.9, subId, p.creatorId, false, p.tint, p.blockType);
+
+                        if (this.mode === 'multiplayer' && this.socket) {
+                            this.socket.emit('createObstacle', { 
+                                id: subId, 
+                                rect: piece, 
+                                opacity: p.opacity || 0.9, 
+                                creatorId: p.creatorId, 
+                                tint: p.tint, 
+                                blockType: p.blockType 
+                            });
+                        }
+                    });
+
+                    deletedCount++;
+                } else {
+                    hasAttemptedForeignDelete = true;
+                }
+            }
+        }
+
+        if (deletedCount > 0) {
+            this.showKillMessage(`REMOVED ${deletedCount} OBSTACLES!`, '#44ff44');
+            this.updateBuildPointsUI();
+        } else if (hasAttemptedForeignDelete) {
+            this.showKillMessage("CANNOT REMOVE OTHER PLAYERS' OBSTACLES!", '#ff4444');
+        }
+    }
+
+    handlePointerUp(pointer) {
+        if (!this.isDrawing) return;
+        const world = pointer.positionToCamera(this.cameras.main);
+
+        if (this.isDeletingByRegion) {
+            const rect = this.getRect(this.startPoint, world);
+            
+            // If the selection rectangle is extremely small, treat it as a single point deletion
+            if (rect.w < 5 && rect.h < 5) {
+                this.removeobstacle(pointer);
+            } else {
+                this.performRegionDeletion(rect, pointer);
+            }
+
+            this.preview.clear();
+            this.isDrawing = false;
+            this.isDeletingByRegion = false;
+        } else {
+            // Apply same limit clamping on pointer up
+            let dx = world.x - this.startPoint.x;
+            let dy = world.y - this.startPoint.y;
+            let w = Math.abs(dx);
+            let h = Math.abs(dy);
+            let area = w * h;
+
+            const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
+            const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
+            if (area > maxAllowedArea) {
+                const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
+                dx *= scale;
+                dy *= scale;
+            }
+
+            const clampedWorld = {
+                x: this.startPoint.x + dx,
+                y: this.startPoint.y + dy
+            };
+            const rect = this.getRect(this.startPoint, clampedWorld);
+            const opacity = 0.9;
+
+            // Always generate a unique ID (even in solo) so decay timers target the correct block
+            const id = this.mode === 'multiplayer' && this.socket
+                ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+                : `solo_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+            const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
+            const tint = PlayerData.getColorTint();
+            const blockType = this.selectedBlockType || 'normal';
+            const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
+
+            if (success && this.mode === 'multiplayer' && this.socket) {
+                this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
+            }
+
+            this.preview.clear();
+            this.isDrawing = false;
         }
     }
 
@@ -166,6 +315,14 @@ export default class GameScene extends Phaser.Scene {
         // Reset teleporter state
         this.canTeleport = true;
         this.teleporterSprites = [];
+        this.teleports = [
+            { x: 375, y: 2900, tx: 2350, ty: 2244 },
+            { x: 2293, y: 2244, tx: 3000, ty: 226 },
+            { x: 2937, y: 226, tx: 3450, ty: 219 },
+            { x: 3356, y: 219, tx: 5600, ty: 3542 },
+            { x: 5510, y: 3542, tx: 450, ty: 2900 }
+        ];
+        this.createTeleporters();
 
         // 🌍 Background
         this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
@@ -316,172 +473,9 @@ export default class GameScene extends Phaser.Scene {
         this.key2 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
         this.key3 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
 
-        this.input.on('pointerdown', (pointer) => {
-            const world = pointer.positionToCamera(this.cameras.main);
-            this.startPoint = world;
-            this.isDrawing = true;
-            this.isDeletingByRegion = this.keyX.isDown;
-        });
-
-        this.input.on('pointermove', (pointer) => {
-            if (!this.isDrawing) return;
-            const world = pointer.positionToCamera(this.cameras.main);
-
-            if (this.isDeletingByRegion) {
-                const rect = this.getRect(this.startPoint, world);
-                this.preview.clear();
-                this.preview.lineStyle(2, 0xff0000, 1);
-                this.preview.fillStyle(0xff0000, 0.25);
-                this.preview.fillRect(rect.x, rect.y, rect.w, rect.h);
-                this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
-            } else {
-                // Limit dimensions to max area while dragging
-                let dx = world.x - this.startPoint.x;
-                let dy = world.y - this.startPoint.y;
-                let w = Math.abs(dx);
-                let h = Math.abs(dy);
-                let area = w * h;
-
-                const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
-                const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
-                if (area > maxAllowedArea) {
-                    const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
-                    dx *= scale;
-                    dy *= scale;
-                }
-
-                const clampedWorld = {
-                    x: this.startPoint.x + dx,
-                    y: this.startPoint.y + dy
-                };
-                const rect = this.getRect(this.startPoint, clampedWorld);
-
-                this.preview.clear();
-                this.preview.lineStyle(2, 0xffff00, 1);
-                this.preview.strokeRect(rect.x, rect.y, rect.w, rect.h);
-            }
-        });
-
-        this.input.on('pointerup', (pointer) => {
-            if (!this.isDrawing) return;
-            const world = pointer.positionToCamera(this.cameras.main);
-
-            if (this.isDeletingByRegion) {
-                const rect = this.getRect(this.startPoint, world);
-                
-                // If the selection rectangle is extremely small, treat it as a single point deletion
-                if (rect.w < 5 && rect.h < 5) {
-                    this.removeobstacle(pointer);
-                } else {
-                    // Region deletion
-                    let deletedCount = 0;
-                    let hasAttemptedForeignDelete = false;
-
-                    for (let i = this.platforms.length - 1; i >= 0; i--) {
-                        const p = this.platforms[i];
-                        if (!p.deletable) continue;
-
-                        // Bounding box overlap check between selection rect and platform p
-                        const overlap =
-                            rect.x < p.x + p.w &&
-                            rect.x + rect.w > p.x &&
-                            rect.y < p.y + p.h &&
-                            rect.y + rect.h > p.y;
-
-                        if (overlap) {
-                            const isOwner = this.mode !== 'multiplayer' || !p.creatorId || p.creatorId === this.socket.id;
-                            if (isOwner) {
-                                // Remove old obstacle locally
-                                if (p.gameObject) p.gameObject.destroy();
-                                if (p.outer) p.outer.destroy();
-                                if (p.middle) p.middle.destroy();
-                                if (p.jelly) p.jelly.destroy();
-
-                                this.platforms.splice(i, 1);
-                                
-                                // Notify server of deletion
-                                if (this.mode === 'multiplayer' && this.socket && p.id) {
-                                    this.socket.emit('removeObstacle', { id: p.id });
-                                }
-
-                                // Compute remaining pieces of the obstacle outside the selection rectangle
-                                const pieces = this.subtractRect(p, rect);
-                                
-                                // Create and sync remaining split pieces
-                                pieces.forEach((piece, index) => {
-                                    const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
-                                    this.createObstacle(piece, p.opacity || 0.9, subId, p.creatorId, false, p.tint, p.blockType);
-
-                                    if (this.mode === 'multiplayer' && this.socket) {
-                                        this.socket.emit('createObstacle', { 
-                                            id: subId, 
-                                            rect: piece, 
-                                            opacity: p.opacity || 0.9, 
-                                            creatorId: p.creatorId, 
-                                            tint: p.tint, 
-                                            blockType: p.blockType 
-                                        });
-                                    }
-                                });
-
-                                deletedCount++;
-                            } else {
-                                hasAttemptedForeignDelete = true;
-                            }
-                        }
-                    }
-
-                    if (deletedCount > 0) {
-                        this.showKillMessage(`REMOVED ${deletedCount} OBSTACLES!`, '#44ff44');
-                        this.updateBuildPointsUI();
-                    } else if (hasAttemptedForeignDelete) {
-                        this.showKillMessage("CANNOT REMOVE OTHER PLAYERS' OBSTACLES!", '#ff4444');
-                    }
-                }
-
-                this.preview.clear();
-                this.isDrawing = false;
-                this.isDeletingByRegion = false;
-            } else {
-                // Apply same limit clamping on pointer up
-                let dx = world.x - this.startPoint.x;
-                let dy = world.y - this.startPoint.y;
-                let w = Math.abs(dx);
-                let h = Math.abs(dy);
-                let area = w * h;
-
-                const availablePoints = Math.max(0, this.MAX_BUILD_POINTS - this.getUsedBuildPoints());
-                const maxAllowedArea = Math.min(this.OBSTACLE_MAX_AREA, availablePoints);
-                if (area > maxAllowedArea) {
-                    const scale = Math.sqrt(maxAllowedArea / Math.max(1, area));
-                    dx *= scale;
-                    dy *= scale;
-                }
-
-                const clampedWorld = {
-                    x: this.startPoint.x + dx,
-                    y: this.startPoint.y + dy
-                };
-                const rect = this.getRect(this.startPoint, clampedWorld);
-                const opacity = 0.9;
-
-                // Always generate a unique ID (even in solo) so decay timers target the correct block
-                const id = this.mode === 'multiplayer' && this.socket
-                    ? `${this.socket.id}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
-                    : `solo_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-                const creatorId = this.mode === 'multiplayer' && this.socket ? this.socket.id : null;
-                const tint = PlayerData.getColorTint();
-                const blockType = this.selectedBlockType || 'normal';
-                const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
-
-                if (success && this.mode === 'multiplayer' && this.socket) {
-                    this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType });
-                }
-
-                this.preview.clear();
-                this.isDrawing = false;
-            }
-        });
+        this.input.on('pointerdown', this.handlePointerDown, this);
+        this.input.on('pointermove', this.handlePointerMove, this);
+        this.input.on('pointerup', this.handlePointerUp, this);
 
 
 
@@ -1057,7 +1051,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.players.forEach(p => p.update());
         this.enemies.forEach(e => e.update());
-        this.checkTeleports();
     }
 
     updateMultiplayer() {
@@ -1112,9 +1105,10 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Interpolate remote players
-        Object.keys(this.otherPlayerMap).forEach(id => {
+        for (const id in this.otherPlayerMap) {
+            if (!Object.prototype.hasOwnProperty.call(this.otherPlayerMap, id)) continue;
             const remote = this.otherPlayerMap[id];
-            if (!remote || !remote.sprite || !remote.sprite.active) return;
+            if (!remote || !remote.sprite || !remote.sprite.active) continue;
 
             if (remote.targetX !== undefined && remote.targetY !== undefined) {
                 const dx = remote.targetX - remote.sprite.x;
@@ -1136,7 +1130,7 @@ export default class GameScene extends Phaser.Scene {
             } catch (err) {
                 // ignore
             }
-        });
+        }
         this.checkTeleports();
     }
 
@@ -2302,12 +2296,7 @@ export default class GameScene extends Phaser.Scene {
             const isKnight = playerObj.character === 'p1';
             const spellName = isKnight ? 'SHIELD' : 'SPELL';
 
-            const spellColors = {
-                'p1': 0x00ffff,
-                'p2': 0xff8c00,
-                'p3': 0x9b30ff
-            };
-            const spellColor = spellColors[playerObj.character] || 0x00ffff;
+            const spellColor = SPELL_COLORS[playerObj.character] || 0x00ffff;
 
             if (playerObj.isShieldActive) {
                 const activeElapsed = now - lastCast;

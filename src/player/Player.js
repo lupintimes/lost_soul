@@ -168,6 +168,10 @@ export default class Player {
 
         if (this.state === 'dead') return;
 
+        if (this.health && typeof this.health.updateBar === 'function') {
+            this.health.updateBar();
+        }
+
         if (this.sprite.y > 3900) {
             this.die();
             return;
@@ -177,8 +181,11 @@ export default class Player {
         const wasOnSlide = this.isStandingOnSlideBlock;
         this.isStandingOnSlideBlock = false;
         if (this.scene && this.scene.platforms) {
-            this.scene.platforms.forEach(platform => {
-                if (!platform.gameObject || !platform.gameObject.active) return;
+            const platforms = this.scene.platforms;
+            const len = platforms.length;
+            for (let i = 0; i < len; i++) {
+                const platform = platforms[i];
+                if (!platform.gameObject || !platform.gameObject.active) continue;
 
                 const rx = platform.x;
                 const ry = platform.y;
@@ -213,7 +220,7 @@ export default class Player {
                         this.isStandingOnSlideBlock = true;
                     }
                 }
-            });
+            }
         }
 
         // Track slide-off coasting: preserve momentum for a moment after leaving slide
@@ -225,16 +232,10 @@ export default class Player {
         }
 
         if (this.state === 'hurt') {
-            if (this.health && typeof this.health.updateBar === 'function') {
-                this.health.updateBar();
-            }
             return;
         }
 
         if (this.state === 'dash') {
-            if (this.health && typeof this.health.updateBar === 'function') {
-                this.health.updateBar();
-            }
             // Allow chaining a double dash if player is Shadow (p2) and has a charge
             if (this.controls && Phaser.Input.Keyboard.JustDown(this.controls.dash)) {
                 this.dash();
@@ -244,16 +245,10 @@ export default class Player {
 
         if (this.isEnemy) {
             this.enemyAI();
-            if (this.health && typeof this.health.updateBar === 'function') {
-                this.health.updateBar();
-            }
             return;
         }
 
         if (!this.isControlled) {
-            if (this.health && typeof this.health.updateBar === 'function') {
-                this.health.updateBar();
-            }
             return;
         }
 
@@ -266,9 +261,6 @@ export default class Player {
                 Phaser.Input.Keyboard.JustDown(this.controls.spell)) {
                 this.state = 'idle';
             } else {
-                if (this.health && typeof this.health.updateBar === 'function') {
-                    this.health.updateBar();
-                }
                 return;
             }
         }
@@ -283,10 +275,6 @@ export default class Player {
             highJumpForce = highJumpForce * 1.3;
         }
 
-        if (this.health && typeof this.health.updateBar === 'function') {
-            this.health.updateBar();
-        }
-
         if (!this.controls) return;
 
         // Slide block wall climbing logic
@@ -294,8 +282,11 @@ export default class Player {
         let isTouchingRightSide = false;
         
         if (this.scene && this.scene.platforms) {
-            this.scene.platforms.forEach(platform => {
-                if (platform.blockType !== 'slide' || !platform.gameObject || !platform.gameObject.active) return;
+            const platforms = this.scene.platforms;
+            const len = platforms.length;
+            for (let i = 0; i < len; i++) {
+                const platform = platforms[i];
+                if (platform.blockType !== 'slide' || !platform.gameObject || !platform.gameObject.active) continue;
 
                 const rx = platform.x;
                 const ry = platform.y;
@@ -321,7 +312,7 @@ export default class Player {
                         isTouchingRightSide = true;
                     }
                 }
-            });
+            }
         }
 
         // Check if player is holding directional keys away from the block
@@ -409,7 +400,6 @@ export default class Player {
                 else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
                     this.sprite.setVelocityY(jumpForce);
                 }
-            } else {
                 // Allow high jump mid-air after normal jump
                 if (Phaser.Input.Keyboard.JustDown(this.controls.highJump) && !this.hasHighJumpedInAir) {
                     this.playSound('sfx_highjump', 0.3);
@@ -1079,19 +1069,30 @@ export default class Player {
             } else {
                 if (this.scene.mode === 'multiplayer') {
                     const allPlayers = [];
-                    if (this.scene.localPlayer) allPlayers.push(this.scene.localPlayer);
-                    if (this.scene.otherPlayerMap) {
-                        allPlayers.push(...Object.values(this.scene.otherPlayerMap));
+                    if (this.scene.localPlayer && this.scene.localPlayer !== this) {
+                        allPlayers.push(this.scene.localPlayer);
                     }
-                    opponents = allPlayers.filter(p => p && p !== this);
+                    if (this.scene.otherPlayerMap) {
+                        for (const id in this.scene.otherPlayerMap) {
+                            if (Object.prototype.hasOwnProperty.call(this.scene.otherPlayerMap, id)) {
+                                const p = this.scene.otherPlayerMap[id];
+                                if (p && p !== this) {
+                                    allPlayers.push(p);
+                                }
+                            }
+                        }
+                    }
+                    opponents = allPlayers;
                 } else {
                     opponents = this.scene.enemies || [];
                 }
             }
 
-            opponents.forEach(opponent => {
-                if (!opponent || !opponent.sprite || !opponent.sprite.active) return;
-                if (opponent.state === 'dead') return;
+            const opLen = opponents.length;
+            for (let i = 0; i < opLen; i++) {
+                const opponent = opponents[i];
+                if (!opponent || !opponent.sprite || !opponent.sprite.active) continue;
+                if (opponent.state === 'dead') continue;
 
                 const dx = opponent.sprite.x - this.sprite.x;
                 const dy = opponent.sprite.y - this.sprite.y;
@@ -1110,12 +1111,15 @@ export default class Player {
                     const pushForce = 3;
                     opponent.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 1);
                 }
-            });
+            }
 
             // Act as a collider for user-built blocks (platforms)
             if (this.scene && this.scene.platforms) {
-                this.scene.platforms.forEach(platform => {
-                    if (platform.source !== 'user') return;
+                const platforms = this.scene.platforms;
+                const platLen = platforms.length;
+                for (let i = 0; i < platLen; i++) {
+                    const platform = platforms[i];
+                    if (platform.source !== 'user') continue;
 
                     const rx = platform.x;
                     const ry = platform.y;
@@ -1156,7 +1160,7 @@ export default class Player {
                             );
                         }
                     }
-                });
+                }
             }
         } else {
             if (this.shieldVisual) {
