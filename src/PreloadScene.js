@@ -69,10 +69,10 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.binary('sfx_spell_bin', '../assets/audio/spell.mp3_');
         this.load.binary('sfx_highjump_bin', '../assets/audio/highjump.mp3_');
 
-        // New block sound effects
-        this.load.audio('sfx_bubble_jump', '../assets/audio/bubble_jump.ogg');
-        this.load.audio('sfx_bubble_break', '../assets/audio/buble_break.ogg');
-        this.load.audio('sfx_ice_break', '../assets/audio/ice_break.ogg');
+        // New block sound effects (loaded as binary to prevent IDM interception)
+        this.load.binary('sfx_bubble_jump_bin', '../assets/audio/bubble_jump.ogg_');
+        this.load.binary('sfx_bubble_break_bin', '../assets/audio/buble_break.ogg_');
+        this.load.binary('sfx_ice_break_bin', '../assets/audio/ice_break.ogg_');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
@@ -179,7 +179,10 @@ export default class PreloadScene extends Phaser.Scene {
 
         console.log('✅ All assets loaded and animations created. Decoding audio...');
 
-        const audioKeys = ['sfx_click', 'sfx_attack1', 'sfx_attack2', 'sfx_hurt', 'sfx_death', 'sfx_dash', 'sfx_spell', 'sfx_highjump'];
+        const audioKeys = [
+            'sfx_click', 'sfx_attack1', 'sfx_attack2', 'sfx_hurt', 'sfx_death', 'sfx_dash', 'sfx_spell', 'sfx_highjump',
+            'sfx_bubble_jump', 'sfx_bubble_break', 'sfx_ice_break'
+        ];
         
         // Count how many keys we expect to decode
         let decodedCount = 0;
