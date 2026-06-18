@@ -1828,38 +1828,43 @@ export default class GameScene extends Phaser.Scene {
             let curVy = vy;
             const gravity = 280; // Gravity acceleration
 
-            this.tweens.addCounter({
-                from: 0,
-                to: 1,
-                duration: Phaser.Math.Between(1200, 1600), // Extended falling phase
-                ease: 'Linear',
-                onUpdate: (tween) => {
-                    const dt = tween.delta / 1000; // time step in seconds
-                    curVx *= 0.97; // air resistance
+            const fallDuration = Phaser.Math.Between(1200, 1600);
+            let elapsed = 0;
+
+            const timer = this.time.addEvent({
+                delay: 16, // ~60fps
+                loop: true,
+                callback: () => {
+                    const dt = 0.016; // 16ms step
+                    elapsed += 16;
+
+                    curVx *= 0.97;
                     curVy += gravity * dt;
 
-                    curX += curVx;
-                    curY += curVy;
+                    curX += curVx * dt * 60;
+                    curY += curVy * dt * 60;
 
                     if (shard && shard.active) {
                         shard.setPosition(curX, curY);
-                        shard.setAngle(shard.angle + curVx * dt * 2.5);
+                        shard.setAngle(shard.angle + curVx * dt * 2.5 * 60);
                     }
-                },
-                onComplete: () => {
-                    if (shard && shard.active) {
-                        // Keep on ground/low for 3 seconds, then fade out and destroy
-                        this.tweens.add({
-                            targets: shard,
-                            alpha: 0,
-                            scale: 0.15,
-                            delay: 3000,
-                            duration: 500,
-                            ease: 'Cubic.easeOut',
-                            onComplete: () => {
-                                if (shard && shard.active) shard.destroy();
-                            }
-                        });
+
+                    if (elapsed >= fallDuration) {
+                        timer.destroy();
+                        if (shard && shard.active) {
+                            // Keep on ground/low for 3 seconds, then fade out and destroy
+                            this.tweens.add({
+                                targets: shard,
+                                alpha: 0,
+                                scale: 0.15,
+                                delay: 3000,
+                                duration: 500,
+                                ease: 'Cubic.easeOut',
+                                onComplete: () => {
+                                    if (shard && shard.active) shard.destroy();
+                                }
+                            });
+                        }
                     }
                 }
             });
