@@ -1838,11 +1838,14 @@ export default class GameScene extends Phaser.Scene {
         const cy = p.y + p.h / 2;
 
         if (p.blockType === 'bounce') {
+            this.safePlaySound('sfx_bubble_break', 0.5);
             this.createBubbleBlastParticles(cx, cy, p.w, p.h, p.tint || 0xffd700);
             this.cameras.main.shake(150, 0.005);
         } else if (p.blockType === 'slide') {
+            this.safePlaySound('sfx_ice_break', 0.55);
             this.createIceShatterParticles(cx, cy, p.w, p.h, p.tint || 0x00e5ff);
         } else {
+            this.safePlaySound('sfx_bubble_break', 0.4);
             this.createNormalDissolveParticles(cx, cy, p.w, p.h, p.tint || 0x475569);
         }
     }

@@ -209,7 +209,7 @@ export default class Player {
                         const jumpVelocity = -9 - (22 * factor);
                         
                         this.sprite.setVelocityY(jumpVelocity);
-                        this.playSound('sfx_highjump', 0.3 + 0.4 * factor);
+                        this.playSound('sfx_bubble_jump', 0.3 + 0.4 * factor);
                         
                         const particleColor = (platform.tint !== null && platform.tint !== undefined) ? platform.tint : 0xffd700;
                         this.createHitParticles(this.sprite.x, py + 76, particleColor);

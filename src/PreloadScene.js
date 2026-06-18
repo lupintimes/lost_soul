@@ -69,6 +69,11 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.binary('sfx_spell_bin', '../assets/audio/spell.mp3_');
         this.load.binary('sfx_highjump_bin', '../assets/audio/highjump.mp3_');
 
+        // New block sound effects
+        this.load.audio('sfx_bubble_jump', '../assets/audio/bubble_jump.ogg');
+        this.load.audio('sfx_bubble_break', '../assets/audio/buble_break.ogg');
+        this.load.audio('sfx_ice_break', '../assets/audio/ice_break.ogg');
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
