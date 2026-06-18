@@ -290,6 +290,9 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         this.cameras.main.setRoundPixels(true);
+        this.game.events.on('visible', () => {
+            this.anims.resumeAll();
+        });
         // Clean up DOM chat elements on scene shutdown or destroy
         this.events.on('shutdown', () => this.cleanupChat());
         this.events.on('destroy', () => this.cleanupChat());
@@ -523,6 +526,8 @@ export default class GameScene extends Phaser.Scene {
         this.socket.off('obstacleCreated');
         this.socket.off('obstacleRemoved');
         this.socket.off('currentObstacles');
+        this.socket.off('spellCast');
+        this.socket.off('shieldBlastReleased');
 
         // 1. Current players
         this.socket.on('currentPlayers', (players) => {
@@ -586,6 +591,7 @@ export default class GameScene extends Phaser.Scene {
             remote.sprite.flipX = playerInfo.flipX;
             remote.isShieldActive = playerInfo.isShieldActive || false;
             remote.isRageActive = playerInfo.isRageActive || false;
+            remote.lastMovementUpdateTime = this.time.now;
 
             if (playerInfo.anim) {
                 const currentAnim = remote.sprite.anims.currentAnim;
@@ -749,6 +755,33 @@ export default class GameScene extends Phaser.Scene {
             });
         });
 
+        // 10. Spell synchronization
+        this.socket.on('spellCast', (data) => {
+            console.log('🔮 Remote spell cast by:', data.casterId);
+            const remotePlayer = this.otherPlayerMap[data.casterId];
+            if (remotePlayer) {
+                if (data.type === 'shield_block') {
+                    remotePlayer.playSound('sfx_highjump', 0.5);
+                    remotePlayer.isShieldActive = true;
+                    remotePlayer.shieldBlocksAbsorbed = 0;
+                } else {
+                    remotePlayer.castSpellRemote(data.x, data.y, data.dir, data.spellId);
+                }
+            }
+        });
+
+        this.socket.on('shieldBlastReleased', (data) => {
+            console.log('💥 Remote shield blast released by:', data.casterId);
+            const remotePlayer = this.otherPlayerMap[data.casterId];
+            if (remotePlayer) {
+                remotePlayer.isShieldActive = false;
+                remotePlayer.releaseShieldBlast(data.blastId, data.blocksAbsorbed);
+            } else if (this.localPlayer && this.localPlayer.playerId === data.casterId) {
+                this.localPlayer.isShieldActive = false;
+                this.localPlayer.releaseShieldBlast(data.blastId, data.blocksAbsorbed);
+            }
+        });
+
         // ✅ Request players after all listeners are ready
         console.log('🔄 Requesting players from server...');
         this.socket.emit('requestPlayers');
@@ -807,6 +840,9 @@ export default class GameScene extends Phaser.Scene {
         const remoteChar = playerInfo.character || 'p1';
         const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false, remoteChar);
         remotePlayer.sprite.setTint(0xff6666);
+        
+        // Play idle animation immediately upon spawning
+        remotePlayer.sprite.anims.play(`${remoteChar}_idle_anim`, true);
 
         // ✅ Disable gravity and physics for remote players in Matter
         remotePlayer.sprite.setSensor(true);
@@ -816,6 +852,10 @@ export default class GameScene extends Phaser.Scene {
         // Interpolation targets
         remotePlayer.targetX = playerInfo.x;
         remotePlayer.targetY = playerInfo.y;
+        remotePlayer.lastMovementUpdateTime = this.time.now;
+
+        remotePlayer.isShieldActive = playerInfo.isShieldActive || false;
+        remotePlayer.isRageActive = playerInfo.isRageActive || false;
 
         // Store by ID
         this.otherPlayerMap[playerInfo.playerId] = remotePlayer;
@@ -1027,31 +1067,61 @@ export default class GameScene extends Phaser.Scene {
             const sy = s.gameObject.y;
             const sr = s.radius;
 
-            if (s.owner.isControlled && this.mode === 'multiplayer') {
-                // Multiplayer: check against remote players
-                for (const id in this.otherPlayerMap) {
-                    if (Object.prototype.hasOwnProperty.call(this.otherPlayerMap, id)) {
-                        const remote = this.otherPlayerMap[id];
-                        if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
+            if (this.mode === 'multiplayer') {
+                if (s.owner.isControlled) {
+                    // Caster's client: check against remote players
+                    let hitDetected = false;
+                    for (const id in this.otherPlayerMap) {
+                        if (Object.prototype.hasOwnProperty.call(this.otherPlayerMap, id)) {
+                            const remote = this.otherPlayerMap[id];
+                            if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
 
-                        const rx = remote.sprite.x;
-                        const ry = remote.sprite.y;
-                        const rw = 64;
-                        const rh = 152;
+                            const rx = remote.sprite.x;
+                            const ry = remote.sprite.y;
+                            const rw = 64;
+                            const rh = 152;
 
-                        // Circular to AABB overlap
-                        const closestX = Math.max(rx - rw / 2, Math.min(sx, rx + rw / 2));
-                        const closestY = Math.max(ry - rh / 2, Math.min(sy, ry + rh / 2));
+                            const closestX = Math.max(rx - rw / 2, Math.min(sx, rx + rw / 2));
+                            const closestY = Math.max(ry - rh / 2, Math.min(sy, ry + rh / 2));
+                            const dx = sx - closestX;
+                            const dy = sy - closestY;
+                            const distSq = dx * dx + dy * dy;
+
+                            if (distSq < sr * sr) {
+                                if (this.socket && s.spellId) {
+                                    this.socket.emit('spellHit', { targetId: id, damage: s.damage, spellId: s.spellId });
+                                }
+                                s.gameObject.destroy();
+                                if (s.trailTimer) s.trailTimer.destroy();
+                                this.spells.splice(i, 1);
+                                hitDetected = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hitDetected) continue;
+                } else {
+                    // Target's client: check if this remote spell hits our local player
+                    if (this.localPlayer && this.localPlayer.sprite && this.localPlayer.sprite.active && this.localPlayer.state !== 'dead' && !this.localPlayer.isInvincible) {
+                        const px = this.localPlayer.sprite.x;
+                        const py = this.localPlayer.sprite.y;
+                        const pw = 64;
+                        const ph = 152;
+
+                        const closestX = Math.max(px - pw / 2, Math.min(sx, px + pw / 2));
+                        const closestY = Math.max(py - ph / 2, Math.min(sy, py + ph / 2));
                         const dx = sx - closestX;
                         const dy = sy - closestY;
                         const distSq = dx * dx + dy * dy;
 
                         if (distSq < sr * sr) {
-                            this.sendAttackToServer(id, s.damage);
+                            if (this.socket && s.spellId) {
+                                this.socket.emit('spellHit', { targetId: this.socket.id, damage: s.damage, spellId: s.spellId });
+                            }
                             s.gameObject.destroy();
                             if (s.trailTimer) s.trailTimer.destroy();
                             this.spells.splice(i, 1);
-                            break;
+                            continue;
                         }
                     }
                 }
@@ -1191,6 +1261,17 @@ export default class GameScene extends Phaser.Scene {
                     const lerpSpeed = 0.3;
                     remote.sprite.x += dx * lerpSpeed;
                     remote.sprite.y += dy * lerpSpeed;
+                }
+            }
+
+            // If we haven't received a movement update for 1000ms, force idle animation
+            const gameTimeNow = this.time.now;
+            if (remote.lastMovementUpdateTime && (gameTimeNow - remote.lastMovementUpdateTime > 1000)) {
+                if (remote.state !== 'dead' && remote.state !== 'attack' && remote.state !== 'taunt') {
+                    const idleAnim = `${remote.character}_idle_anim`;
+                    if (remote.sprite.anims.currentAnim && remote.sprite.anims.currentAnim.key !== idleAnim) {
+                        remote.sprite.anims.play(idleAnim, true);
+                    }
                 }
             }
 
@@ -2136,8 +2217,15 @@ export default class GameScene extends Phaser.Scene {
         const remainingBlinkTime = Math.max(0, blinkStartTime - obstacleAge);
         const remainingDecayTime = Math.max(0, decayTime - obstacleAge);
 
+        console.log(`[createObstacle] id=${id}, creatorId=${creatorId}, obstacleAge=${obstacleAge}`);
+        console.log(`[createObstacle] remainingBlinkTime=${remainingBlinkTime}, remainingDecayTime=${remainingDecayTime}`);
+        const socketId = this.socket ? this.socket.id : 'null';
+        const isOwner = this.mode !== 'multiplayer' || !creatorId || creatorId === socketId;
+        console.log(`[createObstacle] mode=${this.mode}, isOwner=${isOwner}, socketId=${socketId}`);
+
         // Schedule warning blink ONLY for normal blocks (bounce and slide have custom warning updates)
         this.time.delayedCall(remainingBlinkTime, () => {
+            console.log(`[createObstacle] Warning blink callback fired for id=${id}`);
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
@@ -2154,21 +2242,15 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        // Schedule deletion & build points refund ONLY if this client is the OWNER
-        const isOwner = this.mode !== 'multiplayer' || !creatorId || creatorId === this.socket.id;
-
-        if (isOwner) {
+        // Schedule deletion & build points refund ONLY in solo mode (in multiplayer, the server authoritatively handles decay and broadcasts 'obstacleRemoved')
+        if (this.mode !== 'multiplayer') {
+            console.log(`[createObstacle] Solo mode: Scheduling decay timer for block id=${id} in ${remainingDecayTime}ms`);
             this.time.delayedCall(remainingDecayTime, () => {
-                const idx = this.platforms.findIndex(p => p.id === id);
-                if (idx !== -1) {
-                    const p = this.platforms[idx];
-                    // Authoritatively remove locally and sync to other clients
-                    if (this.mode === 'multiplayer' && this.socket && p.id) {
-                        this.socket.emit('removeObstacle', { id: p.id });
-                    }
-                    this.destroyObstacleLocally(id, true);
-                }
+                console.log(`[createObstacle] Solo decay callback fired for id=${id}`);
+                this.destroyObstacleLocally(id, true);
             });
+        } else {
+            console.log(`[createObstacle] Multiplayer mode: relying on server decay for block id=${id}`);
         }
 
         return true;

@@ -596,10 +596,26 @@ export default class Player {
             this.isShieldActive = true;
             this.shieldBlocksAbsorbed = 0;
             
+            const spellId = this.scene.mode === 'multiplayer' && this.isControlled
+                ? `${this.playerId}_shield_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+                : `solo_shield_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+
+            if (this.isControlled && this.scene.mode === 'multiplayer' && this.scene.socket) {
+                this.scene.socket.emit('castSpell', {
+                    x: this.sprite.x,
+                    y: this.sprite.y,
+                    dir: this.sprite.flipX ? -1 : 1,
+                    character: this.character,
+                    spellId: spellId,
+                    type: 'shield_block'
+                });
+            }
+
             if (this.shieldTimer) this.shieldTimer.destroy();
             this.shieldTimer = this.scene.time.delayedCall(2000, () => {
                 this.isShieldActive = false;
-                this.releaseShieldBlast();
+                const blastId = `${spellId}_blast`;
+                this.releaseShieldBlast(blastId);
             });
             return;
         }
@@ -661,6 +677,10 @@ export default class Player {
             });
         }
 
+        const spellId = this.scene.mode === 'multiplayer' && this.isControlled
+            ? `${this.playerId}_spell_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+            : `solo_spell_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+
         if (!this.scene.spells) {
             this.scene.spells = [];
         }
@@ -669,7 +689,92 @@ export default class Player {
             damage: damage,
             owner: this,
             trailTimer: trailTimer,
-            radius: radius
+            radius: radius,
+            spellId: spellId
+        });
+
+        // --- MULTIPLAYER PROJECTILE SYNCHRONIZATION ---
+        if (this.isControlled && this.scene.mode === 'multiplayer' && this.scene.socket) {
+            this.scene.socket.emit('castSpell', {
+                x: this.sprite.x,
+                y: this.sprite.y,
+                dir: dir,
+                character: this.character,
+                spellId: spellId
+            });
+        }
+
+        this.scene.time.delayedCall(1000, () => {
+            if (spell.active) spell.destroy();
+            if (trailTimer) trailTimer.destroy();
+        });
+    }
+
+    castSpellRemote(x, y, dir, spellId) {
+        this.playSound('sfx_spell', 0.4);
+
+        const spellColors = {
+            'p1': 0x00ffff,
+            'p2': 0xff8c00,
+            'p3': 0x9b30ff
+        };
+
+        const spellColor = spellColors[this.character] || 0x00ffff;
+        const damage = this.getSpellDamage();
+
+        const isP2 = this.character === 'p2';
+        const radius = isP2 ? 22 : 15;
+        const velocityX = isP2 ? dir * 14.4 : dir * 8;
+
+        const spell = this.scene.add.circle(
+            x + dir * 50,
+            y,
+            radius
+        );
+        spell.setDepth(10);
+        this.scene.matter.add.gameObject(spell);
+        spell.setCircle(radius, {
+            isSensor: true,
+            ignoreGravity: true
+        });
+        spell.setFillStyle(spellColor);
+        spell.setVelocityX(velocityX);
+
+        // 🔶 Shadow trail
+        let trailTimer = null;
+        if (isP2) {
+            trailTimer = this.scene.time.addEvent({
+                delay: 40,
+                repeat: 24,
+                callback: () => {
+                    if (!spell || !spell.active) {
+                        if (trailTimer) trailTimer.destroy();
+                        return;
+                    }
+                    const dot = this.scene.add.circle(spell.x, spell.y, Phaser.Math.Between(5, 10), 0xff6600, 0.75);
+                    dot.setDepth(9);
+                    this.scene.tweens.add({
+                        targets: dot,
+                        alpha: 0,
+                        scale: 0.1,
+                        duration: 280,
+                        ease: 'Power2',
+                        onComplete: () => { if (dot && dot.active) dot.destroy(); }
+                    });
+                }
+            });
+        }
+
+        if (!this.scene.spells) {
+            this.scene.spells = [];
+        }
+        this.scene.spells.push({
+            gameObject: spell,
+            damage: damage,
+            owner: this,
+            trailTimer: trailTimer,
+            radius: radius,
+            spellId: spellId
         });
 
         this.scene.time.delayedCall(1000, () => {
@@ -678,11 +783,19 @@ export default class Player {
         });
     }
 
-    releaseShieldBlast() {
+    releaseShieldBlast(blastId = null, remoteBlocksAbsorbed = null) {
         if (this.state === 'dead' || !this.sprite || !this.sprite.active) return;
 
+        const activeBlastId = blastId || `${this.playerId || 'solo'}_shield_${Date.now()}_${Math.random().toString(36).substring(2, 5)}_blast`;
+
+        // Double execution guard
+        if (activeBlastId && this.lastReleasedBlastId === activeBlastId) {
+            return;
+        }
+        this.lastReleasedBlastId = activeBlastId;
+
+        const blocksAbsorbed = remoteBlocksAbsorbed !== null ? remoteBlocksAbsorbed : (this.shieldBlocksAbsorbed || 0);
         const baseDamage = 15;
-        const blocksAbsorbed = this.shieldBlocksAbsorbed || 0;
         const bonusDamage = blocksAbsorbed * 7.5;
         const totalDamage = Math.round(baseDamage + bonusDamage);
         const blastRadius = 200;
@@ -726,27 +839,64 @@ export default class Player {
         this.createHitParticles(this.sprite.x, this.sprite.y, 0x00ffff);
         this.createHitParticles(this.sprite.x, this.sprite.y - 30, 0x00ffff);
 
-        // Find targets in radius
-        let targets = [];
-        if (this.isControlled && this.scene.mode === 'multiplayer') {
-            // Multiplayer: check remote players
-            for (const id in this.scene.otherPlayerMap) {
-                if (Object.prototype.hasOwnProperty.call(this.scene.otherPlayerMap, id)) {
-                    const remote = this.scene.otherPlayerMap[id];
-                    if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
+        // --- MULTIPLAYER SHIELD BLAST SYNCHRONIZATION ---
+        if (this.isControlled && this.scene.mode === 'multiplayer' && this.scene.socket) {
+            this.scene.socket.emit('releaseShieldBlast', {
+                blocksAbsorbed: blocksAbsorbed,
+                blastId: activeBlastId
+            });
+        }
 
-                    const dx = remote.sprite.x - this.sprite.x;
-                    const dy = remote.sprite.y - this.sprite.y;
+        // Find targets in radius
+        if (this.scene.mode === 'multiplayer') {
+            if (this.isControlled) {
+                // Caster client: check collision against remote players
+                for (const id in this.scene.otherPlayerMap) {
+                    if (Object.prototype.hasOwnProperty.call(this.scene.otherPlayerMap, id)) {
+                        const remote = this.scene.otherPlayerMap[id];
+                        if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
+
+                        const dx = remote.sprite.x - this.sprite.x;
+                        const dy = remote.sprite.y - this.sprite.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist <= blastRadius) {
+                            if (this.scene.socket) {
+                                this.scene.socket.emit('shieldBlastHit', {
+                                    targetId: id,
+                                    damage: totalDamage,
+                                    blastId: activeBlastId
+                                });
+                            }
+
+                            // Apply local knockback push to target sprite
+                            const angle = Math.atan2(dy, dx);
+                            const pushForce = 15 + blocksAbsorbed * 5;
+                            remote.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 3);
+                        }
+                    }
+                }
+            } else {
+                // Remote client casting on our screen: check if it hits our local player
+                if (this.scene.localPlayer && this.scene.localPlayer.sprite && this.scene.localPlayer.sprite.active && this.scene.localPlayer.state !== 'dead' && !this.scene.localPlayer.isInvincible) {
+                    const localP = this.scene.localPlayer;
+                    const dx = localP.sprite.x - this.sprite.x;
+                    const dy = localP.sprite.y - this.sprite.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist <= blastRadius) {
-                        // Send hit to server
-                        this.scene.sendAttackToServer(id, totalDamage);
+                        if (this.scene.socket) {
+                            this.scene.socket.emit('shieldBlastHit', {
+                                targetId: this.scene.socket.id,
+                                damage: totalDamage,
+                                blastId: activeBlastId
+                            });
+                        }
 
-                        // Apply local knockback push to target sprite
+                        // Apply local knockback push to our local player sprite
                         const angle = Math.atan2(dy, dx);
                         const pushForce = 15 + blocksAbsorbed * 5;
-                        remote.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 3);
+                        localP.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 3);
                     }
                 }
             }

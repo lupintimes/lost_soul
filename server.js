@@ -288,6 +288,17 @@ io.on('connection', (socket) => {
         data.creatorId = creatorId;
         data.createdAt = rooms[roomId].obstacles[data.id].createdAt;
         socket.to(roomId).emit('obstacleCreated', data);
+
+        // Server-side authoritative decay countdown (15 seconds)
+        const obstacleId = data.id;
+        const decayTime = 15000;
+        setTimeout(() => {
+            if (rooms[roomId] && rooms[roomId].obstacles && rooms[roomId].obstacles[obstacleId]) {
+                delete rooms[roomId].obstacles[obstacleId];
+                io.to(roomId).emit('obstacleRemoved', { id: obstacleId });
+                console.log(`🗑️ Server decay: authoritatively removed obstacle ${obstacleId} in room ${roomId}`);
+            }
+        }, decayTime);
     });
 
     socket.on('removeObstacle', (data) => {
@@ -338,6 +349,7 @@ io.on('connection', (socket) => {
         // Knight Shield Block damage reduction (100% reduction - no damage)
         if (target.isShieldActive) {
             damage = 0;
+            target.shieldBlocksAbsorbed = (target.shieldBlocksAbsorbed || 0) + 1;
         }
         target.health = Math.max(0, target.health - damage);
 
@@ -408,6 +420,239 @@ io.on('connection', (socket) => {
 
         scoreboard.sort((a, b) => b.kills - a.kills);
         socket.emit('scoreboard', scoreboard);
+    });
+
+    socket.on('castSpell', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        socket.to(roomId).emit('spellCast', {
+            casterId: socket.id,
+            x: data.x,
+            y: data.y,
+            dir: data.dir,
+            character: data.character,
+            spellId: data.spellId,
+            type: data.type
+        });
+
+        if (data.type === 'shield_block') {
+            const room = rooms[roomId];
+            const player = room.players[socket.id];
+            if (player) {
+                player.isShieldActive = true;
+                player.shieldBlocksAbsorbed = 0;
+                player.shieldSpellId = data.spellId;
+
+                if (player.shieldTimeout) {
+                    clearTimeout(player.shieldTimeout);
+                }
+
+                player.shieldTimeout = setTimeout(() => {
+                    if (rooms[roomId] && rooms[roomId].players[socket.id] && player.isShieldActive) {
+                        console.log(`🛡️ Server fallback: releasing shield blast for ${socket.id}`);
+                        player.isShieldActive = false;
+                        
+                        io.to(roomId).emit('shieldBlastReleased', {
+                            casterId: socket.id,
+                            blocksAbsorbed: player.shieldBlocksAbsorbed,
+                            blastId: `${data.spellId}_blast`
+                        });
+                    }
+                }, 2200);
+            }
+        }
+    });
+
+    socket.on('releaseShieldBlast', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        const room = rooms[roomId];
+        const player = room.players[socket.id];
+        if (player) {
+            player.isShieldActive = false;
+            if (player.shieldTimeout) {
+                clearTimeout(player.shieldTimeout);
+                player.shieldTimeout = null;
+            }
+            const blocks = Math.max(player.shieldBlocksAbsorbed || 0, data.blocksAbsorbed || 0);
+
+            socket.to(roomId).emit('shieldBlastReleased', {
+                casterId: socket.id,
+                blocksAbsorbed: blocks,
+                blastId: data.blastId || `${socket.id}_blast_${Date.now()}`
+            });
+        }
+    });
+
+    socket.on('spellHit', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        const room = rooms[roomId];
+        if (!room.spentSpells) {
+            room.spentSpells = new Set();
+        }
+
+        const spellId = data.spellId;
+        if (room.spentSpells.has(spellId)) {
+            return;
+        }
+        room.spentSpells.add(spellId);
+
+        const target = room.players[data.targetId];
+        const casterId = spellId ? spellId.split('_spell_')[0] : null;
+        const caster = room.players[casterId];
+
+        if (!target) return;
+        if (target.health <= 0) return;
+
+        if (target.isInvincible) return;
+
+        let damage = data.damage || 10;
+        if (target.isShieldActive) {
+            damage = 0;
+        }
+        target.health = Math.max(0, target.health - damage);
+
+        console.log(`🔮 Spell Hit: ${casterId} hit ${data.targetId} with spell ${spellId} for ${damage} dmg (HP: ${target.health})`);
+
+        io.to(roomId).emit('playerDamaged', {
+            attackerId: casterId,
+            targetId: data.targetId,
+            damage: damage,
+            remainingHealth: target.health
+        });
+
+        if (target.health <= 0) {
+            if (caster) {
+                caster.kills++;
+            }
+            target.deaths++;
+
+            console.log(`💀 ${data.targetId} killed by ${casterId} via spell`);
+
+            io.to(roomId).emit('playerKilled', {
+                killerId: casterId,
+                victimId: data.targetId,
+                killerKills: caster ? caster.kills : 0,
+                victimDeaths: target.deaths
+            });
+
+            // Respawn timeout
+            setTimeout(() => {
+                if (rooms[roomId] && rooms[roomId].players[data.targetId]) {
+                    const respawnPoint = getUniqueSpawn(room);
+                    const maxHealth = target.character === 'p1' ? 130 : 100;
+                    target.health = maxHealth;
+                    target.x = respawnPoint.x;
+                    target.y = respawnPoint.y;
+                    target.isInvincible = true;
+
+                    const respawnRoomId = roomId;
+                    const respawnPlayerId = data.targetId;
+
+                    setTimeout(() => {
+                        if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
+                            rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
+                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
+                        }
+                    }, 5000);
+
+                    io.to(roomId).emit('playerRespawned', {
+                        playerId: data.targetId,
+                        x: respawnPoint.x,
+                        y: respawnPoint.y,
+                        health: maxHealth
+                    });
+                }
+            }, 3000);
+        }
+    });
+
+    socket.on('shieldBlastHit', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+
+        const room = rooms[roomId];
+        if (!room.spentBlasts) {
+            room.spentBlasts = new Set();
+        }
+
+        const blastId = data.blastId;
+        if (room.spentBlasts.has(blastId)) {
+            return;
+        }
+        room.spentBlasts.add(blastId);
+
+        const target = room.players[data.targetId];
+        const casterId = blastId ? blastId.split('_shield_')[0] : null;
+        const caster = room.players[casterId];
+
+        if (!target) return;
+        if (target.health <= 0) return;
+        if (target.isInvincible) return;
+
+        let damage = data.damage || 15;
+        if (target.isShieldActive) {
+            damage = 0;
+        }
+        target.health = Math.max(0, target.health - damage);
+
+        console.log(`💥 Shield Blast Hit: ${casterId} hit ${data.targetId} with blast ${blastId} for ${damage} dmg (HP: ${target.health})`);
+
+        io.to(roomId).emit('playerDamaged', {
+            attackerId: casterId,
+            targetId: data.targetId,
+            damage: damage,
+            remainingHealth: target.health
+        });
+
+        if (target.health <= 0) {
+            if (caster) {
+                caster.kills++;
+            }
+            target.deaths++;
+
+            console.log(`💀 ${data.targetId} killed by ${casterId} via shield blast`);
+
+            io.to(roomId).emit('playerKilled', {
+                killerId: casterId,
+                victimId: data.targetId,
+                killerKills: caster ? caster.kills : 0,
+                victimDeaths: target.deaths
+            });
+
+            // Respawn timeout
+            setTimeout(() => {
+                if (rooms[roomId] && rooms[roomId].players[data.targetId]) {
+                    const respawnPoint = getUniqueSpawn(room);
+                    const maxHealth = target.character === 'p1' ? 130 : 100;
+                    target.health = maxHealth;
+                    target.x = respawnPoint.x;
+                    target.y = respawnPoint.y;
+                    target.isInvincible = true;
+
+                    const respawnRoomId = roomId;
+                    const respawnPlayerId = data.targetId;
+
+                    setTimeout(() => {
+                        if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
+                            rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
+                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
+                        }
+                    }, 5000);
+
+                    io.to(roomId).emit('playerRespawned', {
+                        playerId: data.targetId,
+                        x: respawnPoint.x,
+                        y: respawnPoint.y,
+                        health: maxHealth
+                    });
+                }
+            }, 3000);
+        }
     });
 
     socket.on('chatMessage', (data) => {
