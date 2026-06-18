@@ -1816,11 +1816,8 @@ export default class GameScene extends Phaser.Scene {
             const shard = this.add.rectangle(px, py, sw, sh, color, 0.85).setDepth(90);
             shard.setAngle(Phaser.Math.Between(0, 360));
 
-            const angle = Math.random() * Math.PI * 2;
-            const speed = Phaser.Math.Between(60, 180);
-
-            const vx = Math.cos(angle) * speed;
-            const vy = Math.sin(angle) * speed - 60; // Upward burst initial push
+            const vx = Phaser.Math.Between(-12, 12); // minimal horizontal scattering
+            const vy = Phaser.Math.Between(15, 65);  // downward initial push
 
             let curX = px;
             let curY = py;
