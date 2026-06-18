@@ -1979,51 +1979,62 @@ export default class GameScene extends Phaser.Scene {
 
     createBuildPointsUI() {
         const { width } = this.scale;
-        const startX = width - 230;
-        const startY = 10;
-        const panelW = 220;
-        const panelH = 68; // Expanded to fit block type row and larger text
+        const startX = width - 255;
+        const startY = 15;
+        const panelW = 240;
+        const panelH = 68;
 
-        this.buildUIBg = this.add.rectangle(startX, startY, panelW, panelH, 0x000000, 0.6)
-            .setOrigin(0)
+        this.buildGraphics = this.add.graphics()
             .setScrollFactor(0)
-            .setDepth(99);
-        this.buildUIBg.setStrokeStyle(1.5, 0x333333);
+            .setDepth(98);
 
-        this.buildUITitle = this.add.text(startX + 10, startY + 6, 'BUILD POINTS', {
+        // Draw glass panel
+        // Drop shadow
+        this.buildGraphics.fillStyle(0x000000, 0.35);
+        this.buildGraphics.fillRoundedRect(startX + 3, startY + 3, panelW, panelH, 6);
+        // Glass background
+        this.buildGraphics.fillStyle(0x0a0f19, 0.85);
+        this.buildGraphics.fillRoundedRect(startX, startY, panelW, panelH, 6);
+        // Neon stroke
+        this.buildGraphics.lineStyle(1.5, 0x00ffcc, 0.85);
+        this.buildGraphics.strokeRoundedRect(startX, startY, panelW, panelH, 6);
+
+        // Bar track
+        this.buildGraphics.fillStyle(0x151c27, 1);
+        this.buildGraphics.fillRoundedRect(startX + 10, startY + 24, panelW - 20, 10, 3);
+
+        this.buildUITitle = this.add.text(startX + 10, startY + 8, 'BUILD POINTS', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
             color: '#ffff00'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.buildUIBarBg = this.add.rectangle(startX + 10, startY + 20, panelW - 20, 10, 0x222222)
+        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 24, panelW - 20, 10, 0x00ffcc)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 20, panelW - 20, 10, 0x00ffcc)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
-
-        this.buildUIText = this.add.text(startX + 10, startY + 34, '300,000 / 300,000', {
+        this.buildUIText = this.add.text(startX + 10, startY + 38, '300,000 / 300,000', {
             fontFamily: '"Silkscreen"',
             fontSize: '10px',
             color: '#ffffff'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
         // Block type indicator (1=Normal, 2=Bounce, 3=Slide)
-        this.buildBlockTypeText = this.add.text(startX + 10, startY + 46, '[ 1 ] NORMAL', {
+        this.buildBlockTypeText = this.add.text(startX + 10, startY + 50, '[ 1 ] NORMAL', {
             fontFamily: '"Silkscreen"',
             fontSize: '10px',
             color: '#c4c9ca'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
     }
 
     updateBuildPointsUI() {
@@ -2180,115 +2191,118 @@ export default class GameScene extends Phaser.Scene {
     createHUD() {
         const { width, height } = this.scale;
 
-        // 1. Health Panel (top-left)
-        this.hudHealthBg = this.add.rectangle(10, 10, 240, 58, 0x000000, 0.6)
-            .setOrigin(0)
+        // Initialize HUD graphics object
+        this.hudGraphics = this.add.graphics()
             .setScrollFactor(0)
-            .setDepth(99);
-        this.hudHealthBg.setStrokeStyle(1.5, 0x333333);
+            .setDepth(98);
 
-        this.hudHealthTitle = this.add.text(20, 15, 'PLAYER HP', {
+        const drawGlassPanel = (graphics, x, y, w, h, strokeColor, radius = 6) => {
+            // Drop shadow
+            graphics.fillStyle(0x000000, 0.35);
+            graphics.fillRoundedRect(x + 3, y + 3, w, h, radius);
+            // Glass background
+            graphics.fillStyle(0x0a0f19, 0.85);
+            graphics.fillRoundedRect(x, y, w, h, radius);
+            // Neon stroke
+            graphics.lineStyle(1.5, strokeColor, 0.85);
+            graphics.strokeRoundedRect(x, y, w, h, radius);
+        };
+
+        const drawBarTrack = (graphics, x, y, w, h, radius = 3) => {
+            graphics.fillStyle(0x151c27, 1);
+            graphics.fillRoundedRect(x, y, w, h, radius);
+        };
+
+        // 1. Health Card layout (top-left: x=15, y=15, w=240, h=64)
+        drawGlassPanel(this.hudGraphics, 15, 15, 240, 64, 0xff4444);
+        drawBarTrack(this.hudGraphics, 25, 36, 220, 12, 4);
+
+        this.hudHealthTitle = this.add.text(25, 20, 'PLAYER HP', {
             fontFamily: '"Silkscreen"',
-            fontSize: '12px',
+            fontSize: '11px',
             color: '#ff4444'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudHealthBarBg = this.add.rectangle(20, 31, 220, 12, 0x222222)
+        this.hudHealthBarFill = this.add.rectangle(25, 36, 220, 12, 0x2ecc71)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudHealthBarFill = this.add.rectangle(20, 31, 220, 12, 0x2ecc71)
-            .setOrigin(0)
+        this.hudHealthText = this.add.text(25, 52, 'HP: 100 / 100', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '10px',
+            color: '#ffffff'
+        })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudHealthText = this.add.text(20, 46, 'HP: 100 / 100', {
+        // 2. Stats/Kills Card layout (top-left below health: x=15, y=89, w=240, h=36)
+        drawGlassPanel(this.hudGraphics, 15, 89, 240, 36, 0x8a95a5);
+
+        this.hudKillsText = this.add.text(25, 98, 'KILLS: 0   DEATHS: 0', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
             color: '#ffffff'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        // 2. Stats Panel (below Health panel)
-        this.hudKillsBg = this.add.rectangle(10, 78, 240, 32, 0x000000, 0.6)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(99);
-        this.hudKillsBg.setStrokeStyle(1.5, 0x333333);
+        // 3. Spell Cooldown Card (top-right below build points: x=width-255, y=93, w=240, h=50)
+        const spellX = width - 255;
+        const spellY = 93;
+        drawGlassPanel(this.hudGraphics, spellX, spellY, 240, 50, 0x9b30ff);
+        drawBarTrack(this.hudGraphics, spellX + 10, spellY + 28, 220, 10, 3);
 
-        this.hudKillsText = this.add.text(20, 85, 'KILLS: 0   DEATHS: 0', {
+        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 10, 'SPELL (R): READY', {
             fontFamily: '"Silkscreen"',
-            fontSize: '12px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100);
-
-        // 3. Spell Cooldown Panel (below Build Points panel on the right side)
-        const spellX = width - 250;
-        const spellY = 100; // 10px below Build Points panel (10 + 80 = 90)
-
-        this.hudSpellBg = this.add.rectangle(spellX, spellY, 240, 44, 0x000000, 0.6)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(99);
-        this.hudSpellBg.setStrokeStyle(1.5, 0x333333);
-
-        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 8, 'SPELL (R): READY', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '12px',
+            fontSize: '11px',
             color: '#44ff44'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudSpellBarBg = this.add.rectangle(spellX + 10, spellY + 24, 220, 10, 0x222222)
+        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 28, 220, 10, 0x9b30ff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 24, 220, 10, 0x9b30ff)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
+        // 4. Dash Cooldown Card (top-right below spell: x=width-255, y=153, w=240, h=50)
+        const dashX = width - 255;
+        const dashY = 153;
+        drawGlassPanel(this.hudGraphics, dashX, dashY, 240, 50, 0x00bfff);
+        drawBarTrack(this.hudGraphics, dashX + 10, dashY + 28, 220, 10, 3);
 
-        // 4. Dash Cooldown / Charges Panel (below Spell panel on the right side)
-        const dashX = width - 250;
-        const dashY = 154; // 10px below Spell panel (100 + 44 + 10)
-
-        this.hudDashBg = this.add.rectangle(dashX, dashY, 240, 44, 0x000000, 0.6)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(99);
-        this.hudDashBg.setStrokeStyle(1.5, 0x333333);
-
-        this.hudDashTitle = this.add.text(dashX + 10, dashY + 8, 'DASH (SHIFT): READY', {
+        this.hudDashTitle = this.add.text(dashX + 10, dashY + 10, 'DASH (SHIFT): READY', {
             fontFamily: '"Silkscreen"',
-            fontSize: '12px',
+            fontSize: '11px',
             color: '#44ff44'
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudDashBarBg = this.add.rectangle(dashX + 10, dashY + 24, 220, 10, 0x222222)
+        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 28, 220, 10, 0x00bfff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 24, 220, 10, 0x00bfff)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
+        // 5. Controls Card (bottom-middle: x=(width-560)/2, y=height-110, w=560, h=95)
+        const ctrlX = (width - 560) / 2;
+        const ctrlY = height - 110;
+        const ctrlW = 560;
+        const ctrlH = 95;
 
-        this.hudControlsBg = this.add.rectangle((width - 540) / 2, height - 105, 540, 95, 0x000000, 0.7)
-            .setOrigin(0)
+        // Draw controls panel inside a local graphics object so we can fade it out easily with tweens!
+        this.hudControlsGraphics = this.add.graphics()
             .setScrollFactor(0)
-            .setDepth(99);
-        this.hudControlsBg.setStrokeStyle(1.5, 0x555555);
+            .setDepth(98);
+        drawGlassPanel(this.hudControlsGraphics, ctrlX, ctrlY, ctrlW, ctrlH, 0x555555, 8);
 
         const controlsTextStr =
             "CONTROLS HINT:\n" +
@@ -2296,23 +2310,24 @@ export default class GameScene extends Phaser.Scene {
             "• Spell: R | Attack: SPACE\n" +
             "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
 
-        this.hudControlsText = this.add.text((width - 540) / 2 + 15, height - 98, controlsTextStr, {
+        this.hudControlsText = this.add.text(ctrlX + 15, ctrlY + 10, controlsTextStr, {
             fontFamily: '"Silkscreen"',
-            fontSize: '12px',
+            fontSize: '11px',
             color: '#cccccc',
             lineSpacing: 5
         })
             .setScrollFactor(0)
-            .setDepth(100);
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
         // Fade out controls panel after 10 seconds
         this.time.delayedCall(10000, () => {
             this.tweens.add({
-                targets: [this.hudControlsBg, this.hudControlsText],
+                targets: [this.hudControlsGraphics, this.hudControlsText],
                 alpha: 0,
                 duration: 1500,
                 onComplete: () => {
-                    if (this.hudControlsBg && this.hudControlsBg.active) this.hudControlsBg.destroy();
+                    if (this.hudControlsGraphics && this.hudControlsGraphics.active) this.hudControlsGraphics.destroy();
                     if (this.hudControlsText && this.hudControlsText.active) this.hudControlsText.destroy();
                 }
             });
@@ -2328,7 +2343,7 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.hudHealthBarFill && this.hudHealthText) {
             const pct = Math.max(0, Math.min(1, currentHp / maxHp));
-            this.hudHealthBarFill.width = 200 * pct;
+            this.hudHealthBarFill.width = 220 * pct;
 
             let color = 0x2ecc71; // Green
             if (pct < 0.3) {
@@ -2386,7 +2401,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#00ffff');
                 }
                 
-                this.hudSpellBarFill.width = 200 * activeRatio;
+                this.hudSpellBarFill.width = 220 * activeRatio;
                 this.hudSpellBarFill.setFillStyle(0x00ffff);
             } else if (elapsed < cooldown) {
                 const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
@@ -2398,7 +2413,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#ffaa00');
                 }
                 
-                this.hudSpellBarFill.width = 200 * ratio;
+                this.hudSpellBarFill.width = 220 * ratio;
                 this.hudSpellBarFill.setFillStyle(0xffaa00);
             } else {
                 const readyStr = `${spellName} (R): READY`;
@@ -2407,7 +2422,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#44ff44');
                 }
                 
-                this.hudSpellBarFill.width = 200;
+                this.hudSpellBarFill.width = 220;
                 this.hudSpellBarFill.setFillStyle(spellColor);
             }
         }
@@ -2429,7 +2444,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudDashTitle.setColor('#ffaa00');
                 }
                 
-                this.hudDashBarFill.width = 200 * ratio;
+                this.hudDashBarFill.width = 220 * ratio;
                 this.hudDashBarFill.setFillStyle(0xffaa00);
             } else {
                 const readyStr = `DASH (SHIFT): READY [${bolts}]`;
@@ -2438,7 +2453,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudDashTitle.setColor('#44ff44');
                 }
                 
-                this.hudDashBarFill.width = 200;
+                this.hudDashBarFill.width = 220;
                 this.hudDashBarFill.setFillStyle(0x00bfff);
             }
         }
