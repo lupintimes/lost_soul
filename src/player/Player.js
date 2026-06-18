@@ -593,10 +593,12 @@ export default class Player {
         if (this.character === 'p1') {
             this.playSound('sfx_highjump', 0.5);
             this.isShieldActive = true;
+            this.shieldBlocksAbsorbed = 0;
             
             if (this.shieldTimer) this.shieldTimer.destroy();
             this.shieldTimer = this.scene.time.delayedCall(2000, () => {
                 this.isShieldActive = false;
+                this.releaseShieldBlast();
             });
             return;
         }
@@ -675,6 +677,109 @@ export default class Player {
         });
     }
 
+    releaseShieldBlast() {
+        if (this.state === 'dead' || !this.sprite || !this.sprite.active) return;
+
+        const baseDamage = 15;
+        const blocksAbsorbed = this.shieldBlocksAbsorbed || 0;
+        const bonusDamage = blocksAbsorbed * 7.5;
+        const totalDamage = Math.round(baseDamage + bonusDamage);
+        const blastRadius = 200;
+
+        // Play blast sound
+        this.playSound('sfx_spell', 0.6);
+
+        // Visual shockwave effect: an expanding circle that fades out
+        const wave = this.scene.add.circle(this.sprite.x, this.sprite.y, 10, 0x00ffff, 0.6);
+        wave.setDepth(4);
+        this.scene.tweens.add({
+            targets: wave,
+            radius: blastRadius,
+            alpha: 0,
+            duration: 400,
+            ease: 'Quad.easeOut',
+            onComplete: () => {
+                wave.destroy();
+            }
+        });
+
+        // Spawn a ring of particle circles flying outward
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+            const px = this.sprite.x + Math.cos(a) * 30;
+            const py = this.sprite.y + Math.sin(a) * 30;
+            const spark = this.scene.add.circle(px, py, 6, 0x00ffff, 0.9);
+            spark.setDepth(5);
+            this.scene.tweens.add({
+                targets: spark,
+                x: this.sprite.x + Math.cos(a) * (blastRadius * 0.9),
+                y: this.sprite.y + Math.sin(a) * (blastRadius * 0.9),
+                scale: 0.1,
+                alpha: 0,
+                duration: 350,
+                ease: 'Quad.easeOut',
+                onComplete: () => { spark.destroy(); }
+            });
+        }
+
+        // Spawn central blast particles
+        this.createHitParticles(this.sprite.x, this.sprite.y, 0x00ffff);
+        this.createHitParticles(this.sprite.x, this.sprite.y - 30, 0x00ffff);
+
+        // Find targets in radius
+        let targets = [];
+        if (this.isControlled && this.scene.mode === 'multiplayer') {
+            // Multiplayer: check remote players
+            for (const id in this.scene.otherPlayerMap) {
+                if (Object.prototype.hasOwnProperty.call(this.scene.otherPlayerMap, id)) {
+                    const remote = this.scene.otherPlayerMap[id];
+                    if (!remote || !remote.sprite || !remote.sprite.active || remote.state === 'dead' || remote.isInvincible) continue;
+
+                    const dx = remote.sprite.x - this.sprite.x;
+                    const dy = remote.sprite.y - this.sprite.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist <= blastRadius) {
+                        // Send hit to server
+                        this.scene.sendAttackToServer(id, totalDamage);
+
+                        // Apply local knockback push to target sprite
+                        const angle = Math.atan2(dy, dx);
+                        const pushForce = 15 + blocksAbsorbed * 5;
+                        remote.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 3);
+                    }
+                }
+            }
+        } else {
+            // Solo or enemy casting: check against enemies (or players if caster is enemy)
+            const targetList = this.isEnemy ? this.scene.players : this.scene.enemies;
+            if (targetList) {
+                const tarLen = targetList.length;
+                for (let i = 0; i < tarLen; i++) {
+                    const target = targetList[i];
+                    if (!target || !target.sprite || !target.sprite.active || target.state === 'dead' || target.isInvincible || target === this) continue;
+
+                    const dx = target.sprite.x - this.sprite.x;
+                    const dy = target.sprite.y - this.sprite.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist <= blastRadius) {
+                        target.takeDamage(totalDamage, this);
+
+                        // Apply massive knockback push
+                        const angle = Math.atan2(dy, dx);
+                        const pushForce = 15 + blocksAbsorbed * 5;
+                        target.sprite.setVelocity(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce - 3);
+                    }
+                }
+            }
+        }
+
+        // Show a temporary screen text if blocks were absorbed (Guard Counter!)
+        if (blocksAbsorbed > 0 && !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this)) {
+            this.scene.showKillMessage(`GUARD COUNTER! +${Math.round(bonusDamage)} DMG`, '#00ffff');
+        }
+    }
+
     taunt() {
         if (this.state === 'attack' || this.state === 'dead' || this.state === 'dash') return;
         this.state = 'taunt';
@@ -727,13 +832,20 @@ export default class Player {
 
         // Knight Shield Block damage reduction (100% reduction - no damage)
         if (this.isShieldActive) {
+            if (amount > 0) {
+                this.shieldBlocksAbsorbed = (this.shieldBlocksAbsorbed || 0) + 1;
+            }
             amount = 0;
             this.createHitParticles(this.sprite.x, this.sprite.y, 0x00ffff);
             this.playSound('sfx_click', 0.5);
             if (this.shieldVisual) {
-                this.shieldVisual.fillAlpha = 0.5;
-                this.scene.time.delayedCall(100, () => {
-                    if (this.shieldVisual) this.shieldVisual.fillAlpha = 0.15;
+                this.shieldVisual.fillAlpha = 0.6;
+                this.shieldVisual.setScale(1.15);
+                this.scene.time.delayedCall(150, () => {
+                    if (this.shieldVisual) {
+                        this.shieldVisual.fillAlpha = 0.15;
+                        this.shieldVisual.setScale(1.0);
+                    }
                 });
             }
         }
