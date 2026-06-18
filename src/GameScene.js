@@ -1979,9 +1979,9 @@ export default class GameScene extends Phaser.Scene {
 
     createBuildPointsUI() {
         const { width } = this.scale;
-        const startX = width - 255;
+        const startX = width - 195;
         const startY = 15;
-        const panelW = 240;
+        const panelW = 180;
         const panelH = 68;
 
         this.buildGraphics = this.add.graphics()
@@ -2001,7 +2001,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Bar track
         this.buildGraphics.fillStyle(0x151c27, 1);
-        this.buildGraphics.fillRoundedRect(startX + 10, startY + 24, panelW - 20, 10, 3);
+        this.buildGraphics.fillRoundedRect(startX + 10, startY + 24, panelW - 20, 6, 2);
 
         this.buildUITitle = this.add.text(startX + 10, startY + 8, 'BUILD POINTS', {
             fontFamily: '"Silkscreen"',
@@ -2012,7 +2012,7 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 24, panelW - 20, 10, 0x00ffcc)
+        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 24, panelW - 20, 6, 0x00ffcc)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
@@ -2044,8 +2044,8 @@ export default class GameScene extends Phaser.Scene {
         const available = Math.max(0, this.MAX_BUILD_POINTS - used);
         const pct = Math.max(0, Math.min(1, available / this.MAX_BUILD_POINTS));
 
-        // Update bar width (max width is panelW - 20 = 200)
-        this.buildUIBarFill.width = 200 * pct;
+        // Update bar width (max width is panelW - 20 = 160)
+        this.buildUIBarFill.width = 160 * pct;
 
         // Change bar fill color depending on remaining build points percentage
         if (pct < 0.2) {
@@ -2252,13 +2252,13 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        // 3. Spell Cooldown Card (top-right below build points: x=width-255, y=93, w=240, h=50)
-        const spellX = width - 255;
+        // 3. Spell Cooldown Card (top-right below build points: x=width-195, y=93, w=180, h=44)
+        const spellX = width - 195;
         const spellY = 93;
-        drawGlassPanel(this.hudGraphics, spellX, spellY, 240, 50, 0x9b30ff);
-        drawBarTrack(this.hudGraphics, spellX + 10, spellY + 28, 220, 10, 3);
+        drawGlassPanel(this.hudGraphics, spellX, spellY, 180, 44, 0x9b30ff);
+        drawBarTrack(this.hudGraphics, spellX + 10, spellY + 26, 160, 6, 2);
 
-        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 10, 'SPELL (R): READY', {
+        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 8, 'SPELL (R): READY', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
             color: '#44ff44'
@@ -2267,18 +2267,18 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 28, 220, 10, 0x9b30ff)
+        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 26, 160, 6, 0x9b30ff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        // 4. Dash Cooldown Card (top-right below spell: x=width-255, y=153, w=240, h=50)
-        const dashX = width - 255;
-        const dashY = 153;
-        drawGlassPanel(this.hudGraphics, dashX, dashY, 240, 50, 0x00bfff);
-        drawBarTrack(this.hudGraphics, dashX + 10, dashY + 28, 220, 10, 3);
+        // 4. Dash Cooldown Card (top-right below spell: x=width-195, y=147, w=180, h=44)
+        const dashX = width - 195;
+        const dashY = 147;
+        drawGlassPanel(this.hudGraphics, dashX, dashY, 180, 44, 0x00bfff);
+        drawBarTrack(this.hudGraphics, dashX + 10, dashY + 26, 160, 6, 2);
 
-        this.hudDashTitle = this.add.text(dashX + 10, dashY + 10, 'DASH (SHIFT): READY', {
+        this.hudDashTitle = this.add.text(dashX + 10, dashY + 8, 'DASH (SHIFT): READY', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
             color: '#44ff44'
@@ -2287,7 +2287,7 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 28, 220, 10, 0x00bfff)
+        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 26, 160, 6, 0x00bfff)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
@@ -2401,7 +2401,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#00ffff');
                 }
                 
-                this.hudSpellBarFill.width = 220 * activeRatio;
+                this.hudSpellBarFill.width = 160 * activeRatio;
                 this.hudSpellBarFill.setFillStyle(0x00ffff);
             } else if (elapsed < cooldown) {
                 const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
@@ -2413,7 +2413,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#ffaa00');
                 }
                 
-                this.hudSpellBarFill.width = 220 * ratio;
+                this.hudSpellBarFill.width = 160 * ratio;
                 this.hudSpellBarFill.setFillStyle(0xffaa00);
             } else {
                 const readyStr = `${spellName} (R): READY`;
@@ -2422,7 +2422,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudSpellTitle.setColor('#44ff44');
                 }
                 
-                this.hudSpellBarFill.width = 220;
+                this.hudSpellBarFill.width = 160;
                 this.hudSpellBarFill.setFillStyle(spellColor);
             }
         }
@@ -2444,7 +2444,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudDashTitle.setColor('#ffaa00');
                 }
                 
-                this.hudDashBarFill.width = 220 * ratio;
+                this.hudDashBarFill.width = 160 * ratio;
                 this.hudDashBarFill.setFillStyle(0xffaa00);
             } else {
                 const readyStr = `DASH (SHIFT): READY [${bolts}]`;
@@ -2453,7 +2453,7 @@ export default class GameScene extends Phaser.Scene {
                     this.hudDashTitle.setColor('#44ff44');
                 }
                 
-                this.hudDashBarFill.width = 220;
+                this.hudDashBarFill.width = 160;
                 this.hudDashBarFill.setFillStyle(0x00bfff);
             }
         }
