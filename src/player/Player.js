@@ -1360,17 +1360,25 @@ export default class Player {
             const goldColor = (r << 16) | (g << 8) | b;
             this.sprite.setTint(goldColor);
 
-            // Pulsing golden aura dome
-            const auraRadius = 80;
+            // Silhouette-shaped golden pulsing aura
             if (!this.fortressVisual) {
-                this.fortressVisual = this.scene.add.circle(this.sprite.x, this.sprite.y, auraRadius, 0xffd700, 0.08);
-                this.fortressVisual.setStrokeStyle(2.5, 0xffaa00, 0.65);
-                this.fortressVisual.setDepth(3);
+                this.fortressVisual = this.scene.add.sprite(this.sprite.x, this.sprite.y, this.sprite.texture.key);
+                this.fortressVisual.setDepth(this.sprite.depth - 1);
+                this.fortressVisual.setTint(0xffd700);
             } else {
+                // Sync animation state, texture, flip, and coordinates
+                if (this.fortressVisual.texture.key !== this.sprite.texture.key) {
+                    this.fortressVisual.setTexture(this.sprite.texture.key);
+                }
+                this.fortressVisual.setFrame(this.sprite.frame.name);
                 this.fortressVisual.x = this.sprite.x;
                 this.fortressVisual.y = this.sprite.y;
-                const pulseScale = 1 + Math.sin(time / 120) * 0.04;
-                this.fortressVisual.setScale(pulseScale);
+                this.fortressVisual.flipX = this.sprite.flipX;
+
+                // Pulsing outer scale and alpha glow
+                const pulse = Math.sin(time / 100) * 0.03;
+                this.fortressVisual.setScale(this.sprite.scaleX * (1.08 + pulse), this.sprite.scaleY * (1.08 + pulse));
+                this.fortressVisual.setAlpha(0.35 + Math.sin(time / 80) * 0.1);
             }
 
             // Occasional gold shield dust rising upward and drifting
