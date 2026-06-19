@@ -638,18 +638,35 @@ export default class Player {
         const radius = isP2 ? 22 : 15;
         const velocityX = isP2 ? dir * 14.4 : dir * 8;
 
-        const spell = this.scene.add.circle(
-            this.sprite.x + dir * 50,
-            this.sprite.y,
-            radius
-        );
+        const spell = this.scene.add.graphics({
+            x: this.sprite.x + dir * 50,
+            y: this.sprite.y
+        });
+        const steps = 8;
+        const R_inner = radius * 0.3;
+        for (let i = 0; i <= steps; i++) {
+            const factor = i / steps;
+            const currentRadius = radius - (radius - R_inner) * factor;
+
+            const r1 = (spellColor >> 16) & 0xff;
+            const g1 = (spellColor >> 8) & 0xff;
+            const b1 = spellColor & 0xff;
+
+            const r = Math.round(r1 + (255 - r1) * factor);
+            const g = Math.round(g1 + (255 - g1) * factor);
+            const b = Math.round(b1 + (255 - b1) * factor);
+
+            const color = (r << 16) | (g << 8) | b;
+
+            spell.fillStyle(color, 1);
+            spell.fillCircle(0, 0, currentRadius);
+        }
         spell.setDepth(10);
         this.scene.matter.add.gameObject(spell);
         spell.setCircle(radius, {
             isSensor: true,
             ignoreGravity: true
         });
-        spell.setFillStyle(spellColor);
         spell.setVelocityX(velocityX);
 
         // 🔶 Shadow trail: spawn orange fading dots along trajectory
@@ -726,18 +743,35 @@ export default class Player {
         const radius = isP2 ? 22 : 15;
         const velocityX = isP2 ? dir * 14.4 : dir * 8;
 
-        const spell = this.scene.add.circle(
-            x + dir * 50,
-            y,
-            radius
-        );
+        const spell = this.scene.add.graphics({
+            x: x + dir * 50,
+            y: y
+        });
+        const steps = 8;
+        const R_inner = radius * 0.3;
+        for (let i = 0; i <= steps; i++) {
+            const factor = i / steps;
+            const currentRadius = radius - (radius - R_inner) * factor;
+
+            const r1 = (spellColor >> 16) & 0xff;
+            const g1 = (spellColor >> 8) & 0xff;
+            const b1 = spellColor & 0xff;
+
+            const r = Math.round(r1 + (255 - r1) * factor);
+            const g = Math.round(g1 + (255 - g1) * factor);
+            const b = Math.round(b1 + (255 - b1) * factor);
+
+            const color = (r << 16) | (g << 8) | b;
+
+            spell.fillStyle(color, 1);
+            spell.fillCircle(0, 0, currentRadius);
+        }
         spell.setDepth(10);
         this.scene.matter.add.gameObject(spell);
         spell.setCircle(radius, {
             isSensor: true,
             ignoreGravity: true
         });
-        spell.setFillStyle(spellColor);
         spell.setVelocityX(velocityX);
 
         // 🔶 Shadow trail
