@@ -226,6 +226,7 @@ export default class Player {
         // Check if player is standing on bounce/slide blocks
         const wasOnSlide = this.isStandingOnSlideBlock;
         this.isStandingOnSlideBlock = false;
+        const feetOffset = 76 * (this.sprite.scaleY / 0.4);
         if (this.scene && this.scene.platforms) {
             const platforms = this.scene.platforms;
             const len = platforms.length;
@@ -242,7 +243,7 @@ export default class Player {
                 const py = this.sprite.y;
 
                 const isOverlappingX = (px + 20 >= rx) && (px - 20 <= rx + rw);
-                const isStandingOnTop = Math.abs((py + 76) - ry) < 10;
+                const isStandingOnTop = Math.abs((py + feetOffset) - ry) < 10;
 
                 if (isOverlappingX && isStandingOnTop) {
                     if (platform.blockType === 'bounce') {
@@ -257,7 +258,7 @@ export default class Player {
                         this.playSound('sfx_bubble_jump', 0.3 + 0.4 * factor);
                         
                         const particleColor = (platform.tint !== null && platform.tint !== undefined) ? platform.tint : 0xffd700;
-                        this.createHitParticles(this.sprite.x, py + 76, particleColor);
+                        this.createHitParticles(this.sprite.x, py + feetOffset, particleColor);
                         
                         if (this.scene && typeof this.scene.wobbleBlock === 'function') {
                             this.scene.wobbleBlock(platform);
@@ -1323,7 +1324,8 @@ export default class Player {
         if (!this.sprite || !this.sprite.active) return;
 
         const feetX = this.sprite.x;
-        const feetY = this.sprite.y + 76;
+        const feetOffset = 76 * (this.sprite.scaleY / 0.4);
+        const feetY = this.sprite.y + feetOffset;
 
         // Expanding wind ring shockwave
         const ring = this.scene.add.circle(feetX, feetY, 10, 0xffffff, 0.5);
