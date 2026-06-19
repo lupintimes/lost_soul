@@ -633,9 +633,10 @@ export default class Player {
         const spellColor = spellColors[this.character] || 0x00ffff;
         const damage = this.getSpellDamage();
 
-        // Shadow (p2) gets a larger, faster projectile
+        // Shadow (p2) or raging Berserker (p3) gets a larger projectile
         const isP2 = this.character === 'p2';
-        const radius = isP2 ? 22 : 15;
+        const isRagingP3 = this.character === 'p3' && this.isRageActive;
+        const radius = (isP2 || isRagingP3) ? 22 : 15;
         const velocityX = isP2 ? dir * 14.4 : dir * 8;
 
         const spell = this.scene.add.graphics({
@@ -741,7 +742,8 @@ export default class Player {
         const damage = this.getSpellDamage();
 
         const isP2 = this.character === 'p2';
-        const radius = isP2 ? 22 : 15;
+        const isRagingP3 = this.character === 'p3' && this.isRageActive;
+        const radius = (isP2 || isRagingP3) ? 22 : 15;
         const velocityX = isP2 ? dir * 14.4 : dir * 8;
 
         const spell = this.scene.add.graphics({
