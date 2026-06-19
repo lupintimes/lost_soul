@@ -79,6 +79,8 @@ export default class Player {
         // Knight (p1) has a 4-second cooldown for their Shield Block spell. Others have 200ms.
         this.spellCooldown = this.character === 'p1' ? 4000 : 200;
         this.lastSpellTime = 0;
+        this.lastDamageTime = 0;
+        this.lastRegenTime = 0;
 
         // Ability States & variables
         this.isShieldActive = false;
@@ -168,6 +170,29 @@ export default class Player {
         this.updateAbilitiesVisuals();
 
         if (this.state === 'dead') return;
+
+        // Passive health regeneration (recovery over time)
+        const isLocalPlayer = !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
+        if (isLocalPlayer && this.health.current < this.health.max && !this.hasTriggeredUndyingRage) {
+            const now = this.scene.time.now;
+            if (now - this.lastDamageTime >= 3000) {
+                if (!this.lastRegenTime) {
+                    this.lastRegenTime = now;
+                }
+                if (now - this.lastRegenTime >= 500) {
+                    const regenAmount = 3;
+                    this.health.current = Math.min(this.health.max, this.health.current + regenAmount);
+                    if (this.health && typeof this.health.updateBar === 'function') {
+                        this.health.updateBar();
+                    }
+                    this.lastRegenTime = now;
+                }
+            } else {
+                this.lastRegenTime = null;
+            }
+        } else {
+            this.lastRegenTime = null;
+        }
 
         if (this.health && typeof this.health.updateBar === 'function') {
             this.health.updateBar();
@@ -1043,6 +1068,10 @@ export default class Player {
         if (this.isTauntedDefenseBuffActive && amount > 0) {
             amount = Math.ceil(amount * 0.5);
             this.createHitParticles(this.sprite.x, this.sprite.y, 0xffd700);
+        }
+
+        if (amount > 0) {
+            this.lastDamageTime = this.scene.time.now;
         }
 
         this.health.current -= amount;

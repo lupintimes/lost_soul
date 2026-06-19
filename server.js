@@ -326,6 +326,9 @@ io.on('connection', (socket) => {
         player.anim = movementData.anim;
         player.isShieldActive = movementData.isShieldActive || false;
         player.isRageActive = movementData.isRageActive || false;
+        if (movementData.health !== undefined) {
+            player.health = movementData.health;
+        }
 
         // ✅ No console.log here — it slows down the server
         socket.to(roomId).emit('playerMoved', player);
