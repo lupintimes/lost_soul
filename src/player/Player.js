@@ -430,6 +430,7 @@ export default class Player {
                     this.playSound('sfx_highjump', 0.3);
                     this.sprite.setVelocityY(highJumpForce);
                     this.hasHighJumpedInAir = true;
+                    this.createHighJumpBurst(true); // Ground burst
                 }
                 else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
                     this.sprite.setVelocityY(jumpForce);
@@ -445,6 +446,7 @@ export default class Player {
                     this.playSound('sfx_highjump', 0.3);
                     this.sprite.setVelocityY(highJumpForce);
                     this.hasHighJumpedInAir = true;
+                    this.createHighJumpBurst(false); // Mid-air burst
                 }
                 // Allow double jump for p2 (Shadow) in mid-air
                 else if (this.character === 'p2' && Phaser.Input.Keyboard.JustDown(this.controls.jump) && !this.hasDoubleJumped) {
@@ -1290,6 +1292,50 @@ export default class Player {
         }
     }
 
+    createHighJumpBurst(onGround) {
+        if (!this.sprite || !this.sprite.active) return;
+
+        const feetX = this.sprite.x;
+        const feetY = this.sprite.y + 76;
+
+        // Expanding wind ring shockwave
+        const ring = this.scene.add.circle(feetX, feetY, 10, 0xffffff, 0.5);
+        ring.setDepth(1);
+        this.scene.tweens.add({
+            targets: ring,
+            radius: 70,
+            scaleY: onGround ? 0.25 : 0.8, // Squashed if on ground, circular if mid-air
+            alpha: 0,
+            duration: 350,
+            ease: 'Quad.easeOut',
+            onComplete: () => ring.destroy()
+        });
+
+        // Spawn some wind/dust particles shooting downwards/outwards
+        const particleCount = 8;
+        for (let i = 0; i < particleCount; i++) {
+            const size = Phaser.Math.Between(4, 9);
+            const p = this.scene.add.circle(feetX, feetY, size, 0xeeeeee, 0.7)
+                .setDepth(1);
+
+            const angle = Math.PI * 0.5 + (Math.random() - 0.5) * 1.5; // Mostly downwards
+            const speed = Phaser.Math.Between(25, 60);
+            const targetX = feetX + Math.cos(angle) * speed;
+            const targetY = feetY + Math.sin(angle) * speed * (onGround ? 0.4 : 0.8);
+
+            this.scene.tweens.add({
+                targets: p,
+                x: targetX,
+                y: targetY,
+                alpha: 0,
+                scale: 0.1,
+                duration: Phaser.Math.Between(250, 450),
+                ease: 'Quad.easeOut',
+                onComplete: () => p.destroy()
+            });
+        }
+    }
+
     createDashGhost() {
         if (!this.sprite || !this.sprite.active) return;
 
@@ -1741,6 +1787,28 @@ export default class Player {
                 if (this.sprite.alpha !== 1 && !this.isInvincible) {
                     this.sprite.setAlpha(1);
                 }
+            }
+        }
+
+        // High jump rising visual trail
+        if (this.sprite && this.sprite.body && this.sprite.body.velocity.y < -2 && this.hasHighJumpedInAir) {
+            if (!this.lastHighJumpTrailTime) this.lastHighJumpTrailTime = 0;
+            if (time - this.lastHighJumpTrailTime >= 35) {
+                this.lastHighJumpTrailTime = time;
+                
+                // Spawn a fading rising wind line/spark
+                const wx = this.sprite.x + Phaser.Math.Between(-15, 15);
+                const wy = this.sprite.y + Phaser.Math.Between(0, 50);
+                const wLine = this.scene.add.rectangle(wx, wy, 2, Phaser.Math.Between(15, 30), 0xffffff, 0.4)
+                    .setDepth(1);
+                this.scene.tweens.add({
+                    targets: wLine,
+                    alpha: 0,
+                    scaleY: 0.1,
+                    duration: 300,
+                    ease: 'Sine.easeOut',
+                    onComplete: () => wLine.destroy()
+                });
             }
         }
     }

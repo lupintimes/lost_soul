@@ -317,6 +317,10 @@ export default class GameScene extends Phaser.Scene {
         this.maxEnemies = 12;
         this.isSpawningEnemies = false;
         this.multiplayerReady = false;
+        // Wave system state
+        this.currentWave = 0;
+        this.waveInProgress = false;
+        this.waveClearedPending = false;
         // Reset teleporter state
         this.canTeleport = true;
         this.teleporterSprites = [];
@@ -430,10 +434,9 @@ export default class GameScene extends Phaser.Scene {
 
         // ─── Mode Setup ──────────────────────────────────
         if (this.mode === 'solo') {
-            this.maxEnemies = 6;
-            const playerSpawn = this.spawnPlayer();
-            this.spawnInitialEnemies(playerSpawn);
+            this.spawnPlayer();
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
+            this.startNextWave();
 
         } else if (this.mode === 'multiplayer') {
             if (!this.socket || !this.socket.connected) {
@@ -1185,16 +1188,10 @@ export default class GameScene extends Phaser.Scene {
         // Dead players still need to play death animation before being removed
         this.players = this.players.filter(p => p && p.sprite && p.sprite.active);
 
-        this.maxEnemies = 6;
-
-        if (this.enemies.length < this.maxEnemies && !this.isSpawningEnemies) {
-            this.isSpawningEnemies = true;
-            const needed = this.maxEnemies - this.enemies.length;
-
-            this.time.delayedCall(2000, () => {
-                this.spawnEnemyWave(needed);
-                this.isSpawningEnemies = false;
-            });
+        // 🌊 Wave system: trigger wave-clear when all enemies defeated
+        if (this.waveInProgress && this.enemies.length === 0 && !this.waveClearedPending) {
+            this.waveClearedPending = true;
+            this.onWaveCleared();
         }
 
         this.players.forEach(p => p.update());
@@ -1449,6 +1446,265 @@ export default class GameScene extends Phaser.Scene {
 
             this.enemies.push(enemy);
         }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    //  🌊 WAVE SYSTEM
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    getWaveConfig(wave) {
+        // Base configs for waves 1–6, then scale infinitely beyond
+        const configs = [
+            { count: 5,  hpMult: 1.0, speedMult: 1.0, subtitle: 'INCOMING!',       composition: ['p1','p2','p3','p1','p2'] },
+            { count: 7,  hpMult: 1.0, speedMult: 1.1, subtitle: 'PUSH FORWARD!',   composition: ['p1','p2','p3','p2','p1','p3','p2'] },
+            { count: 9,  hpMult: 1.2, speedMult: 1.2, subtitle: 'STAY SHARP!',     composition: ['p3','p2','p1','p3','p2','p1','p3','p2','p3'] },
+            { count: 12, hpMult: 1.3, speedMult: 1.3, subtitle: 'ELITE ASSAULT!',  composition: ['p3','p3','p2','p1','p3','p2','p3','p1','p2','p3','p3','p2'] },
+            { count: 14, hpMult: 1.4, speedMult: 1.4, subtitle: 'BERSERKER RUSH!', composition: ['p3','p3','p3','p2','p1','p3','p3','p2','p3','p3','p1','p2','p3','p3'] },
+            { count: 16, hpMult: 1.55,speedMult: 1.4, subtitle: 'THE HORDE!',      composition: ['p3','p3','p2','p3','p1','p3','p2','p3','p3','p2','p1','p3','p3','p2','p3','p3'] },
+        ];
+
+        if (wave <= configs.length) {
+            return configs[wave - 1];
+        }
+
+        // Wave 7+ : scale up count and HP exponentially
+        const extra = wave - configs.length;
+        const baseCount = 16 + Math.min(extra * 2, 12); // caps at 28 enemies
+        const hpMult = 1.55 + extra * 0.12;
+        const speedMult = Math.min(1.4 + extra * 0.04, 1.9);
+
+        // Alternate composition based on parity for variety
+        const heavyComp = [];
+        for (let i = 0; i < baseCount; i++) {
+            heavyComp.push(i % 3 === 0 ? 'p2' : 'p3');
+        }
+
+        return {
+            count: baseCount,
+            hpMult,
+            speedMult,
+            subtitle: `RELENTLESS! (×${(hpMult).toFixed(1)} HP)`,
+            composition: heavyComp
+        };
+    }
+
+    startNextWave() {
+        this.currentWave++;
+        this.waveInProgress = true;
+        this.waveClearedPending = false;
+
+        const config = this.getWaveConfig(this.currentWave);
+
+        // Dramatic title color: escalates with wave number
+        let titleColor = '#ffffff';
+        if (this.currentWave === 2) titleColor = '#ffe066';
+        else if (this.currentWave === 3) titleColor = '#ffaa00';
+        else if (this.currentWave === 4) titleColor = '#ff7722';
+        else if (this.currentWave >= 5) titleColor = '#ff3333';
+
+        this.showWaveBanner(`WAVE  ${this.currentWave}`, config.subtitle, titleColor);
+        this.cameras.main.flash(350, 15, 10, 80);
+
+        // Spawn enemies after banner animates in
+        this.time.delayedCall(1600, () => {
+            this.spawnWaveEnemies(config);
+        });
+    }
+
+    spawnWaveEnemies(config) {
+        const { count, hpMult, speedMult, composition } = config;
+
+        let playerX = 0, playerY = 0, hasPlayer = false;
+        const playerObj = this.players[0];
+        if (playerObj && playerObj.sprite) {
+            playerX = playerObj.sprite.x;
+            playerY = playerObj.sprite.y;
+            hasPlayer = true;
+        }
+
+        // Prefer off-screen, far-from-player spawn points
+        let candidates = this.spawnPoints.filter(sp => {
+            if (hasPlayer && Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY) < 500) return false;
+            if (this.cameras && this.cameras.main && this.cameras.main.worldView) {
+                const v = this.cameras.main.worldView;
+                if (sp.x >= v.x && sp.x <= v.x + v.width && sp.y >= v.y && sp.y <= v.y + v.height) return false;
+            }
+            return true;
+        });
+
+        // Fallback: any point > 300px from player
+        if (candidates.length < count) {
+            candidates = this.spawnPoints.filter(sp =>
+                !hasPlayer || Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY) > 300
+            );
+        }
+        if (candidates.length === 0) candidates = [...this.spawnPoints];
+
+        const shuffled = Phaser.Utils.Array.Shuffle([...candidates]);
+        const spawnCount = Math.min(count, shuffled.length);
+
+        for (let i = 0; i < spawnCount; i++) {
+            const sp = shuffled[i % shuffled.length];
+            const charType = composition[i % composition.length];
+
+            const enemy = new Player(this, sp.x, sp.y, null, false, charType);
+            enemy.isEnemy = true;
+            enemy.state = 'idle';
+            enemy.countedAsKill = false;
+            enemy.chaseOffset = Phaser.Math.Between(-50, 50);
+
+            // Base stats by character, scaled by wave config
+            if (charType === 'p1') {
+                enemy.speed = 3.2 * speedMult;
+                enemy.jumpForce = -16;
+                enemy.sprite.setTint(0xaaaaaa);
+            } else if (charType === 'p2') {
+                enemy.speed = 4.2 * speedMult;
+                enemy.jumpForce = -18;
+                enemy.sprite.setTint(0x8844ff);
+            } else {
+                enemy.speed = 3.0 * speedMult;
+                enemy.jumpForce = -14;
+                enemy.sprite.setTint(0xff4444);
+            }
+
+            // Scale HP
+            if (enemy.health && hpMult > 1.0) {
+                enemy.health.max = Math.round(enemy.health.max * hpMult);
+                enemy.health.current = enemy.health.max;
+            }
+
+            this.enemies.push(enemy);
+        }
+    }
+
+    onWaveCleared() {
+        const { width, height } = this.scale;
+        const clearedWave = this.currentWave;
+
+        // Gold flash
+        this.cameras.main.flash(500, 80, 60, 0);
+        this.safePlaySound('sfx_highjump', 0.5);
+
+        // "WAVE N CLEARED!" banner
+        const clearTitle = this.add.text(width / 2, height * 0.42, `WAVE  ${clearedWave}  CLEARED!`, {
+            fontFamily: '"Silkscreen"',
+            fontSize: '32px',
+            color: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 5
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(210).setAlpha(0);
+
+        const clearSub = this.add.text(width / 2, height * 0.42 + 44, 'NEXT WAVE IN...', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '15px',
+            color: '#ffeeaa',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(210).setAlpha(0);
+
+        this.tweens.add({
+            targets: [clearTitle, clearSub],
+            alpha: 1,
+            y: `-=20`,
+            duration: 400,
+            ease: 'Back.easeOut'
+        });
+
+        // Countdown: 3, 2, 1...
+        const countdownEl = this.add.text(width / 2, height * 0.42 + 80, '3', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '40px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(210).setAlpha(0);
+
+        let tick = 3;
+        const doTick = () => {
+            countdownEl.setText(`${tick}`).setAlpha(1).setScale(1.4);
+            this.tweens.add({
+                targets: countdownEl,
+                scale: 1.0,
+                alpha: tick > 1 ? 0.4 : 0,
+                duration: 900,
+                ease: 'Quad.easeOut',
+                onComplete: () => {
+                    tick--;
+                    if (tick > 0) {
+                        doTick();
+                    }
+                }
+            });
+        };
+        this.time.delayedCall(500, doTick);
+
+        // Tear down banners and launch next wave after 3.5s
+        this.time.delayedCall(3500, () => {
+            this.tweens.add({
+                targets: [clearTitle, clearSub, countdownEl],
+                alpha: 0,
+                y: `-=30`,
+                duration: 300,
+                onComplete: () => {
+                    clearTitle.destroy();
+                    clearSub.destroy();
+                    countdownEl.destroy();
+                }
+            });
+            this.startNextWave();
+        });
+    }
+
+    showWaveBanner(title, subtitle, titleColor = '#ffffff') {
+        const { width, height } = this.scale;
+
+        const bannerTitle = this.add.text(width / 2, height * 0.38, title, {
+            fontFamily: '"Silkscreen"',
+            fontSize: '42px',
+            color: titleColor,
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(210).setAlpha(0).setScale(0.7);
+
+        const bannerSub = this.add.text(width / 2, height * 0.38 + 52, subtitle, {
+            fontFamily: '"Silkscreen"',
+            fontSize: '18px',
+            color: '#dddddd',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(210).setAlpha(0);
+
+        // Animate in
+        this.tweens.add({
+            targets: bannerTitle,
+            alpha: 1,
+            scale: 1,
+            duration: 350,
+            ease: 'Back.easeOut'
+        });
+        this.tweens.add({
+            targets: bannerSub,
+            alpha: 1,
+            duration: 350,
+            delay: 120,
+            ease: 'Quad.easeOut'
+        });
+
+        // Hold then fade out
+        this.time.delayedCall(1800, () => {
+            this.tweens.add({
+                targets: [bannerTitle, bannerSub],
+                alpha: 0,
+                y: `-=25`,
+                duration: 400,
+                ease: 'Quad.easeIn',
+                onComplete: () => {
+                    bannerTitle.destroy();
+                    bannerSub.destroy();
+                }
+            });
+        });
     }
 
     respawnPlayer() {
@@ -2704,7 +2960,8 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (this.hudKillsText) {
-            const killsStr = `KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`;
+            const waveStr = this.mode === 'solo' && this.currentWave > 0 ? `   WAVE: ${this.currentWave}` : '';
+            const killsStr = `KILLS: ${this.killCount}   DEATHS: ${this.deathCount}${waveStr}`;
             if (this.hudKillsText.text !== killsStr) {
                 this.hudKillsText.setText(killsStr);
             }
