@@ -1837,15 +1837,43 @@ export default class GameScene extends Phaser.Scene {
         const cx = p.x + p.w / 2;
         const cy = p.y + p.h / 2;
 
+        // Find the player object we should measure distance from (local player in multiplayer, or players[0] in solo)
+        const playerObj = this.mode === 'multiplayer' ? this.localPlayer : (this.players && this.players[0]);
+        let factor = 1.0; // Default factor in case player does not exist yet (e.g. at startup/respawn)
+
+        if (playerObj && playerObj.sprite && playerObj.sprite.active) {
+            const px = playerObj.sprite.x;
+            const py = playerObj.sprite.y;
+            const dx = cx - px;
+            const dy = cy - py;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Full volume/shake within 200px, linear attenuation up to 800px, 0 beyond 800px
+            factor = Math.max(0, Math.min(1, 1 - (distance - 200) / 600));
+        }
+
         if (p.blockType === 'bounce') {
-            this.safePlaySound('sfx_bubble_break', 0.5);
+            const volume = 0.5 * factor;
+            if (volume > 0.02) {
+                this.safePlaySound('sfx_bubble_break', volume);
+            }
             this.createBubbleBlastParticles(cx, cy, p.w, p.h, p.tint || 0xffd700);
-            this.cameras.main.shake(150, 0.005);
+            
+            const shakeIntensity = 0.005 * factor;
+            if (shakeIntensity > 0.0001) {
+                this.cameras.main.shake(150, shakeIntensity);
+            }
         } else if (p.blockType === 'slide') {
-            this.safePlaySound('sfx_ice_break', 0.55);
+            const volume = 0.55 * factor;
+            if (volume > 0.02) {
+                this.safePlaySound('sfx_ice_break', volume);
+            }
             this.createIceShatterParticles(cx, cy, p.w, p.h, p.tint || 0x00e5ff);
         } else {
-            this.safePlaySound('sfx_bubble_break', 0.4);
+            const volume = 0.4 * factor;
+            if (volume > 0.02) {
+                this.safePlaySound('sfx_bubble_break', volume);
+            }
             this.createNormalDissolveParticles(cx, cy, p.w, p.h, p.tint || 0x475569);
         }
     }
