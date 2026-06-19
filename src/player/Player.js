@@ -63,6 +63,12 @@ export default class Player {
         this.sprite.setFixedRotation();
         this.sprite.setFriction(0.1, 0.05, 0.01);
         this.sprite.setBounce(0);
+        
+        // Setup collision categories (category 2 for players/enemies, category 1 for map)
+        if (this.sprite && this.sprite.body) {
+            this.sprite.body.collisionFilter.category = 0x0002;
+            this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002;
+        }
 
         if (this.isControlled) {
             this.controls = new Controls(scene);
@@ -87,6 +93,7 @@ export default class Player {
         this.shieldVisual = null;
         
         this.isRageActive = false;
+        this.isRageForced = false;
         this.hasHighJumpedInAir = false;
         this.hasDoubleJumped = false;
         this.hasTriggeredUndyingRage = false;
@@ -173,7 +180,8 @@ export default class Player {
 
         // Passive health regeneration (recovery over time)
         const isLocalPlayer = !this.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
-        if (isLocalPlayer && this.health.current < this.health.max && !this.hasTriggeredUndyingRage) {
+        const maxRegenHp = this.isRageForced ? Math.floor(this.health.max * 0.3) : this.health.max;
+        if (isLocalPlayer && this.health.current < maxRegenHp && !this.hasTriggeredUndyingRage) {
             const now = this.scene.time.now;
             if (now - this.lastDamageTime >= 3000) {
                 if (!this.lastRegenTime) {
@@ -181,7 +189,7 @@ export default class Player {
                 }
                 if (now - this.lastRegenTime >= 500) {
                     const regenAmount = 3;
-                    this.health.current = Math.min(this.health.max, this.health.current + regenAmount);
+                    this.health.current = Math.min(maxRegenHp, this.health.current + regenAmount);
                     if (this.health && typeof this.health.updateBar === 'function') {
                         this.health.updateBar();
                     }
@@ -594,14 +602,14 @@ export default class Player {
         this.playSound('sfx_dash', 0.3);
 
         const dir = this.sprite.flipX ? -1 : 1;
-        const dashSpeed = this.character === 'p2' ? 32 : 20.6;
+        const dashSpeed = this.character === 'p2' ? 44 : 30;
         this.sprite.setVelocityX(dir * dashSpeed);
 
         if (this.dashTimer) {
             this.dashTimer.destroy();
         }
 
-        this.dashTimer = this.scene.time.delayedCall(200, () => {
+        this.dashTimer = this.scene.time.delayedCall(280, () => {
             if (this.state === 'dash') {
                 this.state = 'idle';
             }
@@ -995,6 +1003,25 @@ export default class Player {
         this.state = 'taunt';
         this.sprite.anims.play(`${this.character}_taunt_anim`);
 
+        // 🩸 Berserker Forced Rage: press T to toggle forced Rage Mode (no cooldown)
+        if (this.character === 'p3' && this.isControlled) {
+            this.isRageForced = !this.isRageForced;
+            if (this.isRageForced) {
+                // Reduce health to the minimum rage threshold (30% of max health)
+                const rageThresholdHp = Math.floor(this.health.max * 0.3);
+                if (this.health.current > rageThresholdHp) {
+                    this.health.current = rageThresholdHp;
+                    if (this.health && typeof this.health.updateBar === 'function') {
+                        this.health.updateBar();
+                    }
+                }
+            }
+            this.playSound('sfx_highjump', 0.6);
+            if (this.scene && typeof this.scene.showKillMessage === 'function') {
+                this.scene.showKillMessage(this.isRageForced ? 'RAGE FORCED ON!' : 'RAGE FORCED OFF', this.isRageForced ? '#ff0000' : '#888888');
+            }
+        }
+
         // 🛡️ Knight Fortress Buff: press T to gain 50% damage reduction for 5 seconds (15s cooldown)
         if (this.character === 'p1' && this.isControlled) {
             const now = this.scene.time.now;
@@ -1246,6 +1273,7 @@ export default class Player {
 
         // Reset visual rage states
         this.isRageActive = false;
+        this.isRageForced = false;
         this.speed = this.originalSpeed;
         if (this.sprite && this.sprite.active) {
             this.sprite.setScale(0.4);
@@ -1262,6 +1290,33 @@ export default class Player {
         }
     }
 
+    createDashGhost() {
+        if (!this.sprite || !this.sprite.active) return;
+
+        const color = 0x00ffff; // Cyan shade
+
+        const ghost = this.scene.add.sprite(this.sprite.x, this.sprite.y, this.sprite.texture.key);
+        ghost.setFrame(this.sprite.frame.name);
+        // Stretch horizontally for a motion blur effect (scaleX * 1.35)
+        ghost.setScale(this.sprite.scaleX * 1.35, this.sprite.scaleY);
+        ghost.setFlipX(this.sprite.flipX);
+        ghost.setDepth(this.sprite.depth - 1);
+        ghost.setTint(color);
+        ghost.setAlpha(0.35); // Lower alpha for dense overlapping trail
+
+        this.scene.tweens.add({
+            targets: ghost,
+            alpha: 0,
+            scaleX: this.sprite.scaleX * 0.9,
+            scaleY: this.sprite.scaleY * 0.9,
+            duration: 250, // Faster fade for motion blur
+            ease: 'Expo.easeOut',
+            onComplete: () => {
+                ghost.destroy();
+            }
+        });
+    }
+
     // ☠️ DEATH
     die() {
         if (this.state === 'dead') return;
@@ -1269,6 +1324,7 @@ export default class Player {
         this.state = 'dead';
         this.isShieldActive = false;
         this.isRageActive = false;
+        this.isRageForced = false;
         this.hasTriggeredUndyingRage = false;
         this.isTauntedDefenseBuffActive = false;
         if (this.shieldVisual) {
@@ -1536,8 +1592,11 @@ export default class Player {
                 this.lastRageDrainTime = null;
             }
 
+            const isLocalOrEnemy = this.isEnemy || (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this);
             const healthRatio = (this.health && this.health.max > 0) ? (this.health.current / this.health.max) : 1;
-            const shouldBeRaging = (healthRatio <= 0.3 || this.hasTriggeredUndyingRage) && this.health.current > 0 && this.state !== 'dead';
+            const shouldBeRaging = isLocalOrEnemy
+                ? ((healthRatio <= 0.3 || this.hasTriggeredUndyingRage || this.isRageForced) && this.health.current > 0 && this.state !== 'dead')
+                : (this.isRageActive && this.health.current > 0 && this.state !== 'dead');
             
             if (shouldBeRaging) {
                 // Trigger rage initiation visuals (only for the normal low-HP path;
@@ -1658,6 +1717,31 @@ export default class Player {
             this.sprite.anims.timeScale = 1.6;
         } else {
             this.sprite.anims.timeScale = 1.0;
+        }
+
+        // Set/Restore collision filter based on dashing state
+        if (this.sprite && this.sprite.body) {
+            if (this.state === 'dash') {
+                this.sprite.body.collisionFilter.mask = 0x0001; // only collide with map/ground
+                
+                // Ghostly blinking effect: alternate alpha between 0.2 and 0.6
+                const flash = Math.floor(time / 50) % 2 === 0;
+                this.sprite.setAlpha(flash ? 0.2 : 0.6);
+
+                // Spawn silhouette ghost tail every 20ms (dense trail for motion blur)
+                if (!this.lastDashGhostTime) this.lastDashGhostTime = 0;
+                if (time - this.lastDashGhostTime >= 20) {
+                    this.lastDashGhostTime = time;
+                    this.createDashGhost();
+                }
+            } else {
+                this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002; // collide with map/ground and other players/enemies
+                
+                // Restore alpha if we were dashing and not currently spawn-protected/invincible
+                if (this.sprite.alpha !== 1 && !this.isInvincible) {
+                    this.sprite.setAlpha(1);
+                }
+            }
         }
     }
 }

@@ -591,6 +591,7 @@ export default class GameScene extends Phaser.Scene {
             remote.sprite.flipX = playerInfo.flipX;
             remote.isShieldActive = playerInfo.isShieldActive || false;
             remote.isRageActive = playerInfo.isRageActive || false;
+            remote.state = playerInfo.state || 'idle';
             if (playerInfo.health !== undefined && remote.health && typeof remote.health === 'object') {
                 remote.health.current = playerInfo.health;
             }
@@ -1230,7 +1231,8 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.lastAnim !== anim ||
                     this.localPlayer.lastShieldActive !== this.localPlayer.isShieldActive ||
                     this.localPlayer.lastRageActive !== this.localPlayer.isRageActive ||
-                    this.localPlayer.lastHealth !== this.localPlayer.health.current;
+                    this.localPlayer.lastHealth !== this.localPlayer.health.current ||
+                    this.localPlayer.lastState !== this.localPlayer.state;
 
                 if (hasChanged && (now - this.lastEmitTime) > 50) {
                     this.socket.emit('playerMovement', { 
@@ -1240,7 +1242,8 @@ export default class GameScene extends Phaser.Scene {
                         anim,
                         isShieldActive: this.localPlayer.isShieldActive,
                         isRageActive: this.localPlayer.isRageActive,
-                        health: this.localPlayer.health.current
+                        health: this.localPlayer.health.current,
+                        state: this.localPlayer.state
                     });
                     this.localPlayer.lastX = x;
                     this.localPlayer.lastY = y;
@@ -1249,6 +1252,7 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.lastShieldActive = this.localPlayer.isShieldActive;
                     this.localPlayer.lastRageActive = this.localPlayer.isRageActive;
                     this.localPlayer.lastHealth = this.localPlayer.health.current;
+                    this.localPlayer.lastState = this.localPlayer.state;
                     this.lastEmitTime = now;
                 }
             }

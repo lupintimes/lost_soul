@@ -141,6 +141,7 @@ io.on('connection', (socket) => {
             kills: 0,
             deaths: 0,
             character: pChar,
+            state: 'idle',
             isInvincible: true
         };
 
@@ -197,6 +198,7 @@ io.on('connection', (socket) => {
             kills: 0,
             deaths: 0,
             character: pChar,
+            state: 'idle',
             isInvincible: true
         };
 
@@ -326,6 +328,7 @@ io.on('connection', (socket) => {
         player.anim = movementData.anim;
         player.isShieldActive = movementData.isShieldActive || false;
         player.isRageActive = movementData.isRageActive || false;
+        player.state = movementData.state || 'idle';
         if (movementData.health !== undefined) {
             player.health = movementData.health;
         }
