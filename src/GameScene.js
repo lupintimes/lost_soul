@@ -2421,22 +2421,18 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(98);
 
-        // Draw glass panel
-        // Drop shadow
-        this.buildGraphics.fillStyle(0x000000, 0.35);
-        this.buildGraphics.fillRoundedRect(startX + 3, startY + 3, panelW, panelH, 6);
-        // Glass background
+        // 1. Build Points Panel (flat, smaller height: 50)
         this.buildGraphics.fillStyle(0x0a0f19, 0.85);
-        this.buildGraphics.fillRoundedRect(startX, startY, panelW, panelH, 6);
-        // Neon stroke
-        this.buildGraphics.lineStyle(1.5, 0x00ffcc, 0.85);
-        this.buildGraphics.strokeRoundedRect(startX, startY, panelW, panelH, 6);
+        this.buildGraphics.fillRect(startX, startY, panelW, 50);
+        // Subtle neutral border
+        this.buildGraphics.lineStyle(1.0, 0xffffff, 0.15);
+        this.buildGraphics.strokeRect(startX, startY, panelW, 50);
 
-        // Bar track
+        // Bar track (flat)
         this.buildGraphics.fillStyle(0x151c27, 1);
-        this.buildGraphics.fillRoundedRect(startX + 10, startY + 24, panelW - 20, 6, 2);
+        this.buildGraphics.fillRect(startX + 10, startY + 22, panelW - 20, 6);
 
-        this.buildUITitle = this.add.text(startX + 10, startY + 8, 'BUILD POINTS', {
+        this.buildUITitle = this.add.text(startX + 10, startY + 6, 'BUILD POINTS', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
             color: '#ffff00'
@@ -2445,22 +2441,28 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 24, panelW - 20, 6, 0x00ffcc)
+        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 22, panelW - 20, 6, 0x00ffcc)
             .setOrigin(0)
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.buildUIText = this.add.text(startX + 10, startY + 38, '300,000 / 300,000', {
+        this.buildUIText = this.add.text(startX + 10, startY + 34, '300,000 / 300,000', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
+            fontSize: '9px',
             color: '#ffffff'
         })
             .setScrollFactor(0)
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
+        // 2. Build Mode Panel (flat, placed below: y=71, h=26)
+        const modeY = 71;
+        this.buildGraphics.fillStyle(0x0a0f19, 0.85);
+        this.buildGraphics.fillRect(startX, modeY, panelW, 26);
+        this.buildGraphics.strokeRect(startX, modeY, panelW, 26);
+
         // Block type indicator (1=Normal, 2=Bounce, 3=Slide)
-        this.buildBlockTypeText = this.add.text(startX + 10, startY + 50, '[ 1 ] NORMAL', {
+        this.buildBlockTypeText = this.add.text(startX + 10, modeY + 8, '[ 1 ] NORMAL', {
             fontFamily: '"Silkscreen"',
             fontSize: '10px',
             color: '#c4c9ca'
@@ -2624,20 +2626,17 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(98);
 
         const drawGlassPanel = (graphics, x, y, w, h, strokeColor, radius = 6) => {
-            // Drop shadow
-            graphics.fillStyle(0x000000, 0.35);
-            graphics.fillRoundedRect(x + 3, y + 3, w, h, radius);
             // Glass background
             graphics.fillStyle(0x0a0f19, 0.85);
-            graphics.fillRoundedRect(x, y, w, h, radius);
-            // Neon stroke
-            graphics.lineStyle(1.5, strokeColor, 0.85);
-            graphics.strokeRoundedRect(x, y, w, h, radius);
+            graphics.fillRect(x, y, w, h);
+            // Subtle neutral border
+            graphics.lineStyle(1.0, 0xffffff, 0.15);
+            graphics.strokeRect(x, y, w, h);
         };
 
         const drawBarTrack = (graphics, x, y, w, h, radius = 3) => {
             graphics.fillStyle(0x151c27, 1);
-            graphics.fillRoundedRect(x, y, w, h, radius);
+            graphics.fillRect(x, y, w, h);
         };
 
         // 1. Health Card layout (top-left: x=15, y=15, w=240, h=64)
@@ -2647,7 +2646,7 @@ export default class GameScene extends Phaser.Scene {
         this.hudHealthTitle = this.add.text(25, 20, 'PLAYER HP', {
             fontFamily: '"Silkscreen"',
             fontSize: '11px',
-            color: '#ff4444'
+            color: '#ffffff'
         })
             .setScrollFactor(0)
             .setDepth(100)
@@ -2658,66 +2657,16 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100);
 
-        this.hudHealthText = this.add.text(25, 52, 'HP: 100 / 100', {
+        this.hudKillsText = this.add.text(25, 52, 'KILLS: 0  D: 0', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#ffffff'
+            fontSize: '9px',
+            color: '#aaaaaa'
         })
             .setScrollFactor(0)
             .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+            .setShadow(1.0, 1.0, '#000000', 3);
 
-        // 2. Stats/Kills Card layout (top-left below health: x=15, y=89, w=240, h=36)
-        drawGlassPanel(this.hudGraphics, 15, 89, 240, 36, 0x8a95a5);
 
-        this.hudKillsText = this.add.text(25, 98, 'KILLS: 0   DEATHS: 0', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
-
-        // 3. Spell Cooldown Card (top-right below build points: x=width-195, y=93, w=180, h=44)
-        const spellX = width - 195;
-        const spellY = 93;
-        drawGlassPanel(this.hudGraphics, spellX, spellY, 180, 44, 0x9b30ff);
-        drawBarTrack(this.hudGraphics, spellX + 10, spellY + 26, 160, 6, 2);
-
-        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 8, 'SPELL (R): READY', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#44ff44'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
-
-        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 26, 160, 6, 0x9b30ff)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
-
-        // 4. Dash Cooldown Card (top-right below spell: x=width-195, y=147, w=180, h=44)
-        const dashX = width - 195;
-        const dashY = 147;
-        drawGlassPanel(this.hudGraphics, dashX, dashY, 180, 44, 0x00bfff);
-        drawBarTrack(this.hudGraphics, dashX + 10, dashY + 26, 160, 6, 2);
-
-        this.hudDashTitle = this.add.text(dashX + 10, dashY + 8, 'DASH (SHIFT): READY', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#44ff44'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
-
-        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 26, 160, 6, 0x00bfff)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
 
         // 5. Controls Card (bottom-middle: x=(width-560)/2, y=height-110, w=560, h=95)
         const ctrlX = (width - 560) / 2;
@@ -2768,7 +2717,7 @@ export default class GameScene extends Phaser.Scene {
         const currentHp = playerObj.health ? playerObj.health.current : 0;
         const maxHp = playerObj.health ? playerObj.health.max : 100;
 
-        if (this.hudHealthBarFill && this.hudHealthText) {
+        if (this.hudHealthBarFill) {
             const pct = Math.max(0, Math.min(1, currentHp / maxHp));
             this.hudHealthBarFill.width = 220 * pct;
 
@@ -2779,26 +2728,10 @@ export default class GameScene extends Phaser.Scene {
                 color = 0xf1c40f; // Yellow
             }
             this.hudHealthBarFill.setFillStyle(color);
-
-            let tag = '';
-            if (playerObj.isRageActive) {
-                tag = '  [RAGE]';
-                this.hudHealthText.setColor('#ff3333');
-            } else if (playerObj.isShieldActive) {
-                tag = '  [SHIELD]';
-                this.hudHealthText.setColor('#00ffff');
-            } else {
-                this.hudHealthText.setColor('#ffffff');
-            }
-
-            const hpStr = `HP: ${currentHp} / ${maxHp}${tag}`;
-            if (this.hudHealthText.text !== hpStr) {
-                this.hudHealthText.setText(hpStr);
-            }
         }
 
         if (this.hudKillsText) {
-            const killsStr = `KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`;
+            const killsStr = `KILLS: ${this.killCount}  D: ${this.deathCount}`;
             if (this.hudKillsText.text !== killsStr) {
                 this.hudKillsText.setText(killsStr);
             }
@@ -2806,84 +2739,6 @@ export default class GameScene extends Phaser.Scene {
 
         const now = this.time.now;
 
-        if (this.hudSpellTitle && this.hudSpellBarFill && playerObj) {
-            const lastCast = playerObj.lastSpellTime || 0;
-            const cooldown = playerObj.spellCooldown || 200;
-            const elapsed = now - lastCast;
-
-            const isKnight = playerObj.character === 'p1';
-            const spellName = isKnight ? 'SHIELD' : 'SPELL';
-
-            const spellColor = SPELL_COLORS[playerObj.character] || 0x00ffff;
-
-            if (playerObj.isShieldActive) {
-                const activeElapsed = now - lastCast;
-                const shieldDuration = 2000;
-                const activeRatio = Math.max(0, Math.min(1, 1 - (activeElapsed / shieldDuration)));
-                const activeRem = ((shieldDuration - activeElapsed) / 1000).toFixed(1);
-
-                const activeStr = `SHIELD: ACTIVE (${activeRem}s)`;
-                if (this.hudSpellTitle.text !== activeStr) {
-                    this.hudSpellTitle.setText(activeStr);
-                    this.hudSpellTitle.setColor('#00ffff');
-                }
-                
-                this.hudSpellBarFill.width = 160 * activeRatio;
-                this.hudSpellBarFill.setFillStyle(0x00ffff);
-            } else if (elapsed < cooldown) {
-                const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
-                const rem = ((cooldown - elapsed) / 1000).toFixed(1);
-                
-                const cooldownStr = `${spellName} (R): COOLDOWN (${rem}s)`;
-                if (this.hudSpellTitle.text !== cooldownStr) {
-                    this.hudSpellTitle.setText(cooldownStr);
-                    this.hudSpellTitle.setColor('#ffaa00');
-                }
-                
-                this.hudSpellBarFill.width = 160 * ratio;
-                this.hudSpellBarFill.setFillStyle(0xffaa00);
-            } else {
-                const readyStr = `${spellName} (R): READY`;
-                if (this.hudSpellTitle.text !== readyStr) {
-                    this.hudSpellTitle.setText(readyStr);
-                    this.hudSpellTitle.setColor('#44ff44');
-                }
-                
-                this.hudSpellBarFill.width = 160;
-                this.hudSpellBarFill.setFillStyle(spellColor);
-            }
-        }
-
-        if (this.hudDashTitle && this.hudDashBarFill && playerObj) {
-            const maxCharges = playerObj.maxDashCharges || 1;
-            const currentCharges = playerObj.dashCharges !== undefined ? playerObj.dashCharges : maxCharges;
-            const bolts = '⚡'.repeat(currentCharges);
-            
-            if (currentCharges < maxCharges) {
-                const lastRegen = playerObj.lastDashChargeRegenTime || now;
-                const cooldown = playerObj.dashCooldown || 1500;
-                const elapsed = now - lastRegen;
-                const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
-                
-                const rechargingStr = `DASH (SHIFT): RECHARGING [${bolts}]`;
-                if (this.hudDashTitle.text !== rechargingStr) {
-                    this.hudDashTitle.setText(rechargingStr);
-                    this.hudDashTitle.setColor('#ffaa00');
-                }
-                
-                this.hudDashBarFill.width = 160 * ratio;
-                this.hudDashBarFill.setFillStyle(0xffaa00);
-            } else {
-                const readyStr = `DASH (SHIFT): READY [${bolts}]`;
-                if (this.hudDashTitle.text !== readyStr) {
-                    this.hudDashTitle.setText(readyStr);
-                    this.hudDashTitle.setColor('#44ff44');
-                }
-                
-                this.hudDashBarFill.width = 160;
-                this.hudDashBarFill.setFillStyle(0x00bfff);
-            }
-        }
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
