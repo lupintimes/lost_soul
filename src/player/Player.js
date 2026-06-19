@@ -696,30 +696,28 @@ export default class Player {
         });
         spell.setVelocityX(velocityX);
 
-        // 🔶 Shadow trail: spawn orange fading dots along trajectory
-        let trailTimer = null;
-        if (isP2) {
-            trailTimer = this.scene.time.addEvent({
-                delay: 40,
-                repeat: 24, // ~1 second of trail (25 ticks * 40ms)
-                callback: () => {
-                    if (!spell || !spell.active) {
-                        if (trailTimer) trailTimer.destroy();
-                        return;
-                    }
-                    const dot = this.scene.add.circle(spell.x, spell.y, Phaser.Math.Between(5, 10), 0xff6600, 0.75);
-                    dot.setDepth(9);
-                    this.scene.tweens.add({
-                        targets: dot,
-                        alpha: 0,
-                        scale: 0.1,
-                        duration: 280,
-                        ease: 'Power2',
-                        onComplete: () => { if (dot && dot.active) dot.destroy(); }
-                    });
+        // 🔶 Spell projectile trail: spawn fading dots of signature color along trajectory
+        const trailTimer = this.scene.time.addEvent({
+            delay: 30,
+            repeat: 33, // ~1 second of trail (34 ticks * 30ms)
+            callback: () => {
+                if (!spell || !spell.active) {
+                    if (trailTimer) trailTimer.destroy();
+                    return;
                 }
-            });
-        }
+                const dotRadius = radius * 0.8;
+                const dot = this.scene.add.circle(spell.x, spell.y, dotRadius, spellColor, 0.45);
+                dot.setDepth(9);
+                this.scene.tweens.add({
+                    targets: dot,
+                    alpha: 0,
+                    scale: 0.2,
+                    duration: 300,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => { if (dot && dot.active) dot.destroy(); }
+                });
+            }
+        });
 
         const spellId = this.scene.mode === 'multiplayer' && this.isControlled
             ? `${this.playerId}_spell_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
@@ -803,30 +801,28 @@ export default class Player {
         });
         spell.setVelocityX(velocityX);
 
-        // 🔶 Shadow trail
-        let trailTimer = null;
-        if (isP2) {
-            trailTimer = this.scene.time.addEvent({
-                delay: 40,
-                repeat: 24,
-                callback: () => {
-                    if (!spell || !spell.active) {
-                        if (trailTimer) trailTimer.destroy();
-                        return;
-                    }
-                    const dot = this.scene.add.circle(spell.x, spell.y, Phaser.Math.Between(5, 10), 0xff6600, 0.75);
-                    dot.setDepth(9);
-                    this.scene.tweens.add({
-                        targets: dot,
-                        alpha: 0,
-                        scale: 0.1,
-                        duration: 280,
-                        ease: 'Power2',
-                        onComplete: () => { if (dot && dot.active) dot.destroy(); }
-                    });
+        // 🔶 Spell projectile trail
+        const trailTimer = this.scene.time.addEvent({
+            delay: 30,
+            repeat: 33, // ~1 second of trail (34 ticks * 30ms)
+            callback: () => {
+                if (!spell || !spell.active) {
+                    if (trailTimer) trailTimer.destroy();
+                    return;
                 }
-            });
-        }
+                const dotRadius = radius * 0.8;
+                const dot = this.scene.add.circle(spell.x, spell.y, dotRadius, spellColor, 0.45);
+                dot.setDepth(9);
+                this.scene.tweens.add({
+                    targets: dot,
+                    alpha: 0,
+                    scale: 0.2,
+                    duration: 300,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => { if (dot && dot.active) dot.destroy(); }
+                });
+            }
+        });
 
         if (!this.scene.spells) {
             this.scene.spells = [];
