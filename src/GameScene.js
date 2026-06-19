@@ -1164,6 +1164,11 @@ export default class GameScene extends Phaser.Scene {
                 if (!e.countedAsKill) {
                     this.killCount++;
                     e.countedAsKill = true;
+
+                    const localP = this.localPlayer || this.players[0];
+                    if (localP && localP.character === 'p3' && localP.hasTriggeredUndyingRage) {
+                        localP.recoverFromUndyingRage();
+                    }
                 }
             } else {
                 aliveEnemies.push(e);
@@ -1450,6 +1455,10 @@ export default class GameScene extends Phaser.Scene {
 
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
+
+        if (this.mode === 'solo') {
+            this.localPlayer = player;
+        }
 
         this.players.push(player);
         this.applySpawnProtection(player);

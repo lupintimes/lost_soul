@@ -1207,6 +1207,36 @@ export default class Player {
         });
     }
 
+    recoverFromUndyingRage() {
+        if (!this.hasTriggeredUndyingRage) return;
+
+        this.hasTriggeredUndyingRage = false;
+        this.lastRageDrainTime = null;
+
+        // Restore health to at least 50% of max
+        this.health.current = Math.max(this.health.current, this.health.max * 0.5);
+        if (this.health && typeof this.health.updateBar === 'function') {
+            this.health.updateBar();
+        }
+
+        // Reset visual rage states
+        this.isRageActive = false;
+        this.speed = this.originalSpeed;
+        if (this.sprite && this.sprite.active) {
+            this.sprite.setScale(0.4);
+            this.sprite.clearTint();
+        }
+
+        // Visual and sound feedback
+        this.playSound('sfx_spell', 0.6);
+        this.createHitParticles(this.sprite.x, this.sprite.y, 0x44ff44); // Green burst for recovery
+        this.createHitParticles(this.sprite.x, this.sprite.y - 30, 0x00ff00);
+
+        if (this.scene && typeof this.scene.showKillMessage === 'function') {
+            this.scene.showKillMessage('UNDYING SURVIVAL!', '#00ff00');
+        }
+    }
+
     // ☠️ DEATH
     die() {
         if (this.state === 'dead') return;
