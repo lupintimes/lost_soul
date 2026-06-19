@@ -699,7 +699,7 @@ export default class Player {
         // 🔶 Spell projectile trail: spawn fading dots of signature color along trajectory
         const trailTimer = this.scene.time.addEvent({
             delay: 30,
-            repeat: 33, // ~1 second of trail (34 ticks * 30ms)
+            loop: true,
             callback: () => {
                 if (!spell || !spell.active) {
                     if (trailTimer) trailTimer.destroy();
@@ -711,8 +711,8 @@ export default class Player {
                 this.scene.tweens.add({
                     targets: dot,
                     alpha: 0,
-                    scale: 0.2,
-                    duration: 300,
+                    scale: 0.15,
+                    duration: 450,
                     ease: 'Quad.easeOut',
                     onComplete: () => { if (dot && dot.active) dot.destroy(); }
                 });
@@ -804,7 +804,7 @@ export default class Player {
         // 🔶 Spell projectile trail
         const trailTimer = this.scene.time.addEvent({
             delay: 30,
-            repeat: 33, // ~1 second of trail (34 ticks * 30ms)
+            loop: true,
             callback: () => {
                 if (!spell || !spell.active) {
                     if (trailTimer) trailTimer.destroy();
@@ -816,8 +816,8 @@ export default class Player {
                 this.scene.tweens.add({
                     targets: dot,
                     alpha: 0,
-                    scale: 0.2,
-                    duration: 300,
+                    scale: 0.15,
+                    duration: 450,
                     ease: 'Quad.easeOut',
                     onComplete: () => { if (dot && dot.active) dot.destroy(); }
                 });
