@@ -1114,6 +1114,9 @@ export default class Player {
 
         if (amount > 0) {
             this.lastDamageTime = this.scene.time.now;
+            if (this.health) {
+                this.health.healthBarVisibleEndTime = this.scene.time.now + 2000;
+            }
         }
 
         this.health.current -= amount;

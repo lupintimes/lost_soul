@@ -665,6 +665,10 @@ export default class GameScene extends Phaser.Scene {
                 const isEnemyHit = (data.attackerId === this.socket.id);
                 this.showDamageNumber(targetObj.sprite.x, targetObj.sprite.y - 40, data.damage, isEnemyHit);
 
+                if (targetObj.health && data.damage > 0) {
+                    targetObj.health.healthBarVisibleEndTime = this.time.now + 2000;
+                }
+
                 if (attackerObj && attackerObj.character === 'p1' && data.damage > 0) {
                     targetObj.applyChill(3000);
                     this.showDamageNumber(targetObj.sprite.x, targetObj.sprite.y - 65, 0, false, true); // CHILLED!

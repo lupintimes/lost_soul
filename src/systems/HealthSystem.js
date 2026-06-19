@@ -8,10 +8,21 @@ export default class HealthSystem {
         this.visualHealth = max; // Animated catch-up health tracker
 
         this.bar = scene.add.graphics();
+        this.healthBarVisibleEndTime = 0;
     }
 
     updateBar() {
         if (!this.owner.sprite) return;
+
+        // Hide health bar for other players / enemies unless they have been damaged in the last 3 seconds
+        const isLocalPlayer = !this.owner.isEnemy && (this.scene.mode !== 'multiplayer' || this.scene.localPlayer === this.owner);
+        if (!isLocalPlayer) {
+            const time = this.scene.time.now;
+            if (!this.healthBarVisibleEndTime || time >= this.healthBarVisibleEndTime) {
+                this.bar.clear();
+                return;
+            }
+        }
 
         const width = 60;
         const height = 8;
