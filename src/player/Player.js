@@ -658,7 +658,8 @@ export default class Player {
 
             const color = (r << 16) | (g << 8) | b;
 
-            spell.fillStyle(color, 1);
+            const alpha = 1.0 - 0.4 * factor;
+            spell.fillStyle(color, alpha);
             spell.fillCircle(0, 0, currentRadius);
         }
         spell.setDepth(10);
@@ -763,7 +764,8 @@ export default class Player {
 
             const color = (r << 16) | (g << 8) | b;
 
-            spell.fillStyle(color, 1);
+            const alpha = 1.0 - 0.4 * factor;
+            spell.fillStyle(color, alpha);
             spell.fillCircle(0, 0, currentRadius);
         }
         spell.setDepth(10);
