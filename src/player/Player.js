@@ -33,6 +33,11 @@ export default class Player {
             baseDamage = Math.round(baseDamage * 1.5);
         }
 
+        // 40% damage reduction when chilled
+        if (this.chillEndTime && this.scene.time.now < this.chillEndTime) {
+            baseDamage = Math.round(baseDamage * (1 - this.chillPowerReduction));
+        }
+
         return baseDamage;
     }
 
@@ -41,6 +46,9 @@ export default class Player {
         let damage = charDamage.spell;
         if (this.isRageActive) {
             damage = Math.round(damage * 1.5);
+        }
+        if (this.chillEndTime && this.scene.time.now < this.chillEndTime) {
+            damage = Math.round(damage * (1 - this.chillPowerReduction));
         }
         return damage;
     }
@@ -100,6 +108,10 @@ export default class Player {
         this.lastRageDrainTime = null;
         this.speed = 10;
         this.originalSpeed = 10;
+        this.chillEndTime = null;
+        this.chillSlowFactor = 0.5; // 50% slow
+        this.chillPowerReduction = 0.4; // 40% power reduction
+        this.freezeVisual = null;
 
         // Knight Taunt Fortress Buff
         this.isTauntedDefenseBuffActive = false;
@@ -1062,8 +1074,12 @@ export default class Player {
         });
     }
 
+    applyChill(duration) {
+        this.chillEndTime = this.scene.time.now + duration;
+    }
+
     // 💥 DAMAGE
-    takeDamage(amount, attacker = null) {
+    takeDamage(amount, attacker = null, isMelee = false) {
         if (this.state === 'dead') return;
 
         // ✅ Block ALL damage during invincibility
@@ -1103,6 +1119,17 @@ export default class Player {
         const isFatal = this.health.current <= 0;
         if (isFatal) {
             this.health.current = 0;
+        }
+
+        // Show damage numbers locally (offline/solo mode)
+        if (this.scene.mode !== 'multiplayer') {
+            const isEnemyHit = this.isEnemy;
+            this.scene.showDamageNumber(this.sprite.x, this.sprite.y - 40, amount, isEnemyHit);
+
+            if (attacker && attacker.character === 'p1' && isMelee && amount > 0) {
+                this.applyChill(3000);
+                this.scene.showDamageNumber(this.sprite.x, this.sprite.y - 65, 0, false, true); // CHILLED!
+            }
         }
 
         // Immediately update health bar so the visual feedback is instant
@@ -1380,6 +1407,10 @@ export default class Player {
         if (this.fortressVisual) {
             this.fortressVisual.destroy();
             this.fortressVisual = null;
+        }
+        if (this.freezeVisual) {
+            this.freezeVisual.destroy();
+            this.freezeVisual = null;
         }
         if (this.shieldTimer) this.shieldTimer.destroy();
         if (this.tauntBuffTimer) this.tauntBuffTimer.destroy();
@@ -1758,6 +1789,52 @@ export default class Player {
             }
         }
 
+        // 5. Chill Debuff Visual & Slowdown
+        const isChilled = this.chillEndTime && time < this.chillEndTime;
+        if (isChilled) {
+            // Apply speed reduction dynamically relative to current speed (rage or normal)
+            let currentBaseSpeed = this.originalSpeed;
+            if (this.isRageActive) {
+                currentBaseSpeed = this.hasTriggeredUndyingRage ? 15 : 13;
+            }
+            this.speed = currentBaseSpeed * this.chillSlowFactor;
+            
+            // Tint cold cyan (directly on the sprite)
+            this.sprite.setTint(0x00ffff);
+            
+            // Set 0.75 opacity/alpha if not currently dashing (which alternates its own alpha)
+            if (this.state !== 'dash') {
+                this.sprite.setAlpha(0.75);
+            }
+            
+            // Frost dust falling down
+            if (Math.random() < 0.15) {
+                const startX = this.sprite.x + Phaser.Math.Between(-30, 30);
+                const fp = this.scene.add.circle(startX, this.sprite.y - 20, Phaser.Math.Between(3, 6), 0x00ffff, 0.85);
+                fp.setDepth(4);
+                this.scene.tweens.add({
+                    targets: fp,
+                    x: startX + Phaser.Math.Between(-10, 10),
+                    y: fp.y + 50,
+                    alpha: 0,
+                    scale: 0.1,
+                    duration: Phaser.Math.Between(500, 800),
+                    ease: 'Sine.easeIn',
+                    onComplete: () => { if (fp && fp.active) fp.destroy(); }
+                });
+            }
+        } else {
+            // Restore speed, alpha, and clear tint if the chill just ended
+            if (this.chillEndTime && time >= this.chillEndTime) {
+                this.chillEndTime = null;
+                this.speed = this.isRageActive ? (this.hasTriggeredUndyingRage ? 15 : 13) : this.originalSpeed;
+                this.sprite.clearTint();
+                if (this.state !== 'dash' && !this.isInvincible) {
+                    this.sprite.setAlpha(1.0);
+                }
+            }
+        }
+
         // Apply anim speed adjustments based on state
         if (this.isRageActive) {
             this.sprite.anims.timeScale = 1.6;
@@ -1783,9 +1860,10 @@ export default class Player {
             } else {
                 this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002; // collide with map/ground and other players/enemies
                 
-                // Restore alpha if we were dashing and not currently spawn-protected/invincible
-                if (this.sprite.alpha !== 1 && !this.isInvincible) {
-                    this.sprite.setAlpha(1);
+                // Restore alpha if we were dashing/invincible/chilled
+                const targetAlpha = isChilled ? 0.75 : 1.0;
+                if (this.sprite.alpha !== targetAlpha && !this.isInvincible) {
+                    this.sprite.setAlpha(targetAlpha);
                 }
             }
         }

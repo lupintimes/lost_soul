@@ -607,7 +607,11 @@ export default class GameScene extends Phaser.Scene {
 
         // 5. Player damaged
         this.socket.on('playerDamaged', (data) => {
+            const attackerObj = (data.attackerId === this.socket.id) ? this.localPlayer : this.otherPlayerMap[data.attackerId];
+            let targetObj = null;
+
             if (data.targetId === this.socket.id && this.localPlayer) {
+                targetObj = this.localPlayer;
                 // ✅ Block damage if invincible
                 if (this.localPlayer.isInvincible) return;
 
@@ -635,6 +639,7 @@ export default class GameScene extends Phaser.Scene {
 
             const remote = this.otherPlayerMap[data.targetId];
             if (remote && remote.sprite && remote.sprite.active) {
+                targetObj = remote;
                 if (remote.health && typeof remote.health === 'object') {
                     remote.health.current = data.remainingHealth;
                 }
@@ -653,6 +658,17 @@ export default class GameScene extends Phaser.Scene {
                         remote.sprite.setTint(0xff6666);
                     }
                 });
+            }
+
+            // Show floating damage numbers and chill effect in multiplayer
+            if (targetObj && targetObj.sprite && targetObj.sprite.active) {
+                const isEnemyHit = (data.attackerId === this.socket.id);
+                this.showDamageNumber(targetObj.sprite.x, targetObj.sprite.y - 40, data.damage, isEnemyHit);
+
+                if (attackerObj && attackerObj.character === 'p1' && data.damage > 0) {
+                    targetObj.applyChill(3000);
+                    this.showDamageNumber(targetObj.sprite.x, targetObj.sprite.y - 65, 0, false, true); // CHILLED!
+                }
             }
         });
 
@@ -1897,6 +1913,80 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
+    showDamageNumber(x, y, amount, isEnemyHit, isChill = false) {
+        let text = amount.toString();
+        let color = '#ff3333'; // Default red for player taking damage
+        let fontSize = '20px';
+        let strokeColor = '#000000';
+        let strokeThickness = 4;
+
+        if (isEnemyHit) {
+            color = '#ffcc00'; // Gold/yellow for enemy hits
+            if (amount > 50) {
+                color = '#ff3300'; // Critical/big damage orange-red
+                fontSize = '28px';
+                strokeThickness = 6;
+            } else if (amount > 35) {
+                fontSize = '24px';
+            }
+        } else {
+            // Player taking damage
+            if (amount === 0) {
+                text = "BLOCKED";
+                color = '#00ffff'; // Cyan for shield blocks
+                fontSize = '18px';
+            } else if (amount > 40) {
+                fontSize = '26px';
+                strokeThickness = 5;
+            }
+        }
+
+        if (isChill) {
+            text = "CHILLED!";
+            color = '#33aacc'; // Frost blue
+            fontSize = '20px';
+            strokeThickness = 4;
+        }
+
+        // Add slight random offset to prevent numbers overlapping perfectly
+        const rx = x + Phaser.Math.Between(-25, 25);
+        const ry = y - Phaser.Math.Between(10, 30);
+
+        const dmgText = this.add.text(rx, ry, text, {
+            fontFamily: '"Silkscreen"',
+            fontSize: fontSize,
+            color: color,
+            stroke: strokeColor,
+            strokeThickness: strokeThickness
+        }).setOrigin(0.5).setDepth(100);
+
+        // Tween up, bounce scale, and fade out
+        dmgText.setScale(0.5);
+        this.tweens.add({
+            targets: dmgText,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            y: ry - 50,
+            duration: 150,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.tweens.add({
+                    targets: dmgText,
+                    alpha: 0,
+                    y: ry - 90,
+                    duration: 600,
+                    delay: 200,
+                    ease: 'Sine.easeIn',
+                    onComplete: () => {
+                        if (dmgText && dmgText.active) {
+                            dmgText.destroy();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
     createBubbleBlastParticles(cx, cy, w, h, tint) {
         const area = w * h;
         const count = Math.min(45, Math.max(12, Math.floor(area / 1000)));
@@ -2524,135 +2614,141 @@ export default class GameScene extends Phaser.Scene {
     createHUD() {
         const { width, height } = this.scale;
 
-        // ── Minimal HUD ──────────────────────────────────────────────
-        // All elements anchor to bottom-left and bottom-right edges.
-        // A single thin graphics layer provides subtle backdrops.
-        this.hudGraphics = this.add.graphics().setScrollFactor(0).setDepth(98);
+        // Initialize HUD graphics object
+        this.hudGraphics = this.add.graphics()
+            .setScrollFactor(0)
+            .setDepth(98);
 
-        const PAD = 16;          // outer margin
-        const BAR_W = 180;        // health bar width
-        const BAR_H = 5;          // health bar height (very thin)
-        const PILL_W = 130;       // spell / dash pill width
-        const PILL_H = 28;        // spell / dash pill height
-
-        // ── helpers ──────────────────────────────────────────────────
-        const g = this.hudGraphics;
-
-        const drawStrip = (x, y, w, h, color = 0x000000, alpha = 0.45, r = 4) => {
-            g.fillStyle(color, alpha);
-            g.fillRoundedRect(x, y, w, h, r);
-        };
-        const drawTrack = (x, y, w, h = BAR_H, r = 2) => {
-            g.fillStyle(0x1a1a2e, 0.9);
-            g.fillRoundedRect(x, y, w, h, r);
+        const drawGlassPanel = (graphics, x, y, w, h, strokeColor, radius = 6) => {
+            // Drop shadow
+            graphics.fillStyle(0x000000, 0.35);
+            graphics.fillRoundedRect(x + 3, y + 3, w, h, radius);
+            // Glass background
+            graphics.fillStyle(0x0a0f19, 0.85);
+            graphics.fillRoundedRect(x, y, w, h, radius);
+            // Neon stroke
+            graphics.lineStyle(1.5, strokeColor, 0.85);
+            graphics.strokeRoundedRect(x, y, w, h, radius);
         };
 
-        // ── 1. HEALTH — bottom-left ───────────────────────────────────
-        // Layout: y-anchor from bottom
-        const HP_Y       = height - PAD - 38;   // top of the whole HP block
-        const HP_LABEL_Y = HP_Y;                 // char name / status tag row
-        const HP_NUM_Y   = HP_Y + 14;            // '87 / 100' number row
-        const HP_BAR_Y   = HP_Y + 28;            // thin bar
+        const drawBarTrack = (graphics, x, y, w, h, radius = 3) => {
+            graphics.fillStyle(0x151c27, 1);
+            graphics.fillRoundedRect(x, y, w, h, radius);
+        };
 
-        // Dark backdrop for health block
-        drawStrip(PAD - 6, HP_Y - 4, BAR_W + 12, 42, 0x000000, 0.40, 5);
-        // Bar track
-        drawTrack(PAD, HP_BAR_Y, BAR_W);
+        // 1. Health Card layout (top-left: x=15, y=15, w=240, h=64)
+        drawGlassPanel(this.hudGraphics, 15, 15, 240, 64, 0xff4444);
+        drawBarTrack(this.hudGraphics, 25, 36, 220, 12, 4);
 
-        // Character label (e.g. '♥ KNIGHT')
-        const charLabels = { p1: 'KNIGHT', p2: 'SHADOW', p3: 'BERSERKER' };
-        const charColors = { p1: '#4488ff', p2: '#cc88ff', p3: '#ff6644' };
-        const charKey    = this.selectedCharacter || 'p1';
+        this.hudHealthTitle = this.add.text(25, 20, 'PLAYER HP', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '11px',
+            color: '#ff4444'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.hudCharLabel = this.add.text(PAD, HP_LABEL_Y, `♥  ${charLabels[charKey] || 'PLAYER'}`, {
+        this.hudHealthBarFill = this.add.rectangle(25, 36, 220, 12, 0x2ecc71)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
+
+        this.hudHealthText = this.add.text(25, 52, 'HP: 100 / 100', {
             fontFamily: '"Silkscreen"',
             fontSize: '10px',
-            color: charColors[charKey] || '#aaaaaa'
-        }).setScrollFactor(0).setDepth(100);
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        // HP number + status tag (rightmost on same row)
-        this.hudHealthText = this.add.text(PAD, HP_NUM_Y, '100 / 100', {
+        // 2. Stats/Kills Card layout (top-left below health: x=15, y=89, w=240, h=36)
+        drawGlassPanel(this.hudGraphics, 15, 89, 240, 36, 0x8a95a5);
+
+        this.hudKillsText = this.add.text(25, 98, 'KILLS: 0   DEATHS: 0', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#dddddd'
-        }).setScrollFactor(0).setDepth(100);
+            fontSize: '11px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        // Status badge (RAGE / SHIELD) — floats right of bar area
-        this.hudStatusTag = this.add.text(PAD + BAR_W, HP_NUM_Y, '', {
+        // 3. Spell Cooldown Card (top-right below build points: x=width-195, y=93, w=180, h=44)
+        const spellX = width - 195;
+        const spellY = 93;
+        drawGlassPanel(this.hudGraphics, spellX, spellY, 180, 44, 0x9b30ff);
+        drawBarTrack(this.hudGraphics, spellX + 10, spellY + 26, 160, 6, 2);
+
+        this.hudSpellTitle = this.add.text(spellX + 10, spellY + 8, 'SPELL (R): READY', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#ff3333'
-        }).setScrollFactor(0).setDepth(100).setOrigin(1, 0);
+            fontSize: '11px',
+            color: '#44ff44'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        // Health bar fill
-        this.hudHealthBarFill = this.add.rectangle(PAD, HP_BAR_Y, BAR_W, BAR_H, 0x2ecc71)
-            .setOrigin(0).setScrollFactor(0).setDepth(100);
+        this.hudSpellBarFill = this.add.rectangle(spellX + 10, spellY + 26, 160, 6, 0x9b30ff)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
 
-        // ── 2. KILLS / DEATHS — bottom-left, just above HP block ─────
-        const KILLS_Y = HP_Y - 18;
-        this.hudKillsText = this.add.text(PAD, KILLS_Y, '⚔ 0   ✦ 0', {
+        // 4. Dash Cooldown Card (top-right below spell: x=width-195, y=147, w=180, h=44)
+        const dashX = width - 195;
+        const dashY = 147;
+        drawGlassPanel(this.hudGraphics, dashX, dashY, 180, 44, 0x00bfff);
+        drawBarTrack(this.hudGraphics, dashX + 10, dashY + 26, 160, 6, 2);
+
+        this.hudDashTitle = this.add.text(dashX + 10, dashY + 8, 'DASH (SHIFT): READY', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#667788'
-        }).setScrollFactor(0).setDepth(100);
+            fontSize: '11px',
+            color: '#44ff44'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        // ── 3. SPELL pill — bottom-right ──────────────────────────────
-        const PILL_X     = width - PAD - PILL_W;
-        const SPELL_PY   = height - PAD - PILL_H * 2 - 6;
-        const DASH_PY    = height - PAD - PILL_H;
+        this.hudDashBarFill = this.add.rectangle(dashX + 10, dashY + 26, 160, 6, 0x00bfff)
+            .setOrigin(0)
+            .setScrollFactor(0)
+            .setDepth(100);
 
-        // Spell backdrop
-        drawStrip(PILL_X - 4, SPELL_PY - 2, PILL_W + 8, PILL_H + 4, 0x000000, 0.40, 5);
-        drawTrack(PILL_X, SPELL_PY + 18, PILL_W, 3);
+        // 5. Controls Card (bottom-middle: x=(width-560)/2, y=height-110, w=560, h=95)
+        const ctrlX = (width - 560) / 2;
+        const ctrlY = height - 110;
+        const ctrlW = 560;
+        const ctrlH = 95;
 
-        this.hudSpellTitle = this.add.text(PILL_X, SPELL_PY + 4, 'R  READY', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#44ff88'
-        }).setScrollFactor(0).setDepth(100);
-
-        this.hudSpellBarFill = this.add.rectangle(PILL_X, SPELL_PY + 18, PILL_W, 3, 0x9b30ff)
-            .setOrigin(0).setScrollFactor(0).setDepth(100);
-
-        // ── 4. DASH pill — bottom-right, directly below spell ─────────
-        drawStrip(PILL_X - 4, DASH_PY - 2, PILL_W + 8, PILL_H + 4, 0x000000, 0.40, 5);
-        drawTrack(PILL_X, DASH_PY + 18, PILL_W, 3);
-
-        this.hudDashTitle = this.add.text(PILL_X, DASH_PY + 4, '⇥  READY', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#44ff88'
-        }).setScrollFactor(0).setDepth(100);
-
-        this.hudDashBarFill = this.add.rectangle(PILL_X, DASH_PY + 18, PILL_W, 3, 0x00bfff)
-            .setOrigin(0).setScrollFactor(0).setDepth(100);
-
-        // ── 5. Controls hint — bottom-centre, auto-fades ──────────────
-        const ctrlW = 520;
-        const ctrlX = (width - ctrlW) / 2;
-        const ctrlY = height - 80;
-
-        this.hudControlsGraphics = this.add.graphics().setScrollFactor(0).setDepth(98);
-        this.hudControlsGraphics.fillStyle(0x000000, 0.38);
-        this.hudControlsGraphics.fillRoundedRect(ctrlX - 10, ctrlY - 6, ctrlW + 20, 62, 6);
+        // Draw controls panel inside a local graphics object so we can fade it out easily with tweens!
+        this.hudControlsGraphics = this.add.graphics()
+            .setScrollFactor(0)
+            .setDepth(98);
+        drawGlassPanel(this.hudControlsGraphics, ctrlX, ctrlY, ctrlW, ctrlH, 0x555555, 8);
 
         const controlsTextStr =
-            'A/D Move  W Jump  Q High-Jump  SHIFT Dash  T Taunt\n' +
-            'SPACE Attack  R Spell  LClick+Drag Build  RClick Delete';
+            "CONTROLS HINT:\n" +
+            "• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T\n" +
+            "• Spell: R | Attack: SPACE\n" +
+            "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
 
-        this.hudControlsText = this.add.text(ctrlX, ctrlY, controlsTextStr, {
+        this.hudControlsText = this.add.text(ctrlX + 15, ctrlY + 10, controlsTextStr, {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#889aaa',
-            lineSpacing: 6,
-            align: 'center'
-        }).setScrollFactor(0).setDepth(100).setOrigin(0, 0);
+            fontSize: '11px',
+            color: '#cccccc',
+            lineSpacing: 5
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
 
-        this.time.delayedCall(9000, () => {
+        // Fade out controls panel after 10 seconds
+        this.time.delayedCall(10000, () => {
             this.tweens.add({
                 targets: [this.hudControlsGraphics, this.hudControlsText],
                 alpha: 0,
-                duration: 1200,
+                duration: 1500,
                 onComplete: () => {
                     if (this.hudControlsGraphics && this.hudControlsGraphics.active) this.hudControlsGraphics.destroy();
                     if (this.hudControlsText && this.hudControlsText.active) this.hudControlsText.destroy();
@@ -2665,94 +2761,122 @@ export default class GameScene extends Phaser.Scene {
         const playerObj = this.mode === 'multiplayer' ? this.localPlayer : this.players[0];
         if (!playerObj) return;
 
-        const BAR_W = 180;
-        const PILL_W = 130;
-        const currentHp = Math.round(playerObj.health ? playerObj.health.current : 0);
+        const currentHp = playerObj.health ? playerObj.health.current : 0;
         const maxHp = playerObj.health ? playerObj.health.max : 100;
-        const now = this.time.now;
 
-        // ── Health bar ───────────────────────────────────────────────
-        if (this.hudHealthBarFill) {
+        if (this.hudHealthBarFill && this.hudHealthText) {
             const pct = Math.max(0, Math.min(1, currentHp / maxHp));
-            this.hudHealthBarFill.width = BAR_W * pct;
+            this.hudHealthBarFill.width = 220 * pct;
 
-            let barColor = 0x2ecc71;
-            if (pct < 0.3)       barColor = 0xe74c3c;
-            else if (pct < 0.6)  barColor = 0xf1c40f;
-            this.hudHealthBarFill.setFillStyle(barColor);
-        }
+            let color = 0x2ecc71; // Green
+            if (pct < 0.3) {
+                color = 0xe74c3c; // Red
+            } else if (pct < 0.6) {
+                color = 0xf1c40f; // Yellow
+            }
+            this.hudHealthBarFill.setFillStyle(color);
 
-        if (this.hudHealthText) {
-            const hpStr = `${currentHp} / ${maxHp}`;
-            if (this.hudHealthText.text !== hpStr) this.hudHealthText.setText(hpStr);
-        }
-
-        // Status tag (RAGE / SHIELD)
-        if (this.hudStatusTag) {
+            let tag = '';
             if (playerObj.isRageActive) {
-                this.hudStatusTag.setText('RAGE').setColor('#ff4444');
+                tag = '  [RAGE]';
+                this.hudHealthText.setColor('#ff3333');
             } else if (playerObj.isShieldActive) {
-                this.hudStatusTag.setText('SHIELD').setColor('#00ffff');
+                tag = '  [SHIELD]';
+                this.hudHealthText.setColor('#00ffff');
             } else {
-                this.hudStatusTag.setText('');
+                this.hudHealthText.setColor('#ffffff');
+            }
+
+            const hpStr = `HP: ${currentHp} / ${maxHp}${tag}`;
+            if (this.hudHealthText.text !== hpStr) {
+                this.hudHealthText.setText(hpStr);
             }
         }
 
-        // ── Kills / Deaths ───────────────────────────────────────────
         if (this.hudKillsText) {
-            const s = `⚔ ${this.killCount}   ✦ ${this.deathCount}`;
-            if (this.hudKillsText.text !== s) this.hudKillsText.setText(s);
+            const killsStr = `KILLS: ${this.killCount}   DEATHS: ${this.deathCount}`;
+            if (this.hudKillsText.text !== killsStr) {
+                this.hudKillsText.setText(killsStr);
+            }
         }
 
-        // ── Spell pill ───────────────────────────────────────────────
-        if (this.hudSpellTitle && this.hudSpellBarFill) {
-            const lastCast  = playerObj.lastSpellTime || 0;
-            const cooldown  = playerObj.spellCooldown || 200;
-            const elapsed   = now - lastCast;
+        const now = this.time.now;
+
+        if (this.hudSpellTitle && this.hudSpellBarFill && playerObj) {
+            const lastCast = playerObj.lastSpellTime || 0;
+            const cooldown = playerObj.spellCooldown || 200;
+            const elapsed = now - lastCast;
+
+            const isKnight = playerObj.character === 'p1';
+            const spellName = isKnight ? 'SHIELD' : 'SPELL';
+
             const spellColor = SPELL_COLORS[playerObj.character] || 0x00ffff;
-            const isKnight  = playerObj.character === 'p1';
-            const label     = isKnight ? 'R  SHIELD' : 'R  SPELL';
 
             if (playerObj.isShieldActive) {
-                const dur = 2000;
-                const ratio = Math.max(0, Math.min(1, 1 - ((now - lastCast) / dur)));
-                const rem = ((dur - (now - lastCast)) / 1000).toFixed(1);
-                const s = `R  ${rem}s`;
-                if (this.hudSpellTitle.text !== s) { this.hudSpellTitle.setText(s); this.hudSpellTitle.setColor('#00ffff'); }
-                this.hudSpellBarFill.width = PILL_W * ratio;
+                const activeElapsed = now - lastCast;
+                const shieldDuration = 2000;
+                const activeRatio = Math.max(0, Math.min(1, 1 - (activeElapsed / shieldDuration)));
+                const activeRem = ((shieldDuration - activeElapsed) / 1000).toFixed(1);
+
+                const activeStr = `SHIELD: ACTIVE (${activeRem}s)`;
+                if (this.hudSpellTitle.text !== activeStr) {
+                    this.hudSpellTitle.setText(activeStr);
+                    this.hudSpellTitle.setColor('#00ffff');
+                }
+                
+                this.hudSpellBarFill.width = 160 * activeRatio;
                 this.hudSpellBarFill.setFillStyle(0x00ffff);
             } else if (elapsed < cooldown) {
                 const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
                 const rem = ((cooldown - elapsed) / 1000).toFixed(1);
-                const s = `R  ${rem}s`;
-                if (this.hudSpellTitle.text !== s) { this.hudSpellTitle.setText(s); this.hudSpellTitle.setColor('#ffaa44'); }
-                this.hudSpellBarFill.width = PILL_W * ratio;
-                this.hudSpellBarFill.setFillStyle(0xffaa44);
+                
+                const cooldownStr = `${spellName} (R): COOLDOWN (${rem}s)`;
+                if (this.hudSpellTitle.text !== cooldownStr) {
+                    this.hudSpellTitle.setText(cooldownStr);
+                    this.hudSpellTitle.setColor('#ffaa00');
+                }
+                
+                this.hudSpellBarFill.width = 160 * ratio;
+                this.hudSpellBarFill.setFillStyle(0xffaa00);
             } else {
-                if (this.hudSpellTitle.text !== label) { this.hudSpellTitle.setText(label); this.hudSpellTitle.setColor('#44ff88'); }
-                this.hudSpellBarFill.width = PILL_W;
+                const readyStr = `${spellName} (R): READY`;
+                if (this.hudSpellTitle.text !== readyStr) {
+                    this.hudSpellTitle.setText(readyStr);
+                    this.hudSpellTitle.setColor('#44ff44');
+                }
+                
+                this.hudSpellBarFill.width = 160;
                 this.hudSpellBarFill.setFillStyle(spellColor);
             }
         }
 
-        // ── Dash pill ────────────────────────────────────────────────
-        if (this.hudDashTitle && this.hudDashBarFill) {
-            const maxCharges     = playerObj.maxDashCharges || 1;
+        if (this.hudDashTitle && this.hudDashBarFill && playerObj) {
+            const maxCharges = playerObj.maxDashCharges || 1;
             const currentCharges = playerObj.dashCharges !== undefined ? playerObj.dashCharges : maxCharges;
-            const dots = '●'.repeat(currentCharges) + '○'.repeat(maxCharges - currentCharges);
-
+            const bolts = '⚡'.repeat(currentCharges);
+            
             if (currentCharges < maxCharges) {
                 const lastRegen = playerObj.lastDashChargeRegenTime || now;
-                const cd = playerObj.dashCooldown || 1500;
-                const ratio = Math.max(0, Math.min(1, (now - lastRegen) / cd));
-                const s = `⇥  ${dots}`;
-                if (this.hudDashTitle.text !== s) { this.hudDashTitle.setText(s); this.hudDashTitle.setColor('#ffaa44'); }
-                this.hudDashBarFill.width = PILL_W * ratio;
-                this.hudDashBarFill.setFillStyle(0xffaa44);
+                const cooldown = playerObj.dashCooldown || 1500;
+                const elapsed = now - lastRegen;
+                const ratio = Math.max(0, Math.min(1, elapsed / cooldown));
+                
+                const rechargingStr = `DASH (SHIFT): RECHARGING [${bolts}]`;
+                if (this.hudDashTitle.text !== rechargingStr) {
+                    this.hudDashTitle.setText(rechargingStr);
+                    this.hudDashTitle.setColor('#ffaa00');
+                }
+                
+                this.hudDashBarFill.width = 160 * ratio;
+                this.hudDashBarFill.setFillStyle(0xffaa00);
             } else {
-                const s = `⇥  ${dots}`;
-                if (this.hudDashTitle.text !== s) { this.hudDashTitle.setText(s); this.hudDashTitle.setColor('#44ff88'); }
-                this.hudDashBarFill.width = PILL_W;
+                const readyStr = `DASH (SHIFT): READY [${bolts}]`;
+                if (this.hudDashTitle.text !== readyStr) {
+                    this.hudDashTitle.setText(readyStr);
+                    this.hudDashTitle.setColor('#44ff44');
+                }
+                
+                this.hudDashBarFill.width = 160;
                 this.hudDashBarFill.setFillStyle(0x00bfff);
             }
         }
