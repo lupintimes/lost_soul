@@ -2446,9 +2446,12 @@ export default class GameScene extends Phaser.Scene {
         const startX = width - 195;
         const startY = 15;
         const panelW = 180;
-        const panelH = 68;
 
         this.buildGraphics = this.add.graphics()
+            .setScrollFactor(0)
+            .setDepth(98);
+
+        this.buildModeGraphics = this.add.graphics()
             .setScrollFactor(0)
             .setDepth(98);
 
@@ -2486,17 +2489,30 @@ export default class GameScene extends Phaser.Scene {
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
 
-        // 2. Build Mode Panel (flat, placed below: y=71, h=26)
+        // 2. Build Mode Boxes Text (Normal, Bounce, Slide)
         const modeY = 71;
-        this.buildGraphics.fillStyle(0x0a0f19, 0.85);
-        this.buildGraphics.fillRect(startX, modeY, panelW, 26);
-        this.buildGraphics.strokeRect(startX, modeY, panelW, 26);
-
-        // Block type indicator (1=Normal, 2=Bounce, 3=Slide)
-        this.buildBlockTypeText = this.add.text(startX + 10, modeY + 8, '[ 1 ] NORMAL', {
+        this.buildTextNormal = this.add.text(startX + 12, modeY + 6, '[ 1 ] NORMAL', {
             fontFamily: '"Silkscreen"',
-            fontSize: '10px',
-            color: '#c4c9ca'
+            fontSize: '9px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
+
+        this.buildTextBounce = this.add.text(startX + 12, modeY + 34, '[ 2 ] BOUNCE ↑', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '9px',
+            color: '#ffffff'
+        })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .setShadow(1.5, 1.5, '#000000', 3);
+
+        this.buildTextSlide = this.add.text(startX + 12, modeY + 62, '[ 3 ] SLIDE ⟶', {
+            fontFamily: '"Silkscreen"',
+            fontSize: '9px',
+            color: '#ffffff'
         })
             .setScrollFactor(0)
             .setDepth(100)
@@ -2526,18 +2542,43 @@ export default class GameScene extends Phaser.Scene {
         const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         this.buildUIText.setText(`${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`);
 
-        // Update block type indicator
-        if (this.buildBlockTypeText) {
-            const bt = this.selectedBlockType || 'normal';
-            if (bt === 'bounce') {
-                this.buildBlockTypeText.setText('[ 2 ] BOUNCE ↑');
-                this.buildBlockTypeText.setColor('#ffd700');
-            } else if (bt === 'slide') {
-                this.buildBlockTypeText.setText('[ 3 ] SLIDE ⟶');
-                this.buildBlockTypeText.setColor('#00e5ff');
-            } else {
-                this.buildBlockTypeText.setText('[ 1 ] NORMAL');
-                this.buildBlockTypeText.setColor('#c4c9ca');
+        // Update the 3 separate block type mode boxes
+        const { width } = this.scale;
+        const startX = width - 195;
+        const panelW = 180;
+        const bt = this.selectedBlockType || 'normal';
+
+        if (this.buildModeGraphics) {
+            this.buildModeGraphics.clear();
+
+            // 1. Normal Box
+            const normalSelected = bt === 'normal';
+            this.buildModeGraphics.fillStyle(normalSelected ? 0x0f172a : 0x0a0f19, 0.85);
+            this.buildModeGraphics.fillRect(startX, 71, panelW, 22);
+            this.buildModeGraphics.lineStyle(normalSelected ? 1.5 : 1.0, normalSelected ? 0xffffff : 0xffffff, normalSelected ? 0.85 : 0.12);
+            this.buildModeGraphics.strokeRect(startX, 71, panelW, 22);
+            if (this.buildTextNormal) {
+                this.buildTextNormal.setColor(normalSelected ? '#ffffff' : '#556370');
+            }
+
+            // 2. Bounce Box
+            const bounceSelected = bt === 'bounce';
+            this.buildModeGraphics.fillStyle(bounceSelected ? 0x0f172a : 0x0a0f19, 0.85);
+            this.buildModeGraphics.fillRect(startX, 99, panelW, 22);
+            this.buildModeGraphics.lineStyle(bounceSelected ? 1.5 : 1.0, bounceSelected ? 0xffd700 : 0xffffff, bounceSelected ? 0.85 : 0.12);
+            this.buildModeGraphics.strokeRect(startX, 99, panelW, 22);
+            if (this.buildTextBounce) {
+                this.buildTextBounce.setColor(bounceSelected ? '#ffd700' : '#556370');
+            }
+
+            // 3. Slide Box
+            const slideSelected = bt === 'slide';
+            this.buildModeGraphics.fillStyle(slideSelected ? 0x0f172a : 0x0a0f19, 0.85);
+            this.buildModeGraphics.fillRect(startX, 127, panelW, 22);
+            this.buildModeGraphics.lineStyle(slideSelected ? 1.5 : 1.0, slideSelected ? 0x00e5ff : 0xffffff, slideSelected ? 0.85 : 0.12);
+            this.buildModeGraphics.strokeRect(startX, 127, panelW, 22);
+            if (this.buildTextSlide) {
+                this.buildTextSlide.setColor(slideSelected ? '#00e5ff' : '#556370');
             }
         }
     }
