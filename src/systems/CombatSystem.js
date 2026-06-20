@@ -44,6 +44,17 @@ export default class CombatSystem {
             graphics.closePath();
             graphics.fillPath();
 
+            // Draw white circles along the inner arc of the crescent to corresponding character color
+            graphics.fillStyle(0xffffff, baseAlpha);
+            const numCircles = 6;
+            for (let i = 0; i < numCircles; i++) {
+                const t = i / (numCircles - 1);
+                const angle = startAngle + t * (endAngle - startAngle);
+                const px = Math.cos(angle) * radiusInner;
+                const py = Math.sin(angle) * radiusInner;
+                graphics.fillCircle(px, py, 4.5 * scaleFactor);
+            }
+
             // Set initial rotation and scale orientation
             graphics.setRotation(angleOffset * dir);
             
