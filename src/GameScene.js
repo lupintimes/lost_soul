@@ -2517,6 +2517,8 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(100)
             .setShadow(1.5, 1.5, '#000000', 3);
+
+        this.updateBuildPointsUI();
     }
 
     updateBuildPointsUI() {
