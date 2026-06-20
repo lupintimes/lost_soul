@@ -1833,14 +1833,14 @@ export default class GameScene extends Phaser.Scene {
         platform.jelly.scaleY = 0.65;
         platform.jelly.scaleX = 1.35;
         
-        // Wobble back to 1.0
+        // Wobble back to 1.0 (snappy, no delay feel)
         this.tweens.add({
             targets: platform.jelly,
             scaleY: 1.0,
             scaleX: 1.0,
-            duration: 1200,
+            duration: 450,
             ease: 'Elastic.easeOut',
-            easeParams: [1.5, 0.3],
+            easeParams: [1.2, 0.4],
             onComplete: () => {
                 platform.isWobbling = false;
                 // Restart idle breathing

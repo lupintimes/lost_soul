@@ -243,7 +243,8 @@ export default class Player {
                 const py = this.sprite.y;
 
                 const isOverlappingX = (px + 20 >= rx) && (px - 20 <= rx + rw);
-                const isStandingOnTop = Math.abs((py + feetOffset) - ry) < 10;
+                // Widen threshold to 22px and check falling down (velocity.y >= 0) to avoid lag/resting delay on high-speed falls
+                const isStandingOnTop = Math.abs((py + feetOffset) - ry) < 22 && this.sprite.body.velocity.y >= -1;
 
                 if (isOverlappingX && isStandingOnTop) {
                     if (platform.blockType === 'bounce') {
@@ -262,6 +263,20 @@ export default class Player {
                         
                         if (this.scene && typeof this.scene.wobbleBlock === 'function') {
                             this.scene.wobbleBlock(platform);
+                        }
+                        
+                        if (this.isControlled) {
+                            platform.bounceCount = (platform.bounceCount || 0) + 1;
+                            const maxBounces = Math.round(2 + 6 * factor);
+                            if (platform.bounceCount >= maxBounces) {
+                                const obstacleId = platform.id;
+                                this.scene.time.delayedCall(10, () => {
+                                    if (this.scene.mode === 'multiplayer' && this.scene.socket && obstacleId) {
+                                        this.scene.socket.emit('removeObstacle', { id: obstacleId });
+                                    }
+                                    this.scene.destroyObstacleLocally(obstacleId, true);
+                                });
+                            }
                         }
                     } else if (platform.blockType === 'slide') {
                         this.isStandingOnSlideBlock = true;
