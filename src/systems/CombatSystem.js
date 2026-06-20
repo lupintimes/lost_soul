@@ -18,41 +18,50 @@ export default class CombatSystem {
             const startAngle = -Math.PI / 3.0;   // wider angle range
             const endAngle = Math.PI / 3.0;
 
-            graphics.fillStyle(color, baseAlpha);
-            graphics.beginPath();
-            
-            // Forward arc (outer edge)
-            for (let i = 0; i <= steps; i++) {
-                const t = i / steps;
-                const angle = startAngle + t * (endAngle - startAngle);
-                const r = radiusInner + (radiusOuter - radiusInner) * Math.sin(t * Math.PI);
-                const px = Math.cos(angle) * r;
-                const py = Math.sin(angle) * r;
-                if (i === 0) graphics.moveTo(px, py);
-                else graphics.lineTo(px, py);
-            }
+            const layers = 6;
+            const r1 = (color >> 16) & 0xff;
+            const g1 = (color >> 8) & 0xff;
+            const b1 = color & 0xff;
 
-            // Inner arc (returning edge)
-            for (let i = steps; i >= 0; i--) {
-                const t = i / steps;
-                const angle = startAngle + t * (endAngle - startAngle);
-                const px = Math.cos(angle) * radiusInner;
-                const py = Math.sin(angle) * radiusInner;
-                graphics.lineTo(px, py);
-            }
+            for (let j = 0; j < layers; j++) {
+                const factor = j / (layers - 1);
+                
+                // Interpolate color from base character color (factor = 0) to white (factor = 1)
+                const r = Math.round(r1 + (255 - r1) * factor);
+                const g = Math.round(g1 + (255 - g1) * factor);
+                const b = Math.round(b1 + (255 - b1) * factor);
+                const col = (r << 16) | (g << 8) | b;
 
-            graphics.closePath();
-            graphics.fillPath();
+                // Adjust opacity: outer layers are more translucent, inner core is bright and solid
+                const alpha = baseAlpha * (0.6 + 0.4 * factor);
 
-            // Draw white circles along the inner arc of the crescent to corresponding character color
-            graphics.fillStyle(0xffffff, baseAlpha);
-            const numCircles = 6;
-            for (let i = 0; i < numCircles; i++) {
-                const t = i / (numCircles - 1);
-                const angle = startAngle + t * (endAngle - startAngle);
-                const px = Math.cos(angle) * radiusInner;
-                const py = Math.sin(angle) * radiusInner;
-                graphics.fillCircle(px, py, 4.5 * scaleFactor);
+                graphics.fillStyle(col, alpha);
+                graphics.beginPath();
+
+                // Forward arc (outer edge for this layer)
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const angle = startAngle + t * (endAngle - startAngle);
+                    // Thickness scales down from outer edge to inner edge
+                    const thickness = (radiusOuter - radiusInner) * Math.sin(t * Math.PI) * (1 - factor);
+                    const rCurrent = radiusInner + thickness;
+                    const px = Math.cos(angle) * rCurrent;
+                    const py = Math.sin(angle) * rCurrent;
+                    if (i === 0) graphics.moveTo(px, py);
+                    else graphics.lineTo(px, py);
+                }
+
+                // Inner arc (returning edge, constant at radiusInner)
+                for (let i = steps; i >= 0; i--) {
+                    const t = i / steps;
+                    const angle = startAngle + t * (endAngle - startAngle);
+                    const px = Math.cos(angle) * radiusInner;
+                    const py = Math.sin(angle) * radiusInner;
+                    graphics.lineTo(px, py);
+                }
+
+                graphics.closePath();
+                graphics.fillPath();
             }
 
             // Set initial rotation and scale orientation
