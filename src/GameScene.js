@@ -2037,31 +2037,41 @@ export default class GameScene extends Phaser.Scene {
 
             const sw = Phaser.Math.Between(6, 14);
             const sh = Phaser.Math.Between(4, 10);
-            const color = Phaser.Math.RND.pick([tint, 0xffffff, 0xa5f3fc]);
+            const color = Phaser.Math.RND.pick([tint, 0xffffff, 0xa5f3fc, 0xbae6fd, 0xe0f2fe]);
 
-            const shard = this.add.rectangle(px, py, sw, sh, color, 0.85).setDepth(90);
+            let shard;
+            const shapeType = Phaser.Math.Between(0, 2);
+            if (shapeType === 0) {
+                shard = this.add.rectangle(px, py, sw, sh, color, 0.85).setDepth(90);
+            } else if (shapeType === 1) {
+                shard = this.add.circle(px, py, sw / 2, color, 0.85).setDepth(90);
+            } else {
+                shard = this.add.triangle(px, py, 0, sh, sw / 2, 0, sw, sh, color, 0.85).setDepth(90);
+            }
             shard.setAngle(Phaser.Math.Between(0, 360));
 
             // Turn it into a Matter physics body to collide with map geometry
             this.matter.add.gameObject(shard, {
-                restitution: 0.05, // low bounce so it lays down cleanly
-                friction: 0.8,     // high friction to stop on platforms
+                restitution: Phaser.Math.FloatBetween(0.02, 0.2), // randomized bounce
+                friction: Phaser.Math.FloatBetween(0.4, 0.9),     // randomized friction
                 frictionAir: 0.02,
                 density: 0.001
             });
 
-            // Set a random initial nudge/spin
-            const vx = Phaser.Math.Between(-1.5, 1.5);
-            const vy = Phaser.Math.Between(0.5, 3.0);
+            // Set a random initial nudge/spin in any direction (real explosion)
+            const vx = Phaser.Math.FloatBetween(-3.5, 3.5);
+            const vy = Phaser.Math.FloatBetween(-3.5, 3.5);
             shard.setVelocity(vx, vy);
-            shard.setAngularVelocity(Phaser.Math.Between(-5, 5) / 100);
+            shard.setAngularVelocity(Phaser.Math.FloatBetween(-8, 8) / 100);
 
-            // Shards remain for 3 seconds, then fade out and destroy
+            // Randomized lifespan before fading out
+            const delay = Phaser.Math.Between(1500, 3500);
+
             this.tweens.add({
                 targets: shard,
                 alpha: 0,
                 scale: 0.15,
-                delay: 3000,
+                delay: delay,
                 duration: 500,
                 ease: 'Cubic.easeOut',
                 onComplete: () => {
