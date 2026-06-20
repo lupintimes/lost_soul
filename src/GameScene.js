@@ -1904,7 +1904,7 @@ export default class GameScene extends Phaser.Scene {
             }
         } else if (p.blockType === 'slide') {
             const volume = 0.55 * factor;
-            if (volume > 0.02) {
+            if (volume > 0.02 && !p.hasPlayedBreakWarningAudio) {
                 this.safePlaySound('sfx_ice_break', volume);
             }
             this.createIceShatterParticles(cx, cy, p.w, p.h, p.tint || 0x00e5ff);
@@ -2135,6 +2135,27 @@ export default class GameScene extends Phaser.Scene {
                     p.crackStage = stage;
                     if (p.jelly) {
                         this.drawFrozen(p.jelly, p.w, p.h, p.opacity || 0.9, p.tint, stage / 3);
+                    }
+                }
+
+                // Play ice break sound slightly before actual decay (800ms before 15000)
+                if (age > 14200 && !p.hasPlayedBreakWarningAudio) {
+                    p.hasPlayedBreakWarningAudio = true;
+                    const cx = p.x + p.w / 2;
+                    const cy = p.y + p.h / 2;
+                    const playerObj = this.mode === 'multiplayer' ? this.localPlayer : (this.players && this.players[0]);
+                    let f = 1.0;
+                    if (playerObj && playerObj.sprite && playerObj.sprite.active) {
+                        const px = playerObj.sprite.x;
+                        const py = playerObj.sprite.y;
+                        const dx = cx - px;
+                        const dy = cy - py;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        f = Math.max(0, Math.min(1, 1 - (distance - 200) / 600));
+                    }
+                    const volume = 0.55 * f;
+                    if (volume > 0.02) {
+                        this.safePlaySound('sfx_ice_break', volume);
                     }
                 }
 
