@@ -1829,22 +1829,29 @@ export default class GameScene extends Phaser.Scene {
         // Kill the idle tween
         this.tweens.killTweensOf(platform.jelly);
         
-        // Apply immediate squish
-        platform.jelly.scaleY = 0.65;
-        platform.jelly.scaleX = 1.35;
-        
-        // Wobble back to 1.0 (snappy, no delay feel)
+        // Step 1: Squish down fast on impact
         this.tweens.add({
             targets: platform.jelly,
-            scaleY: 1.0,
-            scaleX: 1.0,
-            duration: 450,
-            ease: 'Elastic.easeOut',
-            easeParams: [1.2, 0.4],
+            scaleY: 0.55,
+            scaleX: 1.4,
+            duration: 80,
+            ease: 'Quad.easeOut',
             onComplete: () => {
-                platform.isWobbling = false;
-                // Restart idle breathing
-                this.startJellyIdle(platform.jelly);
+                // Step 2: Spring back to normal with wobble/elastic bounce
+                if (!platform.jelly || !platform.jelly.active) return;
+                this.tweens.add({
+                    targets: platform.jelly,
+                    scaleY: 1.0,
+                    scaleX: 1.0,
+                    duration: 700,
+                    ease: 'Elastic.easeOut',
+                    easeParams: [1.2, 0.4],
+                    onComplete: () => {
+                        platform.isWobbling = false;
+                        // Restart idle breathing
+                        this.startJellyIdle(platform.jelly);
+                    }
+                });
             }
         });
     }
