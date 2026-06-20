@@ -4,7 +4,7 @@ export default class CombatSystem {
         this.player = player;
     }
 
-    spawnSlashArc(x, y, dir, color, scaleFactor, baseAlpha, angleOffset, delay = 0) {
+    spawnSlashArc(baseOffsetX, baseOffsetY, dir, color, scaleFactor, baseAlpha, angleOffset, delay = 0) {
         this.scene.time.delayedCall(delay, () => {
             if (!this.player || !this.player.sprite || !this.player.sprite.active) return;
 
@@ -44,25 +44,43 @@ export default class CombatSystem {
             graphics.closePath();
             graphics.fillPath();
 
-            // Position and orient the slash
-            graphics.setPosition(x, y);
+            // Set initial rotation and scale orientation
             graphics.setRotation(angleOffset * dir);
             
             if (dir === -1) {
-                graphics.setScale(-0.25, 0.45); // further reduced height scale to 0.45 (sleeker)
+                graphics.setScale(-0.25, 0.45);
             } else {
-                graphics.setScale(0.25, 0.45); // further reduced height scale to 0.45 (sleeker)
+                graphics.setScale(0.25, 0.45);
             }
+
+            // Real-time position tracking to move along with the player
+            const updatePos = () => {
+                if (graphics && graphics.active && this.player && this.player.sprite && this.player.sprite.active) {
+                    const currentDir = this.player.sprite.flipX ? -1 : 1;
+                    graphics.setPosition(this.player.sprite.x + currentDir * baseOffsetX, this.player.sprite.y + baseOffsetY);
+                    
+                    // Keep graphics scale orientation aligned with player direction
+                    const absScaleX = Math.abs(graphics.scaleX);
+                    graphics.setScale(currentDir * absScaleX, graphics.scaleY);
+                }
+            };
+
+            // Set initial position
+            updatePos();
+
+            // Hook into update event to follow player
+            this.scene.events.on('update', updatePos);
 
             // Rapid sweep animation
             this.scene.tweens.add({
                 targets: graphics,
                 scaleX: dir * 1.45,
-                scaleY: 0.52, // further reduced tween height target to 0.52 (sleeker)
+                scaleY: 0.52,
                 alpha: 0,
                 duration: 200,
                 ease: 'Quad.easeOut',
                 onComplete: () => {
+                    this.scene.events.off('update', updatePos);
                     if (graphics && graphics.active) {
                         graphics.destroy();
                     }
@@ -73,8 +91,6 @@ export default class CombatSystem {
 
     createAttackSlashVisual() {
         const dir = this.player.sprite.flipX ? -1 : 1;
-        const x = this.player.sprite.x + dir * 65;
-        const y = this.player.sprite.y - 10;
         
         // Define color based on player character
         let color = 0xddffff; // P1 (Knight) - sharp steel/ice blue
@@ -85,15 +101,17 @@ export default class CombatSystem {
         }
 
         // Spawn Main Slash + 2 trailing tails (with scaling down and tiny delays)
-        this.spawnSlashArc(x, y, dir, color, 1.0, 0.85, 0, 0);                 // Main swing
-        this.spawnSlashArc(x - dir * 15, y + 5, dir, color, 0.82, 0.5, -0.15, 35); // Tail 1 (35ms delay, smaller, offset rotation)
-        this.spawnSlashArc(x - dir * 30, y + 10, dir, color, 0.65, 0.25, -0.3, 70); // Tail 2 (70ms delay, smaller still, further offset)
+        // Pass base relative offsets, which get auto-flipped inside updatePos
+        this.spawnSlashArc(65, -10, dir, color, 1.0, 0.85, 0, 0);                 // Main swing
+        this.spawnSlashArc(50, -5, dir, color, 0.82, 0.5, -0.15, 35); // Tail 1
+        this.spawnSlashArc(35, 0, dir, color, 0.65, 0.25, -0.3, 70); // Tail 2
     }
 
     attack() {
         this.createAttackSlashVisual();
         const dir = this.player.sprite.flipX ? -1 : 1;
 
+        // Create the hitbox at current relative offset
         const hitbox = this.scene.add.rectangle(
             this.player.sprite.x + dir * 80,
             this.player.sprite.y,
@@ -116,7 +134,6 @@ export default class CombatSystem {
             if (!otherGO) return;
 
             targets.forEach(target => {
-                // 🔥 IMPORTANT FIX: skip self
                 if (target === this.player) return;
                 if (target.sprite === otherGO) {
                     target.takeDamage(this.player.getDamage(), this.player, true);
@@ -124,7 +141,28 @@ export default class CombatSystem {
             });
         });
 
+        // Track player position in real-time for the hitbox
+        const updateHitboxPos = () => {
+            if (hitbox && hitbox.active && this.player && this.player.sprite && this.player.sprite.active) {
+                const currentDir = this.player.sprite.flipX ? -1 : 1;
+                if (hitbox.body) {
+                    this.scene.matter.body.setPosition(hitbox.body, {
+                        x: this.player.sprite.x + currentDir * 80,
+                        y: this.player.sprite.y
+                    });
+                } else {
+                    hitbox.setPosition(
+                        this.player.sprite.x + currentDir * 80,
+                        this.player.sprite.y
+                    );
+                }
+            }
+        };
+
+        this.scene.events.on('update', updateHitboxPos);
+
         this.scene.time.delayedCall(100, () => {
+            this.scene.events.off('update', updateHitboxPos);
             if (hitbox.active) hitbox.destroy();
         });
     }
