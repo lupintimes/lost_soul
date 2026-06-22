@@ -233,6 +233,7 @@ export default class Player {
             for (let i = 0; i < len; i++) {
                 const platform = platforms[i];
                 if (!platform.gameObject || !platform.gameObject.active) continue;
+                if (platform.blockType !== 'bounce' && platform.blockType !== 'slide') continue;
 
                 const rx = platform.x;
                 const ry = platform.y;

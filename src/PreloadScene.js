@@ -45,6 +45,7 @@ export default class PreloadScene extends Phaser.Scene {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         this.load.image('bg', '../assets/background.webp');
+        this.load.image('border', '../assets/border.webp');
         this.load.tilemapTiledJSON('map', '../assets/map.json');
         // Load all portal variants
         this.load.image('portal_gold', '../assets/portal/gold_portal.webp');
@@ -93,7 +94,7 @@ export default class PreloadScene extends Phaser.Scene {
     }
 
     create() {
-        this.cameras.main.setRoundPixels(true);
+        this.cameras.main.setRoundPixels(false);
         const characters = ['p1', 'p2', 'p3'];
 
         characters.forEach(char => {

@@ -22,7 +22,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
 
     create() {
-        this.cameras.main.setRoundPixels(true);
+        this.cameras.main.setRoundPixels(false);
 
 
         const { width, height } = this.scale;

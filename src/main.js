@@ -20,7 +20,7 @@ const config = {
         pixelArt: true,
         antialias: false,
         antialiasGL: false,
-        roundPixels: true
+        roundPixels: false
     },
     scale: {
         mode: Phaser.Scale.FIT,

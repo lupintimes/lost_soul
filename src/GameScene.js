@@ -289,7 +289,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.cameras.main.setRoundPixels(true);
+        this.cameras.main.setRoundPixels(false);
         this.game.events.on('visible', () => {
             this.anims.resumeAll();
         });
@@ -331,6 +331,7 @@ export default class GameScene extends Phaser.Scene {
 
         // 🌍 Background
         this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
+        this.border = this.add.image(0, 0, 'border').setOrigin(0);
 
         const worldWidth = this.bg.width;
         const worldHeight = this.bg.height;
@@ -1637,13 +1638,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // 6. Red warning overlay (applied at 0.05 max opacity)
-        if (warnRedProgress > 0) {
-            const overlayOpacity = 0.05 * warnRedProgress * opacity;
-            graphics.fillStyle(0xff0000, overlayOpacity);
-            graphics.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
-            graphics.lineStyle(4, 0xff0000, overlayOpacity);
-            graphics.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
-        }
+        // Removed: Now handled efficiently by a separate warnOverlay graphics object to prevent per-frame redraws.
     }
 
     drawFrozen(graphics, w, h, opacity, tint, crackRatio = 0.35) {
@@ -1864,6 +1859,7 @@ export default class GameScene extends Phaser.Scene {
             if (p.outer) p.outer.destroy();
             if (p.middle) p.middle.destroy();
             if (p.jelly) p.jelly.destroy();
+            if (p.warnOverlay) p.warnOverlay.destroy();
             this.platforms.splice(idx, 1);
             this.updateBuildPointsUI();
             return true;
@@ -1993,12 +1989,12 @@ export default class GameScene extends Phaser.Scene {
 
     createBubbleBlastParticles(cx, cy, w, h, tint) {
         const area = w * h;
-        const count = Math.min(45, Math.max(12, Math.floor(area / 1000)));
+        const count = Math.min(18, Math.max(6, Math.floor(area / 2500)));
 
         for (let i = 0; i < count; i++) {
             const px = cx + Phaser.Math.Between(-w / 2, w / 2);
             const py = cy + Phaser.Math.Between(-h / 2, h / 2);
-            const radius = Phaser.Math.Between(2, 8);
+            const radius = Phaser.Math.Between(4, 12);
 
             const bubble = this.add.graphics().setDepth(90);
             bubble.fillStyle(tint, 0.55);
@@ -2029,14 +2025,14 @@ export default class GameScene extends Phaser.Scene {
 
     createIceShatterParticles(cx, cy, w, h, tint) {
         const area = w * h;
-        const count = Math.min(35, Math.max(10, Math.floor(area / 1200)));
+        const count = Math.min(15, Math.max(5, Math.floor(area / 3000)));
 
         for (let i = 0; i < count; i++) {
             const px = cx + Phaser.Math.Between(-w / 2, w / 2);
             const py = cy + Phaser.Math.Between(-h / 2, h / 2);
 
-            const sw = Phaser.Math.Between(6, 14);
-            const sh = Phaser.Math.Between(4, 10);
+            const sw = Phaser.Math.Between(10, 22);
+            const sh = Phaser.Math.Between(8, 16);
             const color = Phaser.Math.RND.pick([tint, 0xffffff, 0xa5f3fc, 0xbae6fd, 0xe0f2fe]);
 
             let shard;
@@ -2050,30 +2046,20 @@ export default class GameScene extends Phaser.Scene {
             }
             shard.setAngle(Phaser.Math.Between(0, 360));
 
-            // Turn it into a Matter physics body to collide with map geometry
-            this.matter.add.gameObject(shard, {
-                restitution: Phaser.Math.FloatBetween(0.02, 0.2), // randomized bounce
-                friction: Phaser.Math.FloatBetween(0.4, 0.9),     // randomized friction
-                frictionAir: 0.02,
-                density: 0.001
-            });
-
-            // Set a random initial nudge/spin in any direction (real explosion)
-            const vx = Phaser.Math.FloatBetween(-3.5, 3.5);
-            const vy = Phaser.Math.FloatBetween(-3.5, 3.5);
-            shard.setVelocity(vx, vy);
-            shard.setAngularVelocity(Phaser.Math.FloatBetween(-8, 8) / 100);
-
-            // Randomized lifespan before fading out
-            const delay = Phaser.Math.Between(1500, 3500);
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Phaser.Math.Between(50, 180);
+            const targetX = px + Math.cos(angle) * speed;
+            const targetY = py + Math.sin(angle) * speed + 150; // gravity drop
 
             this.tweens.add({
                 targets: shard,
+                x: targetX,
+                y: targetY,
+                angle: shard.angle + Phaser.Math.Between(-180, 180),
                 alpha: 0,
                 scale: 0.15,
-                delay: delay,
-                duration: 500,
-                ease: 'Cubic.easeOut',
+                duration: Phaser.Math.Between(1000, 2500),
+                ease: 'Quad.easeOut',
                 onComplete: () => {
                     if (shard && shard.active) shard.destroy();
                 }
@@ -2083,12 +2069,12 @@ export default class GameScene extends Phaser.Scene {
 
     createNormalDissolveParticles(cx, cy, w, h, tint) {
         const area = w * h;
-        const count = Math.min(25, Math.max(8, Math.floor(area / 1500)));
+        const count = Math.min(12, Math.max(4, Math.floor(area / 3000)));
 
         for (let i = 0; i < count; i++) {
             const px = cx + Phaser.Math.Between(-w / 2, w / 2);
             const py = cy + Phaser.Math.Between(-h / 2, h / 2);
-            const size = Phaser.Math.Between(5, 9);
+            const size = Phaser.Math.Between(8, 14);
             const color = Phaser.Math.RND.pick([tint, 0x1e293b, 0x64748b, 0x334155]);
 
             const dust = this.add.rectangle(px, py, size, size, color, 0.9).setDepth(90);
@@ -2185,9 +2171,12 @@ export default class GameScene extends Phaser.Scene {
                         p.jelly.setPosition(cx + offsetX, cy + offsetY);
                         p.jelly.setScale(scale);
 
-                        // Pass progress to drawJelly warning red overlay (up to 0.05 opacity)
-                        const progress = (age - 12000) / 3000; // 0.0 to 1.0
-                        this.drawJelly(p.jelly, p.w, p.h, p.opacity || 0.9, p.tint, progress);
+                        if (p.warnOverlay) {
+                            p.warnOverlay.setPosition(cx + offsetX, cy + offsetY);
+                            p.warnOverlay.setScale(scale);
+                            const progress = (age - 12000) / 3000; // 0.0 to 1.0
+                            p.warnOverlay.setAlpha(progress * 0.05 * (p.opacity || 0.9));
+                        }
                     }
                 }
             }
@@ -2283,13 +2272,13 @@ export default class GameScene extends Phaser.Scene {
                     rect.y + rect.h > p.y;
 
                 if (overlap) {
-                    console.log(`✂️ Overlap detected with enemy obstacle ${p.id || 'no-id'}. Performing subtraction.`);
 
                     // Remove old enemy obstacle locally
                     if (p.gameObject) p.gameObject.destroy();
                     if (p.outer) p.outer.destroy();
                     if (p.middle) p.middle.destroy();
                     if (p.jelly) p.jelly.destroy();
+                    if (p.warnOverlay) p.warnOverlay.destroy();
                     this.platforms.splice(i, 1);
                     this.updateBuildPointsUI();
 
@@ -2300,7 +2289,6 @@ export default class GameScene extends Phaser.Scene {
 
                     // Compute remaining regions of the enemy obstacle
                     const pieces = this.subtractRect(p, rect);
-                    console.log(`✂️ Obstacle split into ${pieces.length} smaller pieces.`);
 
                     // Create and emit split pieces under original creator's ownership
                     pieces.forEach((piece, index) => {
@@ -2338,11 +2326,20 @@ export default class GameScene extends Phaser.Scene {
         let outer = null;
         let middle = null;
         let jelly = null;
+        let warnOverlay = null;
 
         if (blockType === 'bounce') {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawJelly(jelly, rect.w, rect.h, opacity, tint);
             this.startJellyIdle(jelly);
+            
+            warnOverlay = this.add.graphics({ x: cx, y: cy });
+            const r = Math.min(rect.w, rect.h, 14);
+            warnOverlay.fillStyle(0xff0000, 1);
+            warnOverlay.fillRoundedRect(-rect.w / 2 + 2, -rect.h / 2 + 2, rect.w - 4, rect.h - 4, r);
+            warnOverlay.lineStyle(4, 0xff0000, 1);
+            warnOverlay.strokeRoundedRect(-rect.w / 2 + 2, -rect.h / 2 + 2, rect.w - 4, rect.h - 4, r);
+            warnOverlay.setAlpha(0);
         } else if (blockType === 'slide') {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawFrozen(jelly, rect.w, rect.h, opacity, tint, 0); // Start with 0 crackRatio (clean ice)
@@ -2361,6 +2358,7 @@ export default class GameScene extends Phaser.Scene {
             if (outer) outer.setAngle(rotation);
             if (middle) middle.setAngle(rotation);
             if (jelly) jelly.setAngle(rotation);
+            if (warnOverlay) warnOverlay.setAngle(rotation);
         }
 
         let obstacleAge = 0;
@@ -2373,6 +2371,7 @@ export default class GameScene extends Phaser.Scene {
             outer,
             middle,
             jelly,
+            warnOverlay,
             tint,
             blockType: blockType || 'normal',
             ...rect,
@@ -2391,21 +2390,13 @@ export default class GameScene extends Phaser.Scene {
 
         const remainingBlinkTime = Math.max(0, blinkStartTime - obstacleAge);
         const remainingDecayTime = Math.max(0, decayTime - obstacleAge);
-
-        console.log(`[createObstacle] id=${id}, creatorId=${creatorId}, obstacleAge=${obstacleAge}`);
-        console.log(`[createObstacle] remainingBlinkTime=${remainingBlinkTime}, remainingDecayTime=${remainingDecayTime}`);
-        const socketId = this.socket ? this.socket.id : 'null';
-        const isOwner = this.mode !== 'multiplayer' || !creatorId || creatorId === socketId;
-        console.log(`[createObstacle] mode=${this.mode}, isOwner=${isOwner}, socketId=${socketId}`);
-
         // Schedule warning blink ONLY for normal blocks (bounce and slide have custom warning updates)
         this.time.delayedCall(remainingBlinkTime, () => {
-            console.log(`[createObstacle] Warning blink callback fired for id=${id}`);
             const idx = this.platforms.findIndex(p => p.id === id);
             if (idx !== -1) {
                 const p = this.platforms[idx];
                 if (p.blockType === 'normal') {
-                    const components = [p.gameObject, p.outer, p.middle, p.jelly].filter(Boolean);
+                    const components = [p.gameObject, p.outer, p.middle, p.jelly, p.warnOverlay].filter(Boolean);
                     this.tweens.add({
                         targets: components,
                         alpha: 0.2,
@@ -2419,13 +2410,9 @@ export default class GameScene extends Phaser.Scene {
 
         // Schedule deletion & build points refund ONLY in solo mode (in multiplayer, the server authoritatively handles decay and broadcasts 'obstacleRemoved')
         if (this.mode !== 'multiplayer') {
-            console.log(`[createObstacle] Solo mode: Scheduling decay timer for block id=${id} in ${remainingDecayTime}ms`);
             this.time.delayedCall(remainingDecayTime, () => {
-                console.log(`[createObstacle] Solo decay callback fired for id=${id}`);
                 this.destroyObstacleLocally(id, true);
             });
-        } else {
-            console.log(`[createObstacle] Multiplayer mode: relying on server decay for block id=${id}`);
         }
 
         return true;
