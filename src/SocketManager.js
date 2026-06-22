@@ -2,7 +2,7 @@ const SocketManager = {
     socket: null,
     roomId: null,
 
-    connect(url = 'http://localhost:8081') {
+    connect(url = 'https://lost-soul-server.onrender.com') {
         if (this.socket && this.socket.connected) {
             console.log('♻️ Reusing existing socket:', this.socket.id);
             return this.socket;

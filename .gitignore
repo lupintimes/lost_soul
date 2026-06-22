@@ -65,3 +65,5 @@ thumbnail.png
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+# Exported Game Files
+export/

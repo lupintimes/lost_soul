@@ -258,6 +258,7 @@ export default class Player {
                         
                         this.sprite.setVelocityY(jumpVelocity);
                         this.playSound('sfx_bubble_jump', 0.3 + 0.4 * factor);
+                        this.lastBounceTime = this.scene.time.now;
                         
                         const particleColor = (platform.tint !== null && platform.tint !== undefined) ? platform.tint : 0xffd700;
                         this.createHitParticles(this.sprite.x, py + feetOffset, particleColor);
@@ -465,8 +466,9 @@ export default class Player {
                     this.sprite.setVelocityY(jumpForce);
                 }
             } else {
-                // Fast fall when pressing S in mid-air
-                if (this.controls.down.isDown) {
+                // Fast fall when pressing S in mid-air (disabled briefly after hitting a bounce block)
+                const timeSinceBounce = this.scene.time.now - (this.lastBounceTime || 0);
+                if (this.controls.down.isDown && timeSinceBounce > 400) {
                     this.sprite.setVelocityY(Math.max(this.sprite.body.velocity.y, 16));
                 }
 

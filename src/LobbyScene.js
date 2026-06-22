@@ -8,7 +8,7 @@ export default class LobbyScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('menu_bg', '../assets/background.webp');
+        this.load.image('menu_bg', 'assets/background.webp');
     }
 
     playClick() {
@@ -330,7 +330,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     connectToLobby() {
         // Use SocketManager — it reuses the connection if already open
-        const socket = SocketManager.connect('http://localhost:8081');
+        const socket = SocketManager.connect('https://lost-soul-server.onrender.com');
 
         // Remove old lobby listeners before adding new ones
         socket.off('serverList');

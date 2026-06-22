@@ -44,36 +44,36 @@ export default class PreloadScene extends Phaser.Scene {
         //  🌍 BACKGROUNDS & UI
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        this.load.image('bg', '../assets/background.webp');
-        this.load.image('border', '../assets/border.webp');
-        this.load.tilemapTiledJSON('map', '../assets/map.json');
+        this.load.image('bg', 'assets/background.webp');
+        this.load.image('border', 'assets/border.webp');
+        this.load.tilemapTiledJSON('map', 'assets/map.json');
         // Load all portal variants
-        this.load.image('portal_gold', '../assets/portal/gold_portal.webp');
-        this.load.image('portal_gray', '../assets/portal/gray_portal.webp');
-        this.load.image('portal_pink', '../assets/portal/pink_portal.webp');
-        this.load.image('portal_purple', '../assets/portal/purple_portal.webp');
-        this.load.image('portal_teal', '../assets/portal/teal_portal.webp');
-        this.load.image('discord', '../assets/ui/discord.png');
-        this.load.image('x_icon', '../assets/ui/x.png');
+        this.load.image('portal_gold', 'assets/portal/gold_portal.webp');
+        this.load.image('portal_gray', 'assets/portal/gray_portal.webp');
+        this.load.image('portal_pink', 'assets/portal/pink_portal.webp');
+        this.load.image('portal_purple', 'assets/portal/purple_portal.webp');
+        this.load.image('portal_teal', 'assets/portal/teal_portal.webp');
+        this.load.image('discord', 'assets/ui/discord.png');
+        this.load.image('x_icon', 'assets/ui/x.png');
 
 
         //ADUIO
 
-        this.load.binary('sfx_click_bin', '../assets/audio/click.mp3_');
+        this.load.binary('sfx_click_bin', 'assets/audio/click.mp3_');
 
-        this.load.binary('sfx_attack1_bin', '../assets/audio/attack1.mp3_');
-        this.load.binary('sfx_attack2_bin', '../assets/audio/attack2.mp3_');
+        this.load.binary('sfx_attack1_bin', 'assets/audio/attack1.mp3_');
+        this.load.binary('sfx_attack2_bin', 'assets/audio/attack2.mp3_');
 
-        this.load.binary('sfx_hurt_bin', '../assets/audio/hurt.mp3_');
-        this.load.binary('sfx_death_bin', '../assets/audio/death.mp3_');
-        this.load.binary('sfx_dash_bin', '../assets/audio/dash.mp3_');
-        this.load.binary('sfx_spell_bin', '../assets/audio/spell.mp3_');
-        this.load.binary('sfx_highjump_bin', '../assets/audio/highjump.mp3_');
+        this.load.binary('sfx_hurt_bin', 'assets/audio/hurt.mp3_');
+        this.load.binary('sfx_death_bin', 'assets/audio/death.mp3_');
+        this.load.binary('sfx_dash_bin', 'assets/audio/dash.mp3_');
+        this.load.binary('sfx_spell_bin', 'assets/audio/spell.mp3_');
+        this.load.binary('sfx_highjump_bin', 'assets/audio/highjump.mp3_');
 
         // New block sound effects (loaded as binary to prevent IDM interception)
-        this.load.binary('sfx_bubble_jump_bin', '../assets/audio/bubble_jump.ogg_');
-        this.load.binary('sfx_bubble_break_bin', '../assets/audio/buble_break.ogg_');
-        this.load.binary('sfx_ice_break_bin', '../assets/audio/ice_break.ogg_');
+        this.load.binary('sfx_bubble_jump_bin', 'assets/audio/bubble_jump.ogg_');
+        this.load.binary('sfx_bubble_break_bin', 'assets/audio/buble_break.ogg_');
+        this.load.binary('sfx_ice_break_bin', 'assets/audio/ice_break.ogg_');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
@@ -83,13 +83,13 @@ export default class PreloadScene extends Phaser.Scene {
         const spriteConfig = { frameWidth: 520, frameHeight: 420 };
 
         characters.forEach(char => {
-            this.load.spritesheet(`${char}_idle`, `../assets/${char}/idle.png`, spriteConfig);
-            this.load.spritesheet(`${char}_walk`, `../assets/${char}/walk.png`, spriteConfig);
-            this.load.spritesheet(`${char}_attack`, `../assets/${char}/attack.png`, spriteConfig);
-            this.load.spritesheet(`${char}_blink`, `../assets/${char}/blink.png`, spriteConfig);
-            this.load.spritesheet(`${char}_taunt`, `../assets/${char}/taunt.png`, spriteConfig);
-            this.load.spritesheet(`${char}_hurt`, `../assets/${char}/hurt.png`, spriteConfig);
-            this.load.spritesheet(`${char}_death`, `../assets/${char}/death.png`, spriteConfig);
+            this.load.spritesheet(`${char}_idle`, `assets/${char}/idle.png`, spriteConfig);
+            this.load.spritesheet(`${char}_walk`, `assets/${char}/walk.png`, spriteConfig);
+            this.load.spritesheet(`${char}_attack`, `assets/${char}/attack.png`, spriteConfig);
+            this.load.spritesheet(`${char}_blink`, `assets/${char}/blink.png`, spriteConfig);
+            this.load.spritesheet(`${char}_taunt`, `assets/${char}/taunt.png`, spriteConfig);
+            this.load.spritesheet(`${char}_hurt`, `assets/${char}/hurt.png`, spriteConfig);
+            this.load.spritesheet(`${char}_death`, `assets/${char}/death.png`, spriteConfig);
         });
     }
 
