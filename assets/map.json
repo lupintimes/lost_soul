@@ -1622,30 +1622,6 @@
                                    "y": 1989.33333333333
                             },
                             {
-                                   "height": 155.333333333333,
-                                   "id": 67,
-                                   "name": "",
-                                   "opacity": 1,
-                                   "rotation": 0,
-                                   "type": "",
-                                   "visible": true,
-                                   "width": 120,
-                                   "x": 4484,
-                                   "y": 1956.66666666667
-                            },
-                            {
-                                   "height": 125,
-                                   "id": 70,
-                                   "name": "",
-                                   "opacity": 1,
-                                   "rotation": 0,
-                                   "type": "",
-                                   "visible": true,
-                                   "width": 615,
-                                   "x": 4593,
-                                   "y": 1988
-                            },
-                            {
                                    "height": 202,
                                    "id": 73,
                                    "name": "",
