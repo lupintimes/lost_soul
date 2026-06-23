@@ -2554,7 +2554,7 @@ export default class GameScene extends Phaser.Scene {
                 used += p.w * p.h;
             }
         });
-        return used;
+        return Math.round(used);
     }
 
     createBuildPointsUI() {
@@ -2657,7 +2657,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Format numbers with commas (e.g. 150,000)
-        const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        const formatNum = (num) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         this.buildUIText.setText(`${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`);
 
         // Update the 3 separate block type mode boxes
