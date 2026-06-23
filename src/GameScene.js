@@ -330,8 +330,136 @@ export default class GameScene extends Phaser.Scene {
         this.createTeleporters();
 
         // 🌍 Background
-        this.bg = this.add.image(0, 0, 'bg').setOrigin(0);
-        this.border = this.add.image(0, 0, 'border').setOrigin(0);
+        this.bg = this.add.image(0, 0, 'bg')
+            .setOrigin(0)
+            .setDepth(-10)
+            .setVisible(false);
+
+        // 🧱 Red Region Parallax Layer
+        this.redBg = this.add.image(1575, 400, 'bg_red')
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0.8, 0.8)
+            .setScale(1.6)
+            .setDepth(-8);
+
+        // 🛡️ Create 5-sided polygon geometry mask
+        const maskGraphics = this.add.graphics().setVisible(false);
+        maskGraphics.fillStyle(0xffffff);
+        maskGraphics.beginPath();
+        maskGraphics.moveTo(0, 0);
+        maskGraphics.lineTo(3150, 0);
+        maskGraphics.lineTo(3150, 650);
+        maskGraphics.lineTo(2500, 1250);
+        maskGraphics.lineTo(0, 1250);
+        maskGraphics.closePath();
+        maskGraphics.fillPath();
+
+        const mask = maskGraphics.createGeometryMask();
+        this.redBg.setMask(mask);
+
+
+
+        // 🧱 Yellow Region Parallax Layer
+        this.yellowBg = this.add.image(1250, 1700, 'bg_yellow')
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0.8, 0.8)
+            .setScale(1.8)
+            .setDepth(-8);
+
+        // 🛡️ Create 4-sided polygon geometry mask for Yellow Region
+        const yellowMaskGraphics = this.add.graphics().setVisible(false);
+        yellowMaskGraphics.fillStyle(0xffffff);
+        yellowMaskGraphics.beginPath();
+        yellowMaskGraphics.moveTo(0, 1250);
+        yellowMaskGraphics.lineTo(2500, 1250);
+        yellowMaskGraphics.lineTo(2500, 2600);
+        yellowMaskGraphics.lineTo(0, 2600);
+        yellowMaskGraphics.closePath();
+        yellowMaskGraphics.fillPath();
+
+        const yellowMask = yellowMaskGraphics.createGeometryMask();
+        this.yellowBg.setMask(yellowMask);
+
+
+
+        // 🧱 Grey Region Parallax Layer
+        this.greyBg = this.add.image(-1000, -3360, 'bg_grey')
+            .setOrigin(0)
+            .setScrollFactor(0.8, 0.8)
+            .setScale(2.0)
+            .setDepth(-8);
+
+        // 🛡️ Create 6-sided polygon geometry mask for Grey Region
+        const greyMaskGraphics = this.add.graphics().setVisible(false);
+        greyMaskGraphics.fillStyle(0xffffff);
+        greyMaskGraphics.beginPath();
+        greyMaskGraphics.moveTo(0, 2600);
+        greyMaskGraphics.lineTo(2050, 2600);
+        greyMaskGraphics.lineTo(2050, 3000);
+        greyMaskGraphics.lineTo(3700, 3000);
+        greyMaskGraphics.lineTo(3700, 4000);
+        greyMaskGraphics.lineTo(0, 4000);
+        greyMaskGraphics.closePath();
+        greyMaskGraphics.fillPath();
+
+        const greyMask = greyMaskGraphics.createGeometryMask();
+        this.greyBg.setMask(greyMask);
+
+
+
+        // 🧱 Purple Region Parallax Layer
+        this.purpleBg = this.add.image(4875, 2700, 'bg_purple')
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0.8, 0.8)
+            .setScale(3.2)
+            .setDepth(-8);
+
+        // 🛡️ Create 4-sided polygon geometry mask for Purple Region
+        const purpleMaskGraphics = this.add.graphics().setVisible(false);
+        purpleMaskGraphics.fillStyle(0xffffff);
+        purpleMaskGraphics.beginPath();
+        purpleMaskGraphics.moveTo(3750, 1400);
+        purpleMaskGraphics.lineTo(6000, 1400);
+        purpleMaskGraphics.lineTo(6000, 4000);
+        purpleMaskGraphics.lineTo(3750, 4000);
+        purpleMaskGraphics.closePath();
+        purpleMaskGraphics.fillPath();
+
+        const purpleMask = purpleMaskGraphics.createGeometryMask();
+        this.purpleBg.setMask(purpleMask);
+
+
+
+        // 🧱 Green Region Parallax Layer
+        this.greenBg = this.add.image(4250, 1450, 'bg_green')
+            .setOrigin(0.5, 0.5)
+            .setScrollFactor(0.8, 0.8)
+            .setScale(1.85)
+            .setDepth(-8);
+
+        // 🛡️ Create 8-sided polygon geometry mask for Green Region
+        const greenMaskGraphics = this.add.graphics().setVisible(false);
+        greenMaskGraphics.fillStyle(0xffffff);
+        greenMaskGraphics.beginPath();
+        greenMaskGraphics.moveTo(3150, 0);
+        greenMaskGraphics.lineTo(6000, 0);
+        greenMaskGraphics.lineTo(6000, 1400);
+        greenMaskGraphics.lineTo(3750, 1400);
+        greenMaskGraphics.lineTo(3750, 2900);
+        greenMaskGraphics.lineTo(2500, 2900);
+        greenMaskGraphics.lineTo(2500, 1150);
+        greenMaskGraphics.lineTo(3150, 650);
+        greenMaskGraphics.closePath();
+        greenMaskGraphics.fillPath();
+
+        const greenMask = greenMaskGraphics.createGeometryMask();
+        this.greenBg.setMask(greenMask);
+
+
+
+        this.border = this.add.image(0, 0, 'border')
+            .setOrigin(0)
+            .setDepth(-5);
 
         const worldWidth = this.bg.width;
         const worldHeight = this.bg.height;
@@ -497,6 +625,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.createBuildPointsUI();
         this.createHUD();
+
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
