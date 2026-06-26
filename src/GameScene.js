@@ -383,10 +383,10 @@ export default class GameScene extends Phaser.Scene {
 
 
         // 🧱 Grey Region Parallax Layer
-        this.greyBg = this.add.image(-1000, -3360, 'bg_grey')
-            .setOrigin(0)
+        this.greyBg = this.add.image(1850, 3300, 'bg_grey')
+            .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(2.0)
+            .setScale(1.8)
             .setDepth(-8);
 
         // 🛡️ Create 6-sided polygon geometry mask for Grey Region
