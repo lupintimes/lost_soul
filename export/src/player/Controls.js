@@ -1,0 +1,17 @@
+export default class Controls {
+    constructor(scene) {
+        this.keys = scene.input.keyboard.addKeys({
+            left: 'A',
+            right: 'D',
+            jump: 'W',
+            down: 'S',
+            attack: 'SPACE',
+            highJump: 'Q',
+            dash: 'SHIFT',
+            spell: 'R',
+            taunt: 'T'
+        });
+
+        Object.assign(this, this.keys);
+    }
+}
