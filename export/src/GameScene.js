@@ -278,6 +278,9 @@ export default class GameScene extends Phaser.Scene {
             const tint = PlayerData.getColorTint();
             const blockType = this.selectedBlockType || 'normal';
             const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
+            if (success) {
+                this.safePlaySound('sfx_block_place', 0.5);
+            }
 
             if (success && this.mode === 'multiplayer' && this.socket) {
                 this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType, createdAt: Date.now() });

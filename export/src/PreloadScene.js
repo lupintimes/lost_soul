@@ -46,6 +46,11 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.image('bg', 'assets/background.webp');
         this.load.image('border', 'assets/border.webp');
+        this.load.image('bg_red', 'assets/background/red.webp');
+        this.load.image('bg_yellow', 'assets/background/yellow.webp');
+        this.load.image('bg_grey', 'assets/background/grey.webp');
+        this.load.image('bg_purple', 'assets/background/purple.webp');
+        this.load.image('bg_green', 'assets/background/green.webp');
         this.load.tilemapTiledJSON('map', 'assets/map.json');
         // Load all portal variants
         this.load.image('portal_gold', 'assets/portal/gold_portal.webp');
@@ -74,6 +79,17 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.binary('sfx_bubble_jump_bin', 'assets/audio/bubble_jump.ogg_');
         this.load.binary('sfx_bubble_break_bin', 'assets/audio/buble_break.ogg_');
         this.load.binary('sfx_ice_break_bin', 'assets/audio/ice_break.ogg_');
+        
+        // Additional generic SFX placeholders
+        this.load.binary('sfx_jump_bin', 'assets/audio/jump.mp3_');
+        this.load.binary('sfx_walk_bin', 'assets/audio/walk.mp3_');
+        this.load.binary('sfx_land_bin', 'assets/audio/land.mp3_');
+        this.load.binary('sfx_teleport_bin', 'assets/audio/teleport.mp3_');
+        this.load.binary('sfx_shield_block_bin', 'assets/audio/shield_block.mp3_');
+        this.load.binary('sfx_shield_break_bin', 'assets/audio/shield_break.mp3_');
+        this.load.binary('sfx_block_place_bin', 'assets/audio/block_place.mp3_');
+        this.load.binary('sfx_ui_hover_bin', 'assets/audio/ui_hover.mp3_');
+        this.load.binary('sfx_ui_select_bin', 'assets/audio/ui_select.mp3_');
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  🎭 CHARACTER SPRITESHEETS
@@ -182,7 +198,9 @@ export default class PreloadScene extends Phaser.Scene {
 
         const audioKeys = [
             'sfx_click', 'sfx_attack1', 'sfx_attack2', 'sfx_hurt', 'sfx_death', 'sfx_dash', 'sfx_spell', 'sfx_highjump',
-            'sfx_bubble_jump', 'sfx_bubble_break', 'sfx_ice_break'
+            'sfx_bubble_jump', 'sfx_bubble_break', 'sfx_ice_break',
+            'sfx_jump', 'sfx_walk', 'sfx_land', 'sfx_teleport', 'sfx_shield_block', 
+            'sfx_shield_break', 'sfx_block_place', 'sfx_ui_hover', 'sfx_ui_select'
         ];
         
         // Count how many keys we expect to decode
