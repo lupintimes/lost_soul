@@ -19,7 +19,10 @@ export default class MenuScene extends Phaser.Scene {
         this.cameras.main.setRoundPixels(false);
         const { width, height } = this.scale;
 
-
+        // 🖼️ Background
+        this.add.image(0, 0, 'bg')
+            .setOrigin(0)
+            .setDisplaySize(width, height);
 
         // 🌑 Dark overlay
         this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0);

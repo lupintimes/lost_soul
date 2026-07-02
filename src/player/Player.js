@@ -463,6 +463,7 @@ export default class Player {
                     this.createHighJumpBurst(true); // Ground burst
                 }
                 else if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
+                    this.playSound('sfx_jump', 0.3);
                     this.sprite.setVelocityY(jumpForce);
                 }
             } else {
@@ -481,6 +482,7 @@ export default class Player {
                 }
                 // Allow double jump for p2 (Shadow) in mid-air
                 else if (this.character === 'p2' && Phaser.Input.Keyboard.JustDown(this.controls.jump) && !this.hasDoubleJumped) {
+                    this.playSound('sfx_jump', 0.3);
                     this.sprite.setVelocityY(jumpForce);
                     this.hasDoubleJumped = true;
                 }

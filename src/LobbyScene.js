@@ -7,9 +7,7 @@ export default class LobbyScene extends Phaser.Scene {
         this.serverListElements = [];
     }
 
-    preload() {
-        this.load.image('menu_bg', 'assets/background.webp');
-    }
+    // preload removed because 'bg' is already loaded in PreloadScene
 
     playClick() {
         try {
@@ -31,7 +29,7 @@ export default class LobbyScene extends Phaser.Scene {
         this.selectedCharacter = data.character || 'p1';
 
         // ─── Background ───────────────────────────────────
-        this.add.image(0, 0, 'menu_bg')
+        this.add.image(0, 0, 'bg')
             .setOrigin(0)
             .setDisplaySize(width, height);
 

@@ -278,6 +278,9 @@ export default class GameScene extends Phaser.Scene {
             const tint = PlayerData.getColorTint();
             const blockType = this.selectedBlockType || 'normal';
             const success = this.createObstacle(rect, opacity, id, creatorId, true, tint, blockType);
+            if (success) {
+                this.safePlaySound('sfx_block_place', 0.5);
+            }
 
             if (success && this.mode === 'multiplayer' && this.socket) {
                 this.socket.emit('createObstacle', { id, rect, opacity, creatorId, tint, blockType, createdAt: Date.now() });
@@ -339,7 +342,7 @@ export default class GameScene extends Phaser.Scene {
         this.redBg = this.add.image(1575, 400, 'bg_red')
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(1.6)
+            .setScale(1.1)
             .setDepth(-8);
 
         // 🛡️ Create 5-sided polygon geometry mask
@@ -363,7 +366,7 @@ export default class GameScene extends Phaser.Scene {
         this.yellowBg = this.add.image(1250, 1700, 'bg_yellow')
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(1.8)
+            .setScale(1.1)
             .setDepth(-8);
 
         // 🛡️ Create 4-sided polygon geometry mask for Yellow Region
@@ -383,10 +386,10 @@ export default class GameScene extends Phaser.Scene {
 
 
         // 🧱 Grey Region Parallax Layer
-        this.greyBg = this.add.image(1850, 3300, 'bg_grey')
+        this.greyBg = this.add.image(1850, 2800, 'bg_grey')
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(1.8)
+            .setScale(1.1)
             .setDepth(-8);
 
         // 🛡️ Create 6-sided polygon geometry mask for Grey Region
@@ -408,10 +411,10 @@ export default class GameScene extends Phaser.Scene {
 
 
         // 🧱 Purple Region Parallax Layer
-        this.purpleBg = this.add.image(4875, 2700, 'bg_purple')
+        this.purpleBg = this.add.image(4300, 2300, 'bg_purple')
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(3.2)
+            .setScale(1.1)
             .setDepth(-8);
 
         // 🛡️ Create 4-sided polygon geometry mask for Purple Region
@@ -431,10 +434,10 @@ export default class GameScene extends Phaser.Scene {
 
 
         // 🧱 Green Region Parallax Layer
-        this.greenBg = this.add.image(4250, 1450, 'bg_green')
+        this.greenBg = this.add.image(3500, 1450, 'bg_green')
             .setOrigin(0.5, 0.5)
             .setScrollFactor(0.8, 0.8)
-            .setScale(1.85)
+            .setScale(1.1)
             .setDepth(-8);
 
         // 🛡️ Create 8-sided polygon geometry mask for Green Region
@@ -461,8 +464,11 @@ export default class GameScene extends Phaser.Scene {
             .setOrigin(0)
             .setDepth(-5);
 
-        const worldWidth = this.bg.width;
-        const worldHeight = this.bg.height;
+        const worldWidth = this.border.width;
+        const worldHeight = this.border.height;
+
+        // Ensure background image fits the full world dimensions
+        this.bg.setDisplaySize(worldWidth, worldHeight);
 
         this.matter.world.setBounds(0, 0, worldWidth, worldHeight);
 
@@ -610,6 +616,7 @@ export default class GameScene extends Phaser.Scene {
         this.input.on('pointerdown', this.handlePointerDown, this);
         this.input.on('pointermove', this.handlePointerMove, this);
         this.input.on('pointerup', this.handlePointerUp, this);
+
 
 
 

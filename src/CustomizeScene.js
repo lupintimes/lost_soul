@@ -21,7 +21,7 @@ export default class CustomizeScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // 🖼️ Background
-        this.add.image(0, 0, 'menu_bg')
+        this.add.image(0, 0, 'bg')
             .setOrigin(0)
             .setDisplaySize(width, height);
 
