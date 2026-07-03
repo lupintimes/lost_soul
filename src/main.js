@@ -29,4 +29,6 @@ const config = {
     scene: [PreloadScene, MenuScene, CustomizeScene, LobbyScene, GameScene]
 };
 
-window.game = new Phaser.Game(config);
+document.fonts.ready.then(() => {
+    window.game = new Phaser.Game(config);
+});
