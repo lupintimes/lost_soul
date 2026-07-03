@@ -297,8 +297,8 @@ export default class GameScene extends Phaser.Scene {
             this.anims.resumeAll();
         });
         // Clean up DOM chat elements on scene shutdown or destroy
-        this.events.on('shutdown', () => this.cleanupChat());
-        this.events.on('destroy', () => this.cleanupChat());
+        this.events.on('shutdown', () => { this.cleanupChat(); this.cleanupDOMUI(); });
+        this.events.on('destroy', () => { this.cleanupChat(); this.cleanupDOMUI(); });
 
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
@@ -630,7 +630,7 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-        this.createBuildPointsUI();
+        this.initDOMUI();
         this.createHUD();
 
     }
@@ -2564,148 +2564,246 @@ export default class GameScene extends Phaser.Scene {
         return Math.round(used);
     }
 
-    createBuildPointsUI() {
-        const { width } = this.scale;
-        const startX = width - 195;
-        const startY = 15;
-        const panelW = 180;
+    initDOMUI() {
+        if (document.getElementById('game-ui-container')) {
+            document.getElementById('game-ui-container').remove();
+        }
+        if (document.getElementById('game-ui-styles')) {
+            document.getElementById('game-ui-styles').remove();
+        }
 
-        this.buildGraphics = this.add.graphics()
-            .setScrollFactor(0)
-            .setDepth(98);
+        const style = document.createElement('style');
+        style.id = 'game-ui-styles';
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+            
+            #game-ui-container {
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                pointer-events: none;
+                font-family: 'Press Start 2P', cursive;
+                color: white;
+                z-index: 100;
+                user-select: none;
+            }
 
-        this.buildModeGraphics = this.add.graphics()
-            .setScrollFactor(0)
-            .setDepth(98);
+            .pixel-panel {
+                background: rgba(10, 5, 15, 0.85);
+                border: 2px solid #3b2a5c;
+                border-radius: 4px;
+            }
 
-        // 1. Build Points Panel (flat, smaller height: 50)
-        this.buildGraphics.fillStyle(0x0a0f19, 0.85);
-        this.buildGraphics.fillRect(startX, startY, panelW, 50);
-        // Subtle neutral border
-        this.buildGraphics.lineStyle(1.0, 0xffffff, 0.15);
-        this.buildGraphics.strokeRect(startX, startY, panelW, 50);
+            #ui-player-panel {
+                position: absolute;
+                top: 15px; left: 15px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                pointer-events: auto;
+                padding: 10px 15px;
+            }
+            .avatar-container {
+                width: 60px; height: 60px;
+                display: flex; justify-content: center; align-items: center;
+                overflow: hidden;
+                background: transparent;
+                border: 2px solid #555;
+                border-radius: 4px;
+            }
 
-        // Bar track (flat)
-        this.buildGraphics.fillStyle(0x151c27, 1);
-        this.buildGraphics.fillRect(startX + 10, startY + 22, panelW - 20, 6);
+            .player-stats { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+            .player-name { font-size: 8px; margin: 0; color: #fff; line-height: 1; }
+            
+            .hp-bar-bg { width: 180px; height: 14px; background: #111; overflow: hidden; position: relative; margin: 2px 0; }
+            .hp-bar-fill { width: 100%; height: 100%; background: #22c55e; transition: width 0.2s ease, background-color 0.2s ease; }
+            .hp-text { position: absolute; width: 100%; text-align: center; font-size: 8px; line-height: 14px; text-shadow: 1px 1px 0 #000; top: 0; left: 0; }
+            
+            .kill-death { font-size: 8px; color: #ccc; display: flex; gap: 15px; margin-top: 2px; }
+            .kill-death span { display: flex; align-items: center; gap: 4px; }
 
-        this.buildUITitle = this.add.text(startX + 10, startY + 6, 'BUILD POINTS', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#ffff00'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+            /* --- Top Right: Build Points --- */
+            #ui-build-panel {
+                position: absolute;
+                top: 15px; right: 15px;
+                padding: 12px 15px;
+                display: flex; flex-direction: column; gap: 10px;
+                pointer-events: auto;
+            }
+            .build-header { display: flex; align-items: center; gap: 10px; font-size: 8px; color: #fff; }
+            .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
+            .build-bar-bg { width: 180px; height: 8px; background: #111; }
+            .build-bar-fill { width: 60%; height: 100%; background: #0ea5e9; transition: width 0.2s ease; }
+            .build-text { font-size: 7px; text-align: left; color: #ddd; margin-top: 2px; }
 
-        this.buildUIBarFill = this.add.rectangle(startX + 10, startY + 22, panelW - 20, 6, 0x00ffcc)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
+            /* --- Bottom: Hotbar --- */
+            #ui-hotbar {
+                position: absolute;
+                bottom: 30px; left: 50%; transform: translateX(-50%);
+                display: flex; gap: 12px;
+                pointer-events: auto;
+            }
+            .hotbar-slot {
+                width: 64px; height: 64px;
+                display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+                background: rgba(10, 5, 15, 0.85);
+                border: 2px solid #333;
+                border-radius: 4px;
+                position: relative;
+                cursor: pointer;
+            }
+            .hotbar-slot[data-type="normal"].active { border-color: #fff; }
+            .hotbar-slot[data-type="bounce"].active { border-color: #fbbf24; }
+            .hotbar-slot[data-type="slide"].active { border-color: #0ea5e9; }
 
-        this.buildUIText = this.add.text(startX + 10, startY + 34, '300,000 / 300,000', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '9px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+            .slot-key { position: absolute; top: 4px; left: 4px; font-size: 6px; color: #aaa; border: 1px solid #555; border-radius: 2px; padding: 2px 4px; }
+            .slot-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 6px; }
+            .slot-label { font-size: 6px; color: #aaa; text-align: center; }
 
-        // 2. Build Mode Boxes Text (Normal, Bounce, Slide)
-        const modeY = 71;
-        this.buildTextNormal = this.add.text(startX + 12, modeY + 6, '[ 1 ] NORMAL', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '9px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+            .hotbar-slot[data-type="normal"] { color: #fff; }
+            .hotbar-slot[data-type="bounce"] { color: #fbbf24; }
+            .hotbar-slot[data-type="slide"] { color: #0ea5e9; }
+            .hotbar-slot.active .slot-label { color: currentColor; }
+            .hotbar-slot.active .slot-key { color: currentColor; border-color: currentColor; }
 
-        this.buildTextBounce = this.add.text(startX + 12, modeY + 34, '[ 2 ] BOUNCE ↑', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '9px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+            /* --- Instructions Hint --- */
+            #ui-instructions {
+                position: absolute;
+                bottom: 110px; left: 50%; transform: translateX(-50%);
+                padding: 12px 20px;
+                display: flex; flex-direction: column; gap: 8px;
+                text-align: center;
+                transition: opacity 1.5s ease;
+            }
+            .inst-title { color: #fff; font-size: 8px; margin-bottom: 2px; }
+            .inst-text { color: #ccc; font-size: 6px; line-height: 1.4; }
+        `;
+        document.head.appendChild(style);
 
-        this.buildTextSlide = this.add.text(startX + 12, modeY + 62, '[ 3 ] SLIDE ⟶', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '9px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
+        const container = document.createElement('div');
+        container.id = 'game-ui-container';
+        
+        container.innerHTML = `
+            <div id="ui-player-panel" class="pixel-panel">
+                <div class="avatar-container" style="background: transparent;">
+                </div>
+                <div class="player-stats">
+                    <h3 class="player-name">HP</h3>
+                    <div class="hp-bar-bg">
+                        <div class="hp-bar-fill" id="ui-hp-fill"></div>
+                        <div class="hp-text" id="ui-hp-text">100 / 100</div>
+                    </div>
+                    <div class="kill-death">
+                        <span>💀 KILLS: <span id="ui-kills">0</span></span>
+                        <span>🎯 D: <span id="ui-deaths">0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ui-build-panel" class="pixel-panel">
+                <div class="build-header">
+                    <div class="build-icon"></div>
+                    BUILD POINTS
+                </div>
+                <div class="build-bar-bg">
+                    <div class="build-bar-fill" id="ui-build-fill"></div>
+                </div>
+                <div class="build-text" id="ui-build-text">300,000 / 500,000</div>
+            </div>
+
+            <div id="ui-hotbar">
+                <div class="hotbar-slot active" data-type="normal" onclick="window.game.scene.getScene('GameScene').selectedBlockType = 'normal';">
+                    <div class="slot-key">1</div>
+                    <div class="slot-icon">🧊</div>
+                    <div class="slot-label">NORMAL</div>
+                </div>
+                <div class="hotbar-slot" data-type="bounce" onclick="window.game.scene.getScene('GameScene').selectedBlockType = 'bounce';">
+                    <div class="slot-key">2</div>
+                    <div class="slot-icon">🍄</div>
+                    <div class="slot-label">BOUNCE ↑</div>
+                </div>
+                <div class="hotbar-slot" data-type="slide" onclick="window.game.scene.getScene('GameScene').selectedBlockType = 'slide';">
+                    <div class="slot-key">3</div>
+                    <div class="slot-icon">❄️</div>
+                    <div class="slot-label">SLIDE ⟶</div>
+                </div>
+            </div>
+
+            <div id="ui-instructions" class="pixel-panel">
+                <div class="inst-title">CONTROLS HINT</div>
+                <div class="inst-text">• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T</div>
+                <div class="inst-text">• Spell: R | Attack: SPACE</div>
+                <div class="inst-text">• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)</div>
+            </div>
+        `;
+
+        document.body.appendChild(container);
+
+        // Sync DOM UI position and scale with the Phaser canvas
+        const syncUI = () => {
+            const canvas = this.game.canvas;
+            if (!document.getElementById('game-ui-container') || !canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width / 1280;
+            const scaleY = rect.height / 720;
+            container.style.transformOrigin = 'top left';
+            container.style.transform = `scale(${scaleX}, ${scaleY})`;
+            container.style.left = `${rect.left}px`;
+            container.style.top = `${rect.top}px`;
+            container.style.width = '1280px';
+            container.style.height = '720px';
+        };
+
+        syncUI();
+        window.addEventListener('resize', syncUI);
+        this.events.once('shutdown', () => window.removeEventListener('resize', syncUI));
+        this.events.once('destroy', () => window.removeEventListener('resize', syncUI));
+
+        // Fade out instructions after 10 seconds
+        setTimeout(() => {
+            const inst = document.getElementById('ui-instructions');
+            if (inst) {
+                inst.style.opacity = '0';
+                setTimeout(() => { if (inst) inst.remove(); }, 1500);
+            }
+        }, 10000);
 
         this.updateBuildPointsUI();
     }
 
     updateBuildPointsUI() {
-        if (!this.buildUIBarFill || !this.buildUIText) return;
+        const buildFill = document.getElementById('ui-build-fill');
+        const buildText = document.getElementById('ui-build-text');
+        
+        if (!buildFill || !buildText) return;
 
         const used = this.getUsedBuildPoints();
         const available = Math.max(0, this.MAX_BUILD_POINTS - used);
         const pct = Math.max(0, Math.min(1, available / this.MAX_BUILD_POINTS));
 
-        // Update bar width (max width is panelW - 20 = 160)
-        this.buildUIBarFill.width = 160 * pct;
+        buildFill.style.width = `${pct * 100}%`;
 
-        // Change bar fill color depending on remaining build points percentage
         if (pct < 0.2) {
-            this.buildUIBarFill.setFillStyle(0xff4444); // Red
+            buildFill.style.backgroundColor = '#ef4444';
+            buildFill.style.boxShadow = '0 0 10px #ef4444';
         } else if (pct < 0.5) {
-            this.buildUIBarFill.setFillStyle(0xffaa00); // Orange
+            buildFill.style.backgroundColor = '#f59e0b';
+            buildFill.style.boxShadow = '0 0 10px #f59e0b';
         } else {
-            this.buildUIBarFill.setFillStyle(0x00ffcc); // Cyan
+            buildFill.style.backgroundColor = '#06b6d4';
+            buildFill.style.boxShadow = '0 0 10px #06b6d4';
         }
 
-        // Format numbers with commas (e.g. 150,000)
         const formatNum = (num) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        this.buildUIText.setText(`${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`);
+        buildText.textContent = `${formatNum(available)} / ${formatNum(this.MAX_BUILD_POINTS)}`;
 
-        // Update the 3 separate block type mode boxes
-        const { width } = this.scale;
-        const startX = width - 195;
-        const panelW = 180;
         const bt = this.selectedBlockType || 'normal';
-
-        if (this.buildModeGraphics) {
-            this.buildModeGraphics.clear();
-
-            // 1. Normal Box
-            const normalSelected = bt === 'normal';
-            this.buildModeGraphics.fillStyle(normalSelected ? 0x0f172a : 0x0a0f19, 0.85);
-            this.buildModeGraphics.fillRect(startX, 71, panelW, 22);
-            this.buildModeGraphics.lineStyle(normalSelected ? 1.5 : 1.0, normalSelected ? 0xffffff : 0xffffff, normalSelected ? 0.85 : 0.12);
-            this.buildModeGraphics.strokeRect(startX, 71, panelW, 22);
-            if (this.buildTextNormal) {
-                this.buildTextNormal.setColor(normalSelected ? '#ffffff' : '#556370');
+        document.querySelectorAll('.hotbar-slot').forEach(slot => {
+            if (slot.dataset.type === bt) {
+                slot.classList.add('active');
+            } else {
+                slot.classList.remove('active');
             }
-
-            // 2. Bounce Box
-            const bounceSelected = bt === 'bounce';
-            this.buildModeGraphics.fillStyle(bounceSelected ? 0x0f172a : 0x0a0f19, 0.85);
-            this.buildModeGraphics.fillRect(startX, 99, panelW, 22);
-            this.buildModeGraphics.lineStyle(bounceSelected ? 1.5 : 1.0, bounceSelected ? 0xffd700 : 0xffffff, bounceSelected ? 0.85 : 0.12);
-            this.buildModeGraphics.strokeRect(startX, 99, panelW, 22);
-            if (this.buildTextBounce) {
-                this.buildTextBounce.setColor(bounceSelected ? '#ffd700' : '#556370');
-            }
-
-            // 3. Slide Box
-            const slideSelected = bt === 'slide';
-            this.buildModeGraphics.fillStyle(slideSelected ? 0x0f172a : 0x0a0f19, 0.85);
-            this.buildModeGraphics.fillRect(startX, 127, panelW, 22);
-            this.buildModeGraphics.lineStyle(slideSelected ? 1.5 : 1.0, slideSelected ? 0x00e5ff : 0xffffff, slideSelected ? 0.85 : 0.12);
-            this.buildModeGraphics.strokeRect(startX, 127, panelW, 22);
-            if (this.buildTextSlide) {
-                this.buildTextSlide.setColor(slideSelected ? '#00e5ff' : '#556370');
-            }
-        }
+        });
     }
 
     removeobstacle(pointer) {
@@ -2815,127 +2913,62 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createHUD() {
-        const { width, height } = this.scale;
-
-        // Initialize HUD graphics object
-        this.hudGraphics = this.add.graphics()
-            .setScrollFactor(0)
-            .setDepth(98);
-
-        const drawGlassPanel = (graphics, x, y, w, h, strokeColor, radius = 6) => {
-            // Glass background
-            graphics.fillStyle(0x0a0f19, 0.85);
-            graphics.fillRect(x, y, w, h);
-            // Subtle neutral border
-            graphics.lineStyle(1.0, 0xffffff, 0.15);
-            graphics.strokeRect(x, y, w, h);
-        };
-
-        const drawBarTrack = (graphics, x, y, w, h, radius = 3) => {
-            graphics.fillStyle(0x151c27, 1);
-            graphics.fillRect(x, y, w, h);
-        };
-
-        // 1. Health Card layout (top-left: x=15, y=15, w=240, h=64)
-        drawGlassPanel(this.hudGraphics, 15, 15, 240, 64, 0xff4444);
-        drawBarTrack(this.hudGraphics, 25, 36, 220, 12, 4);
-
-        this.hudHealthTitle = this.add.text(25, 20, 'PLAYER HP', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#ffffff'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
-
-        this.hudHealthBarFill = this.add.rectangle(25, 36, 220, 12, 0x2ecc71)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(100);
-
-        this.hudKillsText = this.add.text(25, 52, 'KILLS: 0  D: 0', {
-            fontFamily: '"Silkscreen"',
-            fontSize: '9px',
-            color: '#aaaaaa'
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.0, 1.0, '#000000', 3);
-
-
-
-        // 5. Controls Card (bottom-middle: x=(width-560)/2, y=height-110, w=560, h=95)
-        const ctrlX = (width - 560) / 2;
-        const ctrlY = height - 110;
-        const ctrlW = 560;
-        const ctrlH = 95;
-
-        // Draw controls panel inside a local graphics object so we can fade it out easily with tweens!
-        this.hudControlsGraphics = this.add.graphics()
-            .setScrollFactor(0)
-            .setDepth(98);
-        drawGlassPanel(this.hudControlsGraphics, ctrlX, ctrlY, ctrlW, ctrlH, 0x555555, 8);
-
-        const controlsTextStr =
-            "CONTROLS HINT:\n" +
-            "• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T\n" +
-            "• Spell: R | Attack: SPACE\n" +
-            "• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)";
-
-        this.hudControlsText = this.add.text(ctrlX + 15, ctrlY + 10, controlsTextStr, {
-            fontFamily: '"Silkscreen"',
-            fontSize: '11px',
-            color: '#cccccc',
-            lineSpacing: 5
-        })
-            .setScrollFactor(0)
-            .setDepth(100)
-            .setShadow(1.5, 1.5, '#000000', 3);
-
-        // Fade out controls panel after 10 seconds
-        this.time.delayedCall(10000, () => {
-            this.tweens.add({
-                targets: [this.hudControlsGraphics, this.hudControlsText],
-                alpha: 0,
-                duration: 1500,
-                onComplete: () => {
-                    if (this.hudControlsGraphics && this.hudControlsGraphics.active) this.hudControlsGraphics.destroy();
-                    if (this.hudControlsText && this.hudControlsText.active) this.hudControlsText.destroy();
-                }
-            });
-        });
+        // Obsolete: HUD and instructions are now handled entirely by DOM UI (initDOMUI)
+        // We only use this to render the animated avatar sprite behind the DOM UI
+        
+        const char = PlayerData.character || 'p1';
+        
+        // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
+        this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
+            .setScrollFactor(1)
+            .setDepth(99);
+            
+        this.uiAvatarSprite.anims.play(`${char}_preview`, true);
+        const tint = PlayerData.getColorTint();
+        if (tint) {
+            this.uiAvatarSprite.setTint(tint);
+        }
     }
 
     updateHUD() {
+        if (this.uiAvatarSprite) {
+            const cam = this.cameras.main;
+            const worldPos = cam.getWorldPoint(60, 65);
+            this.uiAvatarSprite.setPosition(worldPos.x, worldPos.y);
+            this.uiAvatarSprite.setScale(0.18 / cam.zoom);
+        }
+
         const playerObj = this.mode === 'multiplayer' ? this.localPlayer : this.players[0];
         if (!playerObj) return;
 
         const currentHp = playerObj.health ? playerObj.health.current : 0;
         const maxHp = playerObj.health ? playerObj.health.max : 100;
 
-        if (this.hudHealthBarFill) {
+        const hpFill = document.getElementById('ui-hp-fill');
+        const hpText = document.getElementById('ui-hp-text');
+        
+        if (hpFill && hpText) {
             const pct = Math.max(0, Math.min(1, currentHp / maxHp));
-            this.hudHealthBarFill.width = 220 * pct;
+            hpFill.style.width = `${pct * 100}%`;
+            hpText.textContent = `${Math.round(currentHp)} / ${maxHp}`;
 
-            let color = 0x2ecc71; // Green
             if (pct < 0.3) {
-                color = 0xe74c3c; // Red
+                hpFill.style.backgroundColor = '#ef4444';
+                hpFill.style.boxShadow = '0 0 10px #ef4444';
             } else if (pct < 0.6) {
-                color = 0xf1c40f; // Yellow
-            }
-            this.hudHealthBarFill.setFillStyle(color);
-        }
-
-        if (this.hudKillsText) {
-            const killsStr = `KILLS: ${this.killCount}  D: ${this.deathCount}`;
-            if (this.hudKillsText.text !== killsStr) {
-                this.hudKillsText.setText(killsStr);
+                hpFill.style.backgroundColor = '#f59e0b';
+                hpFill.style.boxShadow = '0 0 10px #f59e0b';
+            } else {
+                hpFill.style.backgroundColor = '#10b981';
+                hpFill.style.boxShadow = '0 0 10px #10b981';
             }
         }
 
-        const now = this.time.now;
+        const uiKills = document.getElementById('ui-kills');
+        if (uiKills) uiKills.textContent = this.killCount;
 
+        const uiDeaths = document.getElementById('ui-deaths');
+        if (uiDeaths) uiDeaths.textContent = this.deathCount;
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3168,6 +3201,15 @@ export default class GameScene extends Phaser.Scene {
 
         this.chatLog.appendChild(msgDiv);
         this.chatLog.scrollTop = this.chatLog.scrollHeight;
+    }
+
+    cleanupDOMUI() {
+        if (document.getElementById('game-ui-container')) {
+            document.getElementById('game-ui-container').remove();
+        }
+        if (document.getElementById('game-ui-styles')) {
+            document.getElementById('game-ui-styles').remove();
+        }
     }
 
     cleanupChat() {
