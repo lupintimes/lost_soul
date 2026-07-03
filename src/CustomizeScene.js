@@ -29,14 +29,14 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // 🏷️ Title
         this.add.text(width / 2, 20, 'CUSTOMIZE', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '26px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         // ← BACK button
         const backBtn = this.add.text(20, 15, '← BACK', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '13px',
             color: '#ff4444',
             backgroundColor: '#222',
@@ -68,7 +68,7 @@ export default class CustomizeScene extends Phaser.Scene {
             .setStrokeStyle(2, 0x333333);
 
         this.add.text(previewX, previewY - 135, 'PREVIEW', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '12px',
             color: '#888888'
         }).setOrigin(0.5);
@@ -83,13 +83,13 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Info labels
         this.charLabel = this.add.text(previewX, previewY + 80, PlayerData.getCharacterInfo().name, {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '14px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         this.colorLabel = this.add.text(previewX, previewY + 100, `COLOR: ${PlayerData.color.toUpperCase()}`, {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '10px',
             color: '#888888'
         }).setOrigin(0.5);
@@ -122,7 +122,7 @@ export default class CustomizeScene extends Phaser.Scene {
             const isActive = tabKeys[i] === this.activeTab;
 
             const tabBtn = this.add.text(tx, ty, tabName, {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '14px',
                 color: isActive ? '#ffff00' : '#666666',
                 backgroundColor: isActive ? '#333' : '#1a1a1a',
@@ -231,7 +231,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Item name
             const nameText = this.add.text(x + 40, iy + 6, item.name, {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '14px',
                 color: isSelected ? '#44ff44' : '#ffffff'
             });
@@ -240,7 +240,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Description (for characters)
             if (item.desc) {
                 const descText = this.add.text(x + 40, iy + 28, item.desc, {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '11px',
                     color: '#666666'
                 });
@@ -250,7 +250,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Selected checkmark
             if (isSelected) {
                 const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2 - 8, '✓', {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '20px',
                     color: '#44ff44'
                 });
@@ -373,14 +373,14 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 // Character name + HP badge
                 const nameT = this.add.text(x + 10, cardY + 4, `${data.label}  ABILITIES`, {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: hexCol
                 });
                 this.optionElements.push(nameT);
 
                 const hpT = this.add.text(x + w - 10, cardY + 4, `HP  ${data.hp}`, {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: '#44ff44'
                 }).setOrigin(1, 0);
@@ -390,7 +390,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 data.lines.forEach((line, li) => {
                     const isKey = !line.startsWith(' ');
                     const lt = this.add.text(x + 12, cardY + 24 + li * lineH, line, {
-                        fontFamily: '"Silkscreen"',
+                        fontFamily: 'Arial',
                         fontSize: '12px',
                         color: isKey ? '#ffffff' : '#888888'
                     });
@@ -442,7 +442,7 @@ export default class CustomizeScene extends Phaser.Scene {
             this.instrContainer.add(headerBg);
 
             const headerText = this.add.text(x + 10, curY + 4, title, {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '13px',
                 color: hexColor
             });
@@ -453,7 +453,7 @@ export default class CustomizeScene extends Phaser.Scene {
             lines.forEach(line => {
                 const isBullet = line.startsWith('•');
                 const lineText = this.add.text(x + (isBullet ? 14 : 8), curY, line, {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '11px',
                     color: isBullet ? '#cccccc' : hexColor,
                     wordWrap: { width: w - 24 }
