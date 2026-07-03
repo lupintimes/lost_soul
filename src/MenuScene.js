@@ -29,8 +29,9 @@ export default class MenuScene extends Phaser.Scene {
 
         // 🏷️ Title
         this.add.text(width * 0.4, height * 0.15, 'LOST SOUL', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '28px',
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '48px',
+            fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
@@ -128,9 +129,13 @@ export default class MenuScene extends Phaser.Scene {
 
     // 🔘 Button Creator
     createButton(x, y, text, callback) {
+        const fontFamily = '"Rajdhani"';
+        const fontWeight = 'bold';
+
         const btn = this.add.text(x, y, text, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '16px',
+            fontFamily: fontFamily,
+            fontSize: '28px', // Rajdhani runs a bit smaller, increasing slightly
+            fontWeight: fontWeight,
             color: '#ffffff',
             backgroundColor: '#222',
             padding: { x: 15, y: 10 }
@@ -204,8 +209,8 @@ export default class MenuScene extends Phaser.Scene {
             width / 2, height / 2 - 50,
             "LOST SOUL\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '10px',
+                fontFamily: '"Inter"',
+                fontSize: '14px',
                 color: '#ffffff',
                 align: 'center',
                 wordWrap: { width: width * 0.4 }

@@ -2575,13 +2575,14 @@ export default class GameScene extends Phaser.Scene {
         const style = document.createElement('style');
         style.id = 'game-ui-styles';
         style.textContent = `
-            @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&family=Inter:wght@400;500;700&display=swap');
             
             #game-ui-container {
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
                 pointer-events: none;
-                font-family: 'Press Start 2P', cursive;
+                font-family: 'Rajdhani', sans-serif;
+                font-weight: 700;
                 color: white;
                 z-index: 100;
                 user-select: none;
@@ -2611,14 +2612,14 @@ export default class GameScene extends Phaser.Scene {
                 border-radius: 4px;
             }
 
-            .player-stats { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
-            .player-name { font-size: 8px; margin: 0; color: #fff; line-height: 1; }
+            .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+            .player-name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; margin: 0; color: #fff; line-height: 1; }
             
-            .hp-bar-bg { width: 180px; height: 14px; background: #111; overflow: hidden; position: relative; margin: 2px 0; }
+            .hp-bar-bg { width: 180px; height: 16px; background: #111; overflow: hidden; position: relative; margin: 2px 0; border-radius: 3px; }
             .hp-bar-fill { width: 100%; height: 100%; background: #22c55e; transition: width 0.2s ease, background-color 0.2s ease; }
-            .hp-text { position: absolute; width: 100%; text-align: center; font-size: 8px; line-height: 14px; text-shadow: 1px 1px 0 #000; top: 0; left: 0; }
+            .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
             
-            .kill-death { font-size: 8px; color: #ccc; display: flex; gap: 15px; margin-top: 2px; }
+            .kill-death { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #ccc; display: flex; gap: 15px; margin-top: 2px; }
             .kill-death span { display: flex; align-items: center; gap: 4px; }
 
             /* --- Top Right: Build Points --- */
@@ -2629,11 +2630,11 @@ export default class GameScene extends Phaser.Scene {
                 display: flex; flex-direction: column; gap: 10px;
                 pointer-events: auto;
             }
-            .build-header { display: flex; align-items: center; gap: 10px; font-size: 8px; color: #fff; }
+            .build-header { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #fff; }
             .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
-            .build-bar-bg { width: 180px; height: 8px; background: #111; }
+            .build-bar-bg { width: 180px; height: 10px; background: #111; border-radius: 3px; overflow: hidden; }
             .build-bar-fill { width: 60%; height: 100%; background: #0ea5e9; transition: width 0.2s ease; }
-            .build-text { font-size: 7px; text-align: left; color: #ddd; margin-top: 2px; }
+            .build-text { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 11px; text-align: left; color: #ddd; margin-top: 2px; }
 
             /* --- Bottom: Hotbar --- */
             #ui-hotbar {
@@ -2933,8 +2934,9 @@ export default class GameScene extends Phaser.Scene {
     updateHUD() {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
-            const worldPos = cam.getWorldPoint(60, 65);
-            this.uiAvatarSprite.setPosition(worldPos.x, worldPos.y);
+            if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
+            cam.getWorldPoint(60, 65, this._tempWorldPos);
+            this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
         }
 
@@ -2944,31 +2946,56 @@ export default class GameScene extends Phaser.Scene {
         const currentHp = playerObj.health ? playerObj.health.current : 0;
         const maxHp = playerObj.health ? playerObj.health.max : 100;
 
-        const hpFill = document.getElementById('ui-hp-fill');
-        const hpText = document.getElementById('ui-hp-text');
-        
-        if (hpFill && hpText) {
-            const pct = Math.max(0, Math.min(1, currentHp / maxHp));
-            hpFill.style.width = `${pct * 100}%`;
-            hpText.textContent = `${Math.round(currentHp)} / ${maxHp}`;
-
-            if (pct < 0.3) {
-                hpFill.style.backgroundColor = '#ef4444';
-                hpFill.style.boxShadow = '0 0 10px #ef4444';
-            } else if (pct < 0.6) {
-                hpFill.style.backgroundColor = '#f59e0b';
-                hpFill.style.boxShadow = '0 0 10px #f59e0b';
-            } else {
-                hpFill.style.backgroundColor = '#10b981';
-                hpFill.style.boxShadow = '0 0 10px #10b981';
-            }
+        // Initialize DOM cache if needed
+        if (!this._domCache) {
+            this._domCache = {
+                hpFill: document.getElementById('ui-hp-fill'),
+                hpText: document.getElementById('ui-hp-text'),
+                uiKills: document.getElementById('ui-kills'),
+                uiDeaths: document.getElementById('ui-deaths'),
+                lastHp: -1,
+                lastMaxHp: -1,
+                lastKills: -1,
+                lastDeaths: -1,
+                lastHpColor: ''
+            };
         }
 
-        const uiKills = document.getElementById('ui-kills');
-        if (uiKills) uiKills.textContent = this.killCount;
+        const cache = this._domCache;
 
-        const uiDeaths = document.getElementById('ui-deaths');
-        if (uiDeaths) uiDeaths.textContent = this.deathCount;
+        // Only update HP DOM if values actually changed
+        if (cache.hpFill && cache.hpText && (cache.lastHp !== currentHp || cache.lastMaxHp !== maxHp)) {
+            const pct = Math.max(0, Math.min(1, currentHp / maxHp));
+            cache.hpFill.style.width = `${pct * 100}%`;
+            cache.hpText.textContent = `${Math.round(currentHp)} / ${maxHp}`;
+
+            let colorHex = '#10b981';
+            if (pct < 0.3) {
+                colorHex = '#ef4444';
+            } else if (pct < 0.6) {
+                colorHex = '#f59e0b';
+            }
+            
+            // Only update CSS string if color changed to avoid style reflows
+            if (cache.lastHpColor !== colorHex) {
+                cache.hpFill.style.backgroundColor = colorHex;
+                cache.hpFill.style.boxShadow = `0 0 10px ${colorHex}`;
+                cache.lastHpColor = colorHex;
+            }
+
+            cache.lastHp = currentHp;
+            cache.lastMaxHp = maxHp;
+        }
+
+        if (cache.uiKills && cache.lastKills !== this.killCount) {
+            cache.uiKills.textContent = this.killCount;
+            cache.lastKills = this.killCount;
+        }
+
+        if (cache.uiDeaths && cache.lastDeaths !== this.deathCount) {
+            cache.uiDeaths.textContent = this.deathCount;
+            cache.lastDeaths = this.deathCount;
+        }
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -17,8 +17,8 @@ const config = {
         }
     },
     render: {
-        pixelArt: true,
-        antialias: false,
+        pixelArt: false,
+        antialias: true,
         antialiasGL: false,
         roundPixels: false
     },
