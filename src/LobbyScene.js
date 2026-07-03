@@ -37,14 +37,14 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ─── Title ────────────────────────────────────────
         this.add.text(width / 2, 30, 'MULTIPLAYER LOBBY', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '26px',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         // ─── Back Button ──────────────────────────────────
         const backBtn = this.add.text(20, 20, '← BACK', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '15px',
             color: '#ff4444',
             backgroundColor: '#222',
@@ -81,7 +81,7 @@ export default class LobbyScene extends Phaser.Scene {
         ).setOrigin(0);
 
         this.add.text(panelLeft.x + 15, panelLeft.y + 12, 'AVAILABLE SERVERS', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '14px',
             color: '#aaaaaa'
         });
@@ -89,17 +89,17 @@ export default class LobbyScene extends Phaser.Scene {
         const headerY = panelLeft.y + 40;
 
         this.add.text(panelLeft.x + 15, headerY, 'NAME', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '12px',
             color: '#666666'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.5, headerY, 'PLAYERS', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '12px',
             color: '#666666'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.75, headerY, 'STATUS', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '12px',
             color: '#666666'
         });
@@ -122,7 +122,7 @@ export default class LobbyScene extends Phaser.Scene {
             this.listConfig.startY + 60,
             'Connecting...',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '13px',
                 color: '#555555'
             }
@@ -147,7 +147,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 20,
             'CREATE\nSERVER',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '16px',
                 color: '#aaaaaa',
                 align: 'center'
@@ -156,7 +156,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Server Name Input ─────────────────────────────
         this.add.text(panelRight.x + 15, panelRight.y + 80, 'SERVER NAME:', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '11px',
             color: '#888888'
         });
@@ -176,7 +176,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 107,
             this.serverNameValue,
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '12px',
                 color: '#ffffff'
             }
@@ -193,7 +193,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Max Players Selector ──────────────────────────
         this.add.text(panelRight.x + 15, panelRight.y + 150, 'MAX PLAYERS:', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '11px',
             color: '#888888'
         });
@@ -205,7 +205,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 172,
             ' - ',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '15px',
                 color: '#ffffff',
                 backgroundColor: '#333',
@@ -219,7 +219,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 175,
             String(this.maxPlayers),
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '15px',
                 color: '#ffffff'
             }
@@ -230,7 +230,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 172,
             ' + ',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '15px',
                 color: '#ffffff',
                 backgroundColor: '#333',
@@ -265,7 +265,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + panelRight.h - 60,
             'CREATE',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '18px',
                 color: '#ffffff',
                 backgroundColor: '#228B22',
@@ -295,7 +295,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelLeft.y + panelLeft.h - 25,
             '↻ REFRESH',
             {
-                fontFamily: '"Silkscreen"',
+                fontFamily: 'Arial',
                 fontSize: '12px',
                 color: '#4488ff',
                 backgroundColor: '#1a1a1a',
@@ -409,7 +409,7 @@ export default class LobbyScene extends Phaser.Scene {
                 startY + 60,
                 'No servers found.\nCreate one!',
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: '#555555',
                     align: 'center'
@@ -434,7 +434,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + 15, rowY + 14,
                 server.name || 'Unnamed',
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: '#ffffff'
                 }
@@ -446,7 +446,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + w * 0.5, rowY + 14,
                 `${server.players}/${server.maxPlayers}`,
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: isFull ? '#ff4444' : '#44ff44'
                 }
@@ -456,7 +456,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + w * 0.75, rowY + 14,
                 isFull ? 'FULL' : 'OPEN',
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '12px',
                     color: isFull ? '#ff4444' : '#44ff44'
                 }
