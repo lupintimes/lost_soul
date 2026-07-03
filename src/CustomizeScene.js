@@ -228,11 +228,38 @@ export default class CustomizeScene extends Phaser.Scene {
             this.input.off('wheel', this.instrWheelListener);
             this.instrWheelListener = null;
         }
+        if (this.optionWheelListener) {
+            this.input.off('wheel', this.optionWheelListener);
+            this.optionWheelListener = null;
+        }
 
         this.optionElements.forEach(el => el.destroy());
         this.optionElements = [];
 
         const { x, y, w, itemH } = this.optionsConfig;
+
+        // Viewport dimensions for options list masking/scrollbar
+        const panelX = this.scale.width * 0.42;
+        const panelY = 80;
+        const panelW = this.scale.width * 0.53;
+        const panelH = this.scale.height - 120;
+
+        const maskX = panelX + 10;
+        const maskY = panelY + 60;
+        const maskW = panelW - 20;
+        const maskH = panelH - 80;
+
+        // Create container for list elements
+        const scrollContainer = this.add.container(0, 0);
+        this.optionElements.push(scrollContainer);
+
+        // Create mask
+        const maskShape = this.make.graphics();
+        maskShape.fillStyle(0xffffff);
+        maskShape.fillRect(maskX, maskY, maskW, maskH);
+        const mask = maskShape.createGeometryMask();
+        scrollContainer.setMask(mask);
+        this.optionElements.push(maskShape);
 
         let items = [];
         let currentSelection = '';
@@ -265,12 +292,12 @@ export default class CustomizeScene extends Phaser.Scene {
                 rowBg.strokeRoundedRect(x, iy, w, itemH - 5, 6);
             };
             drawRow(isSelected ? 0x22262b : 0x16181a, isSelected ? 0.85 : 0.5, isSelected ? 0x8a99ad : 0x2d3135);
-            this.optionElements.push(rowBg);
+            scrollContainer.add(rowBg);
 
             // Color indicator dot
             const dotColor = item.color || item.tint || 0x888888;
             const dot = this.add.circle(x + 20, iy + (itemH - 5) / 2, 8, dotColor);
-            this.optionElements.push(dot);
+            scrollContainer.add(dot);
 
             // Item name
             const nameText = this.add.text(x + 40, iy + 6, item.name, {
@@ -279,7 +306,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 fontWeight: 'bold',
                 color: isSelected ? '#ffffff' : '#8a99ad'
             });
-            this.optionElements.push(nameText);
+            scrollContainer.add(nameText);
 
             // Description (for characters)
             if (item.desc) {
@@ -288,7 +315,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontSize: '13px',
                     color: '#666666'
                 });
-                this.optionElements.push(descText);
+                scrollContainer.add(descText);
             }
 
             // Selected checkmark
@@ -299,7 +326,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontWeight: 'bold',
                     color: '#8a99ad'
                 }).setOrigin(0.5);
-                this.optionElements.push(check);
+                scrollContainer.add(check);
             }
 
             // Character preview sprite (only for character tab)
@@ -307,7 +334,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 const miniSprite = this.add.sprite(x + w - 70, iy + (itemH - 5) / 2, `${item.id}_idle`);
                 miniSprite.setScale(0.15);
                 miniSprite.anims.play(`${item.id}_preview`, true);
-                this.optionElements.push(miniSprite);
+                scrollContainer.add(miniSprite);
             }
 
             // Color preview box (only for color tab)
@@ -318,14 +345,14 @@ export default class CustomizeScene extends Phaser.Scene {
                     30, 30,
                     item.tint || 0xffffff
                 ).setStrokeStyle(1.5, 0x2d3135);
-                this.optionElements.push(previewBox);
+                scrollContainer.add(previewBox);
             }
 
             // Invisible interactive area
             const hitArea = this.add.rectangle(x + w / 2, iy + (itemH - 5) / 2, w, itemH - 5, 0x000000, 0)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
-            this.optionElements.push(hitArea);
+            scrollContainer.add(hitArea);
 
             hitArea.on('pointerover', () => {
                 if (!isSelected) {
@@ -358,6 +385,8 @@ export default class CustomizeScene extends Phaser.Scene {
                 this.renderOptions();
             });
         });
+
+        let abilityCardH = 0;
 
         // ── Character Ability Card (only in character tab) ───────
         if (this.activeTab === 'character') {
@@ -409,6 +438,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 const cardY = y + items.length * itemH + 10;
                 const lineH = 18;
                 const cardH = 22 + data.lines.length * lineH + 12;
+                abilityCardH = cardH + 10;
 
                 // Card background graphics with character-specific colored border
                 const cardG = this.add.graphics();
@@ -416,13 +446,13 @@ export default class CustomizeScene extends Phaser.Scene {
                 cardG.fillRoundedRect(x, cardY, w, cardH, 8);
                 cardG.lineStyle(1.5, data.color, 0.8);
                 cardG.strokeRoundedRect(x, cardY, w, cardH, 8);
-                this.optionElements.push(cardG);
+                scrollContainer.add(cardG);
 
                 // Header tint graphic
                 const headerG = this.add.graphics();
                 headerG.fillStyle(data.color, 0.15);
                 headerG.fillRoundedRect(x, cardY, w, 24, 6);
-                this.optionElements.push(headerG);
+                scrollContainer.add(headerG);
 
                 const hexCol = '#' + data.color.toString(16).padStart(6, '0');
 
@@ -433,7 +463,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontWeight: 'bold',
                     color: hexCol
                 });
-                this.optionElements.push(nameT);
+                scrollContainer.add(nameT);
 
                 const hpT = this.add.text(x + w - 12, cardY + 4, `HP  ${data.hp}`, {
                     fontFamily: '"Cormorant Garamond"',
@@ -441,7 +471,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontWeight: 'bold',
                     color: '#ffffff'
                 }).setOrigin(1, 0);
-                this.optionElements.push(hpT);
+                scrollContainer.add(hpT);
 
                 // Ability lines
                 data.lines.forEach((line, li) => {
@@ -451,9 +481,58 @@ export default class CustomizeScene extends Phaser.Scene {
                         fontSize: '14px',
                         color: isKey ? '#ffffff' : '#8a99ad'
                     });
-                    this.optionElements.push(lt);
+                    scrollContainer.add(lt);
                 });
             }
+        }
+
+        // 3. Set up scrolling limits and scrollbar UI for lists exceeding mask height
+        const listTotalH = items.length * itemH + abilityCardH;
+        const maxScroll = Math.min(0, -(listTotalH - maskH));
+
+        if (listTotalH > maskH) {
+            // Draw Scrollbar Track
+            const trackX = panelX + panelW - 12;
+            const track = this.add.graphics();
+            track.fillStyle(0x16181a, 0.6);
+            track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
+            track.lineStyle(1.5, 0x2d3135, 1);
+            track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
+            this.optionElements.push(track);
+
+            // Draw Scrollbar Handle
+            const handleH = Math.max(30, (maskH / listTotalH) * maskH);
+            const maxHandleY = maskH - handleH;
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x8a99ad).setOrigin(0);
+            this.optionElements.push(handle);
+
+            // Wheel scroll handler
+            const wheelListener = (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+                let targetY = scrollContainer.y - deltaY * 0.5;
+                targetY = Phaser.Math.Clamp(targetY, maxScroll, 0);
+                scrollContainer.y = targetY;
+
+                // Update handle position
+                const scrollRatio = targetY / maxScroll;
+                handle.y = maskY + scrollRatio * maxHandleY;
+            };
+            this.input.on('wheel', wheelListener);
+            this.optionWheelListener = wheelListener;
+
+            // Handle drag behavior
+            handle.setInteractive({ useHandCursor: true, draggable: true });
+            handle.on('pointerover', () => handle.setFillStyle(0xffffff));
+            handle.on('pointerout', () => handle.setFillStyle(0x8a99ad));
+
+            handle.on('drag', (pointer, dragX, dragY) => {
+                let localY = dragY - maskY;
+                localY = Phaser.Math.Clamp(localY, 0, maxHandleY);
+                handle.y = maskY + localY;
+
+                const scrollRatio = localY / maxHandleY;
+                const targetY = scrollRatio * maxScroll;
+                scrollContainer.y = targetY;
+            });
         }
     }
 
