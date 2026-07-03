@@ -24,63 +24,54 @@ export default class MenuScene extends Phaser.Scene {
             .setOrigin(0)
             .setDisplaySize(width, height);
 
-        // 🌑 Dark overlay
-        this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0);
-
         // 🏷️ Title
-        this.add.text(width * 0.4, height * 0.15, 'LOST SOUL', {
-            fontFamily: '"Cormorant Garamond"',
-            fontSize: '48px',
-            fontWeight: 'bold',
-            color: '#ffffff'
-        }).setOrigin(0.5);
+        const leftX = width * 0.15;
+        this.add.image(leftX + 160, height * 0.18, 'logo').setOrigin(0.5).setScale(0.4);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  LEFT SIDE — BUTTONS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        const btnX = width * 0.35;
+        let btnY = height * 0.35;
+        const btnSpacing = 85;
 
-        this.createButton(btnX, height * 0.35, 'SOLO', () => {
+        this.createButton(leftX, btnY, '', 'SOLO', 'Begin your journey', () => {
             this.scene.start('GameScene', {
                 mode: 'solo',
                 character: PlayerData.character
             });
         });
+        btnY += btnSpacing;
 
-        this.createButton(btnX, height * 0.47, 'MULTIPLAYER', () => {
+        this.createButton(leftX, btnY, '', 'MULTIPLAYER', 'Join or host a world', () => {
             this.scene.start('LobbyScene', {
                 character: PlayerData.character
             });
         });
+        btnY += btnSpacing;
 
-        this.createButton(btnX, height * 0.59, 'CUSTOMIZE', () => {
+        this.createButton(leftX, btnY, '', 'CUSTOMIZE', 'Edit your soul', () => {
             this.scene.start('CustomizeScene');
         });
+        btnY += btnSpacing;
 
-        this.createButton(btnX, height * 0.71, 'ABOUT US', () => {
+        this.createButton(leftX, btnY, '', 'ABOUT', 'Uncover the story', () => {
             this.showAbout();
         });
+
+        // Bottom buttons
+        this.createButton(width * 0.05, height - 70, '⚙', '', null, () => {
+            // Settings placeholder
+            this.playClick();
+        }, true);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  RIGHT SIDE — CHARACTER PREVIEW
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const previewX = width * 0.75;
-        const previewY = height * 0.5;
-
-        // Preview background panel
-        this.add.rectangle(previewX, previewY, 200, 250, 0x111111, 1)
-            .setStrokeStyle(2, 0x333333);
-
-        // Character name
-        const charInfo = PlayerData.getCharacterInfo();
-
-        this.add.text(previewX, previewY - 110, charInfo.name, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '12px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
+        const previewY = height * 0.5; // Centered vertically
+        const tint = PlayerData.getColorTint();
 
         // Create simple particle texture
         if (!this.textures.exists('menu_particle')) {
@@ -91,93 +82,115 @@ export default class MenuScene extends Phaser.Scene {
             particleGraphics.destroy();
         }
 
-        const tint = PlayerData.getColorTint();
-
-        // Particles behind character
-        this.add.particles(previewX, previewY - 10, 'menu_particle', {
-            speed: { min: 20, max: 80 },
+        // Particles slightly behind character (for some ambience)
+        this.add.particles(previewX, previewY - 20, 'menu_particle', {
+            speed: { min: 5, max: 20 },
             angle: { min: 0, max: 360 },
-            scale: { start: 0.6, end: 0 },
-            alpha: { start: 0.5, end: 0 },
-            lifespan: 2000,
+            scale: { start: 0.5, end: 0 },
+            alpha: { start: 0.3, end: 0 },
+            lifespan: 3000,
             blendMode: 'ADD',
             tint: tint || 0x888888,
-            frequency: 150,
-            emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 40) }
+            frequency: 200,
+            emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 30) }
         });
 
         // Character sprite
-        const previewSprite = this.add.sprite(previewX, previewY - 10, `${PlayerData.character}_idle`);
-        previewSprite.setScale(0.5);
+        const previewSprite = this.add.sprite(previewX, previewY, `${PlayerData.character}_idle`);
+        previewSprite.setScale(1.0); // Normal scene size
         previewSprite.anims.play(`${PlayerData.character}_preview`, true);
 
         // Apply color tint
         if (tint) {
             previewSprite.setTint(tint);
         }
-
-        // Color label
-        const colorInfo = PlayerData.colors.find(c => c.id === PlayerData.color);
-        this.add.text(previewX, previewY + 85, `COLOR: ${colorInfo?.name || 'DEFAULT'}`, {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '7px',
-            color: '#888888'
-        }).setOrigin(0.5);
-
-        // "EDIT" mini button
-        const customBtn = this.add.text(previewX, previewY + 110, '⚙ EDIT', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '8px',
-            color: '#44ff44',
-            backgroundColor: '#1a1a1a',
-            padding: { x: 10, y: 5 }
-        })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
-
-        customBtn.on('pointerover', () => {
-            customBtn.setStyle({ backgroundColor: '#333' });
-            customBtn.setScale(1.05);
-        });
-        customBtn.on('pointerout', () => {
-            customBtn.setStyle({ backgroundColor: '#1a1a1a' });
-            customBtn.setScale(1);
-        });
-        customBtn.on('pointerdown', () => {
-
-            this.playClick();
-            this.scene.start('CustomizeScene');
-        });
     }
 
     // 🔘 Button Creator
-    createButton(x, y, text, callback) {
-        const fontFamily = '"Rajdhani"';
-        const fontWeight = 'bold';
+    createButton(x, y, icon, title, subtitle, callback, isSmall = false) {
+        const btnContainer = this.add.container(x, y);
+        const w = isSmall ? (!title ? 50 : 160) : 320;
+        const h = isSmall ? (!title ? 50 : 40) : 70;
 
-        const btn = this.add.text(x, y, text, {
-            fontFamily: fontFamily,
-            fontSize: '28px', // Rajdhani runs a bit smaller, increasing slightly
-            fontWeight: fontWeight,
-            color: '#ffffff',
-            backgroundColor: '#222',
-            padding: { x: 15, y: 10 }
-        })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
+        // Backgrounds
+        const drawBg = (graphics, color, alpha, borderColor) => {
+            graphics.clear();
+            graphics.fillStyle(color, alpha);
+            graphics.fillRoundedRect(0, 0, w, h, 6);
+            graphics.lineStyle(1.5, borderColor, 0.8);
+            graphics.strokeRoundedRect(0, 0, w, h, 6);
+        };
 
-        btn.on('pointerover', () => {
-            btn.setStyle({ backgroundColor: '#555' });
-            btn.setScale(1.05);
+        const bgDefault = this.add.graphics();
+        drawBg(bgDefault, 0x16181a, 0.7, 0x2d3135);
+        btnContainer.add(bgDefault);
+
+        const bgHover = this.add.graphics();
+        drawBg(bgHover, 0x22262b, 0.85, 0x8a99ad);
+        bgHover.setAlpha(0);
+        btnContainer.add(bgHover);
+
+        // Icon Text
+        if (icon) {
+            const iconText = this.add.text(isSmall && !title ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: isSmall ? (!title ? '28px' : '16px') : '24px',
+                color: '#ffffff'
+            }).setOrigin(0.5);
+            btnContainer.add(iconText);
+        }
+
+        // Title
+        const titleOffset = icon ? (isSmall ? 40 : 65) : (isSmall ? 20 : 35);
+        if (title) {
+            const titleText = this.add.text(titleOffset, subtitle ? (h / 2 - 8) : h / 2, title, {
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: isSmall ? '16px' : '28px',
+                fontWeight: 'bold',
+                color: '#ffffff'
+            }).setOrigin(0, 0.5);
+            btnContainer.add(titleText);
+        }
+
+        if (subtitle) {
+            const subText = this.add.text(titleOffset, h / 2 + 16, subtitle, {
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '12px',
+                color: '#888888'
+            }).setOrigin(0, 0.5);
+            btnContainer.add(subText);
+        }
+
+        // Interaction
+        const hitArea = new Phaser.Geom.Rectangle(0, 0, w, h);
+        btnContainer.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
+        
+        btnContainer.on('pointerover', () => {
+            if (btnContainer.fadeTween) btnContainer.fadeTween.stop();
+            btnContainer.fadeTween = this.tweens.add({
+                targets: bgHover,
+                alpha: 1,
+                duration: 120,
+                ease: 'Quad.easeOut'
+            });
         });
-        btn.on('pointerout', () => {
-            btn.setStyle({ backgroundColor: '#222' });
-            btn.setScale(1);
+        
+        btnContainer.on('pointerout', () => {
+            if (btnContainer.fadeTween) btnContainer.fadeTween.stop();
+            btnContainer.fadeTween = this.tweens.add({
+                targets: bgHover,
+                alpha: 0,
+                duration: 250,
+                ease: 'Quad.easeOut'
+            });
         });
-        btn.on('pointerdown', () => {
-            this.playClick();  // ✅ Click on press
+        
+        btnContainer.on('pointerdown', () => {
+            this.playClick();
             callback();
         });
+
+        return btnContainer;
     }
 
     // 📜 About Popup
@@ -186,26 +199,31 @@ export default class MenuScene extends Phaser.Scene {
 
         const elements = [];
 
-        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.6)
+        const overlay = this.add.rectangle(0, 0, width, height, 0x090a0b, 0.75)
             .setOrigin(0)
             .setDepth(10);
         elements.push(overlay);
 
-        const box = this.add.rectangle(
-            width / 2, height / 2,
-            width * 0.5, height * 0.5,
-            0x111111
-        ).setDepth(11);
-        elements.push(box);
+        const boxW = width * 0.5;
+        const boxH = height * 0.55;
+        
+        // Rounded slate box with border
+        const boxG = this.add.graphics().setDepth(11);
+        boxG.fillStyle(0x16181a, 0.95);
+        boxG.fillRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
+        boxG.lineStyle(1.5, 0x8a99ad, 0.9);
+        boxG.strokeRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
+        elements.push(boxG);
 
         const closeText = this.add.text(
-            width / 2 + (width * 0.25) - 30,
-            height / 2 - (height * 0.25) + 20,
-            'X',
+            width / 2 + (boxW / 2) - 25,
+            height / 2 - (boxH / 2) + 25,
+            '✕',
             {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '16px',
-                color: '#ff4444'
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#8a99ad'
             }
         )
             .setOrigin(0.5)
@@ -213,7 +231,7 @@ export default class MenuScene extends Phaser.Scene {
         elements.push(closeText);
 
         const closeHitbox = this.add.rectangle(
-            closeText.x, closeText.y, 60, 60, 0x000000, 0
+            closeText.x, closeText.y, 45, 45, 0x000000, 0
         )
             .setInteractive({ useHandCursor: true })
             .setDepth(12);
@@ -225,25 +243,26 @@ export default class MenuScene extends Phaser.Scene {
         });
         closeHitbox.on('pointerout', () => {
             closeText.setScale(1);
-            closeText.setColor('#ff4444');
+            closeText.setColor('#8a99ad');
         });
 
         const aboutText = this.add.text(
-            width / 2, height / 2 - 50,
+            width / 2, height / 2 - 35,
             "LOST SOUL\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
             {
-                fontFamily: '"Inter"',
-                fontSize: '14px',
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '20px',
                 color: '#ffffff',
                 align: 'center',
-                wordWrap: { width: width * 0.4 }
+                lineSpacing: 4,
+                wordWrap: { width: boxW * 0.8 }
             }
         )
             .setOrigin(0.5)
             .setDepth(12);
         elements.push(aboutText);
 
-        const discord = this.add.image(width / 2 - 60, height / 2 + 80, 'discord')
+        const discord = this.add.image(width / 2 - 60, height / 2 + 95, 'discord')
             .setScale(0.5)
             .setInteractive({ useHandCursor: true })
             .setDepth(12);
@@ -256,7 +275,7 @@ export default class MenuScene extends Phaser.Scene {
             window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
         });
 
-        const xBtn = this.add.image(width / 2 + 60, height / 2 + 80, 'x_icon')
+        const xBtn = this.add.image(width / 2 + 60, height / 2 + 95, 'x_icon')
             .setScale(0.5)
             .setInteractive({ useHandCursor: true })
             .setDepth(12);
