@@ -21,38 +21,53 @@ export default class CustomizeScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // 🖼️ Background
-        this.add.image(0, 0, 'bg')
+        this.add.image(0, 0, 'menu_bg')
             .setOrigin(0)
             .setDisplaySize(width, height);
 
-        this.add.rectangle(0, 0, width, height, 0x000000, 0.7).setOrigin(0);
+        this.add.rectangle(0, 0, width, height, 0x090a0b, 0.75).setOrigin(0);
 
         // 🏷️ Title
-        this.add.text(width / 2, 20, 'CUSTOMIZE', {
-            fontFamily: 'Arial',
-            fontSize: '26px',
+        this.add.text(width / 2, 35, 'CUSTOMIZE', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '36px',
+            fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         // ← BACK button
-        const backBtn = this.add.text(20, 15, '← BACK', {
-            fontFamily: 'Arial',
-            fontSize: '13px',
-            color: '#ff4444',
-            backgroundColor: '#222',
-            padding: { x: 8, y: 5 }
-        })
-            .setInteractive({ useHandCursor: true });
+        const backBtnContainer = this.add.container(20, 20);
+        const backW = 100;
+        const backH = 40;
+        const backBg = this.add.graphics();
+        const drawBackBg = (color, alpha, borderColor) => {
+            backBg.clear();
+            backBg.fillStyle(color, alpha);
+            backBg.fillRoundedRect(0, 0, backW, backH, 6);
+            backBg.lineStyle(1.5, borderColor, 0.8);
+            backBg.strokeRoundedRect(0, 0, backW, backH, 6);
+        };
+        drawBackBg(0x16181a, 0.7, 0x2d3135);
+        backBtnContainer.add(backBg);
 
-        backBtn.on('pointerover', () => {
-            backBtn.setStyle({ backgroundColor: '#555' });
-            backBtn.setScale(1.05);
+        const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
+        }).setOrigin(0.5);
+        backBtnContainer.add(backText);
+
+        backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
+        backBtnContainer.on('pointerover', () => {
+            drawBackBg(0x22262b, 0.85, 0xff4444);
+            backText.setColor('#ffffff');
         });
-        backBtn.on('pointerout', () => {
-            backBtn.setStyle({ backgroundColor: '#222' });
-            backBtn.setScale(1);
+        backBtnContainer.on('pointerout', () => {
+            drawBackBg(0x16181a, 0.7, 0x2d3135);
+            backText.setColor('#8a99ad');
         });
-        backBtn.on('pointerdown', () => {
+        backBtnContainer.on('pointerdown', () => {
             this.playClick(); 
             this.scene.start('MenuScene');
         });
@@ -64,13 +79,18 @@ export default class CustomizeScene extends Phaser.Scene {
         const previewX = width * 0.2;
         const previewY = height * 0.5;
 
-        this.add.rectangle(previewX, previewY, 180, 300, 0x111111, 0.8)
-            .setStrokeStyle(2, 0x333333);
+        // Preview panel with rounded corners and border
+        const previewPanelG = this.add.graphics();
+        previewPanelG.fillStyle(0x16181a, 0.85);
+        previewPanelG.fillRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
+        previewPanelG.lineStyle(1.5, 0x2d3135, 1);
+        previewPanelG.strokeRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
 
-        this.add.text(previewX, previewY - 135, 'PREVIEW', {
-            fontFamily: 'Arial',
-            fontSize: '12px',
-            color: '#888888'
+        this.add.text(previewX, previewY - 130, 'PREVIEW', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         }).setOrigin(0.5);
 
         // Character preview sprite — plays idle + blink
@@ -83,15 +103,16 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Info labels
         this.charLabel = this.add.text(previewX, previewY + 80, PlayerData.getCharacterInfo().name, {
-            fontFamily: 'Arial',
-            fontSize: '14px',
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '22px',
+            fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        this.colorLabel = this.add.text(previewX, previewY + 100, `COLOR: ${PlayerData.color.toUpperCase()}`, {
-            fontFamily: 'Arial',
-            fontSize: '10px',
-            color: '#888888'
+        this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            color: '#8a99ad'
         }).setOrigin(0.5);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -99,15 +120,18 @@ export default class CustomizeScene extends Phaser.Scene {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const panelX = width * 0.42;
-        const panelY = 50;
+        const panelY = 80;
         const panelW = width * 0.53;
-        const panelH = height - 70;
+        const panelH = height - 120;
 
-        this.add.rectangle(panelX + panelW / 2, panelY + panelH / 2, panelW, panelH, 0x111111, 0.8)
-            .setStrokeStyle(1, 0x333333);
+        const panelG = this.add.graphics();
+        panelG.fillStyle(0x16181a, 0.85);
+        panelG.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+        panelG.lineStyle(1.5, 0x2d3135, 1);
+        panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        //  TABS — Only CHARACTER and COLOR
+        //  TABS — CHARACTER, COLOR, INSTRUCTIONS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const tabs = ['CHARACTER', 'COLOR', 'INSTRUCTIONS'];
@@ -118,47 +142,65 @@ export default class CustomizeScene extends Phaser.Scene {
 
         tabs.forEach((tabName, i) => {
             const tx = panelX + i * tabW + tabW / 2;
-            const ty = panelY + 15;
+            const ty = panelY + 25;
             const isActive = tabKeys[i] === this.activeTab;
 
-            const tabBtn = this.add.text(tx, ty, tabName, {
-                fontFamily: 'Arial',
-                fontSize: '14px',
-                color: isActive ? '#ffff00' : '#666666',
-                backgroundColor: isActive ? '#333' : '#1a1a1a',
-                padding: { x: 12, y: 8 }
-            })
-                .setOrigin(0.5)
-                .setInteractive({ useHandCursor: true });
+            const tabContainer = this.add.container(tx, ty);
+            const tbW = tabW - 14;
+            const tbH = 36;
 
-            tabBtn.tabKey = tabKeys[i];
+            const tbBg = this.add.graphics();
+            const drawTabBg = (color, alpha, borderColor) => {
+                tbBg.clear();
+                tbBg.fillStyle(color, alpha);
+                tbBg.fillRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
+                tbBg.lineStyle(1.5, borderColor, 0.8);
+                tbBg.strokeRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
+            };
+            drawTabBg(isActive ? 0x22262b : 0x16181a, isActive ? 0.85 : 0.6, isActive ? 0x8a99ad : 0x2d3135);
+            tabContainer.add(tbBg);
 
-            tabBtn.on('pointerover', () => {
-                if (this.activeTab !== tabBtn.tabKey) {
-                    tabBtn.setStyle({ backgroundColor: '#2a2a2a' });
+            const tabText = this.add.text(0, 0, tabName, {
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                color: isActive ? '#ffffff' : '#8a99ad'
+            }).setOrigin(0.5);
+            tabContainer.add(tabText);
+
+            tabContainer.tabKey = tabKeys[i];
+            tabContainer.drawTabBg = drawTabBg;
+            tabContainer.tabText = tabText;
+
+            tabContainer.setInteractive(new Phaser.Geom.Rectangle(-tbW / 2, -tbH / 2, tbW, tbH), Phaser.Geom.Rectangle.Contains);
+
+            tabContainer.on('pointerover', () => {
+                if (this.activeTab !== tabContainer.tabKey) {
+                    drawTabBg(0x22262b, 0.7, 0x8a99ad);
+                    tabText.setColor('#ffffff');
                 }
             });
-            tabBtn.on('pointerout', () => {
-                if (this.activeTab !== tabBtn.tabKey) {
-                    tabBtn.setStyle({ backgroundColor: '#1a1a1a' });
+            
+            tabContainer.on('pointerout', () => {
+                if (this.activeTab !== tabContainer.tabKey) {
+                    drawTabBg(0x16181a, 0.6, 0x2d3135);
+                    tabText.setColor('#8a99ad');
                 }
             });
 
-            tabBtn.on('pointerdown', () => {
+            tabContainer.on('pointerdown', () => {
                 this.playClick(); 
-                this.activeTab = tabBtn.tabKey;
+                this.activeTab = tabContainer.tabKey;
                 this.renderOptions();
 
                 this.tabButtons.forEach(tb => {
-                    if (tb.tabKey === this.activeTab) {
-                        tb.setStyle({ color: '#ffff00', backgroundColor: '#333' });
-                    } else {
-                        tb.setStyle({ color: '#666666', backgroundColor: '#1a1a1a' });
-                    }
+                    const isNowActive = tb.tabKey === this.activeTab;
+                    tb.drawTabBg(isNowActive ? 0x22262b : 0x16181a, isNowActive ? 0.85 : 0.6, isNowActive ? 0x8a99ad : 0x2d3135);
+                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#8a99ad');
                 });
             });
 
-            this.tabButtons.push(tabBtn);
+            this.tabButtons.push(tabContainer);
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -167,7 +209,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
         this.optionsConfig = {
             x: panelX + 15,
-            y: panelY + 45,
+            y: panelY + 60,
             w: panelW - 30,
             itemH: 50
         };
@@ -213,16 +255,17 @@ export default class CustomizeScene extends Phaser.Scene {
             const iy = y + index * itemH;
             const isSelected = item.id === currentSelection;
 
-            // Item background
-            const itemBg = this.add.rectangle(
-                x, iy,
-                w, itemH - 5,
-                isSelected ? 0x2a2a2a : 0x1a1a1a
-            )
-                .setOrigin(0)
-                .setStrokeStyle(isSelected ? 2 : 1, isSelected ? 0x44ff44 : 0x333333)
-                .setInteractive({ useHandCursor: true });
-            this.optionElements.push(itemBg);
+            // Row background using Graphics
+            const rowBg = this.add.graphics();
+            const drawRow = (color, alpha, borderColor) => {
+                rowBg.clear();
+                rowBg.fillStyle(color, alpha);
+                rowBg.fillRoundedRect(x, iy, w, itemH - 5, 6);
+                rowBg.lineStyle(1.5, borderColor, 0.8);
+                rowBg.strokeRoundedRect(x, iy, w, itemH - 5, 6);
+            };
+            drawRow(isSelected ? 0x22262b : 0x16181a, isSelected ? 0.85 : 0.5, isSelected ? 0x8a99ad : 0x2d3135);
+            this.optionElements.push(rowBg);
 
             // Color indicator dot
             const dotColor = item.color || item.tint || 0x888888;
@@ -231,17 +274,18 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Item name
             const nameText = this.add.text(x + 40, iy + 6, item.name, {
-                fontFamily: 'Arial',
-                fontSize: '14px',
-                color: isSelected ? '#44ff44' : '#ffffff'
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: isSelected ? '#ffffff' : '#8a99ad'
             });
             this.optionElements.push(nameText);
 
             // Description (for characters)
             if (item.desc) {
-                const descText = this.add.text(x + 40, iy + 28, item.desc, {
-                    fontFamily: 'Arial',
-                    fontSize: '11px',
+                const descText = this.add.text(x + 40, iy + 25, item.desc, {
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '13px',
                     color: '#666666'
                 });
                 this.optionElements.push(descText);
@@ -249,11 +293,12 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Selected checkmark
             if (isSelected) {
-                const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2 - 8, '✓', {
-                    fontFamily: 'Arial',
-                    fontSize: '20px',
-                    color: '#44ff44'
-                });
+                const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2, '✓', {
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#8a99ad'
+                }).setOrigin(0.5);
                 this.optionElements.push(check);
             }
 
@@ -272,27 +317,31 @@ export default class CustomizeScene extends Phaser.Scene {
                     iy + (itemH - 5) / 2,
                     30, 30,
                     item.tint || 0xffffff
-                ).setStrokeStyle(1, 0x444444);
+                ).setStrokeStyle(1.5, 0x2d3135);
                 this.optionElements.push(previewBox);
             }
 
-            // Hover
-            itemBg.on('pointerover', () => {
-                if (!isSelected) {
-                    itemBg.setFillStyle(0x222222);
-                    nameText.setColor('#ffff00');
-                }
-            });
+            // Invisible interactive area
+            const hitArea = this.add.rectangle(x + w / 2, iy + (itemH - 5) / 2, w, itemH - 5, 0x000000, 0)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
+            this.optionElements.push(hitArea);
 
-            itemBg.on('pointerout', () => {
+            hitArea.on('pointerover', () => {
                 if (!isSelected) {
-                    itemBg.setFillStyle(0x1a1a1a);
+                    drawRow(0x22262b, 0.8, 0x8a99ad);
                     nameText.setColor('#ffffff');
                 }
             });
 
-            // Click to select
-            itemBg.on('pointerdown', () => {
+            hitArea.on('pointerout', () => {
+                if (!isSelected) {
+                    drawRow(0x16181a, 0.5, 0x2d3135);
+                    nameText.setColor('#8a99ad');
+                }
+            });
+
+            hitArea.on('pointerdown', () => {
                 this.playClick(); 
                 switch (this.activeTab) {
                     case 'character':
@@ -359,40 +408,48 @@ export default class CustomizeScene extends Phaser.Scene {
             if (data) {
                 const cardY = y + items.length * itemH + 10;
                 const lineH = 18;
-                const cardH = 22 + data.lines.length * lineH + 10;
+                const cardH = 22 + data.lines.length * lineH + 12;
+
+                // Card background graphics with character-specific colored border
+                const cardG = this.add.graphics();
+                cardG.fillStyle(0x16181a, 0.9);
+                cardG.fillRoundedRect(x, cardY, w, cardH, 8);
+                cardG.lineStyle(1.5, data.color, 0.8);
+                cardG.strokeRoundedRect(x, cardY, w, cardH, 8);
+                this.optionElements.push(cardG);
+
+                // Header tint graphic
+                const headerG = this.add.graphics();
+                headerG.fillStyle(data.color, 0.15);
+                headerG.fillRoundedRect(x, cardY, w, 24, 6);
+                this.optionElements.push(headerG);
+
                 const hexCol = '#' + data.color.toString(16).padStart(6, '0');
 
-                // Card background
-                const cardBg = this.add.rectangle(x, cardY, w, cardH, 0x141428).setOrigin(0);
-                cardBg.setStrokeStyle(2, data.color);
-                this.optionElements.push(cardBg);
-
-                // Header row: colored bar
-                const headerBg = this.add.rectangle(x, cardY, w, 20, data.color, 0.15).setOrigin(0);
-                this.optionElements.push(headerBg);
-
                 // Character name + HP badge
-                const nameT = this.add.text(x + 10, cardY + 4, `${data.label}  ABILITIES`, {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
+                const nameT = this.add.text(x + 12, cardY + 4, `${data.label}  ABILITIES`, {
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
                     color: hexCol
                 });
                 this.optionElements.push(nameT);
 
-                const hpT = this.add.text(x + w - 10, cardY + 4, `HP  ${data.hp}`, {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
-                    color: '#44ff44'
+                const hpT = this.add.text(x + w - 12, cardY + 4, `HP  ${data.hp}`, {
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#ffffff'
                 }).setOrigin(1, 0);
                 this.optionElements.push(hpT);
 
                 // Ability lines
                 data.lines.forEach((line, li) => {
                     const isKey = !line.startsWith(' ');
-                    const lt = this.add.text(x + 12, cardY + 24 + li * lineH, line, {
-                        fontFamily: 'Arial',
-                        fontSize: '12px',
-                        color: isKey ? '#ffffff' : '#888888'
+                    const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
+                        fontFamily: '"Cormorant Garamond"',
+                        fontSize: '14px',
+                        color: isKey ? '#ffffff' : '#8a99ad'
                     });
                     this.optionElements.push(lt);
                 });
@@ -409,12 +466,12 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Define viewport dimensions for masking/scrollbar
         const panelX = this.scale.width * 0.42;
-        const panelY = 50;
+        const panelY = 80;
         const panelW = this.scale.width * 0.53;
-        const panelH = this.scale.height - 70;
+        const panelH = this.scale.height - 120;
 
         const maskX = panelX + 10;
-        const maskY = panelY + 50;
+        const maskY = panelY + 60;
         const maskW = panelW - 20;
         const maskH = panelH - 80;
 
@@ -436,26 +493,30 @@ export default class CustomizeScene extends Phaser.Scene {
         const addSection = (title, color, lines) => {
             const hexColor = '#' + color.toString(16).padStart(6, '0');
 
-            // Section header
-            const headerBg = this.add.rectangle(x, curY, w, 24, 0x1e1e2e).setOrigin(0);
-            headerBg.setStrokeStyle(1, color);
+            // Section header using rounded rect
+            const headerBg = this.add.graphics();
+            headerBg.fillStyle(0x16181a, 0.95);
+            headerBg.fillRoundedRect(x, curY, w, 24, 6);
+            headerBg.lineStyle(1.5, color, 0.7);
+            headerBg.strokeRoundedRect(x, curY, w, 24, 6);
             this.instrContainer.add(headerBg);
 
-            const headerText = this.add.text(x + 10, curY + 4, title, {
-                fontFamily: 'Arial',
-                fontSize: '13px',
+            const headerText = this.add.text(x + 10, curY + 3, title, {
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '15px',
+                fontWeight: 'bold',
                 color: hexColor
             });
             this.instrContainer.add(headerText);
 
-            curY += 28;
+            curY += 32;
 
             lines.forEach(line => {
                 const isBullet = line.startsWith('•');
                 const lineText = this.add.text(x + (isBullet ? 14 : 8), curY, line, {
-                    fontFamily: 'Arial',
-                    fontSize: '11px',
-                    color: isBullet ? '#cccccc' : hexColor,
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '14px',
+                    color: isBullet ? '#ffffff' : hexColor,
                     wordWrap: { width: w - 24 }
                 });
                 this.instrContainer.add(lineText);
@@ -530,14 +591,17 @@ export default class CustomizeScene extends Phaser.Scene {
         if (totalHeight > maskH) {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
-            const track = this.add.rectangle(trackX, maskY, 6, maskH, 0x1a1a1a).setOrigin(0);
-            track.setStrokeStyle(1, 0x333333);
+            const track = this.add.graphics();
+            track.fillStyle(0x16181a, 0.6);
+            track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
+            track.lineStyle(1.5, 0x2d3135, 1);
+            track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / totalHeight) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x555555).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x8a99ad).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -556,8 +620,8 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Handle drag behavior
             handle.setInteractive({ useHandCursor: true, draggable: true });
-            handle.on('pointerover', () => handle.setFillStyle(0x777777));
-            handle.on('pointerout', () => handle.setFillStyle(0x555555));
+            handle.on('pointerover', () => handle.setFillStyle(0xffffff));
+            handle.on('pointerout', () => handle.setFillStyle(0x8a99ad));
 
             handle.on('drag', (pointer, dragX, dragY) => {
                 let localY = dragY - maskY;
