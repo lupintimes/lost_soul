@@ -582,7 +582,7 @@ export default class GameScene extends Phaser.Scene {
                 this.scale.height / 2,
                 'JOINING MATCH...',
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '18px',
                     color: '#ffff00'
                 }
@@ -1096,7 +1096,7 @@ export default class GameScene extends Phaser.Scene {
         this.scoreboardElements.push(bg);
 
         const header = this.add.text(startX + 10, startY + 4, 'SCOREBOARD', {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '11px',
             color: '#ffff00'
         })
@@ -1115,7 +1115,7 @@ export default class GameScene extends Phaser.Scene {
                 startY + 24 + (index * 18),
                 `${prefix}${shortId}  K:${entry.kills}  D:${entry.deaths}`,
                 {
-                    fontFamily: '"Silkscreen"',
+                    fontFamily: 'Arial',
                     fontSize: '11px',
                     color: color
                 }
@@ -1135,7 +1135,7 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         const msg = this.add.text(width / 2, height * 0.3, text, {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: '26px',
             color: color,
             stroke: '#000000',
@@ -2089,7 +2089,7 @@ export default class GameScene extends Phaser.Scene {
         const ry = y - Phaser.Math.Between(10, 30);
 
         const dmgText = this.add.text(rx, ry, text, {
-            fontFamily: '"Silkscreen"',
+            fontFamily: 'Arial',
             fontSize: fontSize,
             color: color,
             stroke: strokeColor,
