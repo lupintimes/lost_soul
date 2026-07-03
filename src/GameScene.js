@@ -2675,8 +2675,8 @@ export default class GameScene extends Phaser.Scene {
                 text-align: center;
                 transition: opacity 1.5s ease;
             }
-            .inst-title { color: #fff; font-size: 8px; margin-bottom: 2px; }
-            .inst-text { color: #ccc; font-size: 6px; line-height: 1.4; }
+            .inst-title { color: #fff; font-size: 16px; margin-bottom: 2px; }
+            .inst-text { color: #ccc; font-size: 14px; line-height: 1.4; }
         `;
         document.head.appendChild(style);
 
