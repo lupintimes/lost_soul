@@ -28,7 +28,7 @@ export default class MenuScene extends Phaser.Scene {
         this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0);
 
         // 🏷️ Title
-        this.add.text(width * 0.4, height * 0.15, 'SWORD ARENA', {
+        this.add.text(width * 0.4, height * 0.15, 'LOST SOUL', {
             fontFamily: '"Press Start 2P"',
             fontSize: '28px',
             color: '#ffffff'
@@ -202,7 +202,7 @@ export default class MenuScene extends Phaser.Scene {
 
         const aboutText = this.add.text(
             width / 2, height / 2 - 50,
-            "SWORD ARENA\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
+            "LOST SOUL\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
             {
                 fontFamily: '"Press Start 2P"',
                 fontSize: '10px',
