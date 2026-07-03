@@ -20,7 +20,7 @@ export default class MenuScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // 🖼️ Background
-        this.add.image(0, 0, 'bg')
+        this.add.image(0, 0, 'menu_bg')
             .setOrigin(0)
             .setDisplaySize(width, height);
 
@@ -82,13 +82,36 @@ export default class MenuScene extends Phaser.Scene {
             color: '#ffffff'
         }).setOrigin(0.5);
 
+        // Create simple particle texture
+        if (!this.textures.exists('menu_particle')) {
+            const particleGraphics = this.make.graphics();
+            particleGraphics.fillStyle(0xffffff, 1);
+            particleGraphics.fillCircle(4, 4, 4);
+            particleGraphics.generateTexture('menu_particle', 8, 8);
+            particleGraphics.destroy();
+        }
+
+        const tint = PlayerData.getColorTint();
+
+        // Particles behind character
+        this.add.particles(previewX, previewY - 10, 'menu_particle', {
+            speed: { min: 20, max: 80 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.6, end: 0 },
+            alpha: { start: 0.5, end: 0 },
+            lifespan: 2000,
+            blendMode: 'ADD',
+            tint: tint || 0x888888,
+            frequency: 150,
+            emitZone: { type: 'random', source: new Phaser.Geom.Circle(0, 0, 40) }
+        });
+
         // Character sprite
         const previewSprite = this.add.sprite(previewX, previewY - 10, `${PlayerData.character}_idle`);
         previewSprite.setScale(0.5);
         previewSprite.anims.play(`${PlayerData.character}_preview`, true);
 
         // Apply color tint
-        const tint = PlayerData.getColorTint();
         if (tint) {
             previewSprite.setTint(tint);
         }

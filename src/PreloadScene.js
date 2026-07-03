@@ -45,6 +45,7 @@ export default class PreloadScene extends Phaser.Scene {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         this.load.image('bg', 'assets/background.webp');
+        this.load.image('menu_bg', 'assets/background_menu.webp');
         this.load.image('border', 'assets/border.webp');
         this.load.image('bg_red', 'assets/background/red.webp');
         this.load.image('bg_yellow', 'assets/background/yellow.webp');
