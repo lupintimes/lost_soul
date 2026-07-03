@@ -29,38 +29,53 @@ export default class LobbyScene extends Phaser.Scene {
         this.selectedCharacter = data.character || 'p1';
 
         // ─── Background ───────────────────────────────────
-        this.add.image(0, 0, 'bg')
+        this.add.image(0, 0, 'menu_bg')
             .setOrigin(0)
             .setDisplaySize(width, height);
 
-        this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0);
+        this.add.rectangle(0, 0, width, height, 0x090a0b, 0.75).setOrigin(0);
 
         // ─── Title ────────────────────────────────────────
-        this.add.text(width / 2, 30, 'MULTIPLAYER LOBBY', {
-            fontFamily: 'Arial',
-            fontSize: '26px',
+        this.add.text(width / 2, 35, 'MULTIPLAYER LOBBY', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '36px',
+            fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         // ─── Back Button ──────────────────────────────────
-        const backBtn = this.add.text(20, 20, '← BACK', {
-            fontFamily: 'Arial',
-            fontSize: '15px',
-            color: '#ff4444',
-            backgroundColor: '#222',
-            padding: { x: 10, y: 6 }
-        })
-            .setInteractive({ useHandCursor: true });
+        const backBtnContainer = this.add.container(20, 20);
+        const backW = 100;
+        const backH = 40;
+        const backBg = this.add.graphics();
+        const drawBackBg = (color, alpha, borderColor) => {
+            backBg.clear();
+            backBg.fillStyle(color, alpha);
+            backBg.fillRoundedRect(0, 0, backW, backH, 6);
+            backBg.lineStyle(1.5, borderColor, 0.8);
+            backBg.strokeRoundedRect(0, 0, backW, backH, 6);
+        };
+        drawBackBg(0x16181a, 0.7, 0x2d3135);
+        backBtnContainer.add(backBg);
 
-        backBtn.on('pointerover', () => {
-            backBtn.setStyle({ backgroundColor: '#555' });
-            backBtn.setScale(1.05);
+        const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
+        }).setOrigin(0.5);
+        backBtnContainer.add(backText);
+
+        backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
+        backBtnContainer.on('pointerover', () => {
+            drawBackBg(0x22262b, 0.85, 0xff4444);
+            backText.setColor('#ffffff');
         });
-        backBtn.on('pointerout', () => {
-            backBtn.setStyle({ backgroundColor: '#222' });
-            backBtn.setScale(1);
+        backBtnContainer.on('pointerout', () => {
+            drawBackBg(0x16181a, 0.7, 0x2d3135);
+            backText.setColor('#8a99ad');
         });
-        backBtn.on('pointerdown', () => {
+        backBtnContainer.on('pointerdown', () => {
             this.cleanup();
             this.playClick(); 
             this.scene.start('MenuScene');
@@ -69,45 +84,49 @@ export default class LobbyScene extends Phaser.Scene {
         // ─── Left Panel (Server List) ─────────────────────
         const panelLeft = {
             x: 30,
-            y: 70,
+            y: 80,
             w: width * 0.6,
-            h: height - 100
+            h: height - 120
         };
 
-        this.add.rectangle(
-            panelLeft.x, panelLeft.y,
-            panelLeft.w, panelLeft.h,
-            0x111111, 0.8
-        ).setOrigin(0);
+        const panelLeftG = this.add.graphics();
+        panelLeftG.fillStyle(0x16181a, 0.85);
+        panelLeftG.fillRoundedRect(panelLeft.x, panelLeft.y, panelLeft.w, panelLeft.h, 10);
+        panelLeftG.lineStyle(1.5, 0x2d3135, 1);
+        panelLeftG.strokeRoundedRect(panelLeft.x, panelLeft.y, panelLeft.w, panelLeft.h, 10);
 
-        this.add.text(panelLeft.x + 15, panelLeft.y + 12, 'AVAILABLE SERVERS', {
-            fontFamily: 'Arial',
-            fontSize: '14px',
-            color: '#aaaaaa'
+        this.add.text(panelLeft.x + 20, panelLeft.y + 15, 'AVAILABLE SERVERS', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#ffffff'
         });
 
-        const headerY = panelLeft.y + 40;
+        const headerY = panelLeft.y + 45;
 
-        this.add.text(panelLeft.x + 15, headerY, 'NAME', {
-            fontFamily: 'Arial',
-            fontSize: '12px',
-            color: '#666666'
+        this.add.text(panelLeft.x + 20, headerY, 'NAME', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.5, headerY, 'PLAYERS', {
-            fontFamily: 'Arial',
-            fontSize: '12px',
-            color: '#666666'
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.75, headerY, 'STATUS', {
-            fontFamily: 'Arial',
-            fontSize: '12px',
-            color: '#666666'
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         });
 
         this.add.rectangle(
-            panelLeft.x + 10, headerY + 18,
-            panelLeft.w - 20, 1,
-            0x333333
+            panelLeft.x + 15, headerY + 18,
+            panelLeft.w - 30, 1,
+            0x2d3135
         ).setOrigin(0);
 
         this.listConfig = {
@@ -122,68 +141,84 @@ export default class LobbyScene extends Phaser.Scene {
             this.listConfig.startY + 60,
             'Connecting...',
             {
-                fontFamily: 'Arial',
-                fontSize: '13px',
-                color: '#555555'
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '18px',
+                color: '#8a99ad'
             }
         ).setOrigin(0.5);
 
         // ─── Right Panel (Create Server) ──────────────────
         const panelRight = {
             x: panelLeft.x + panelLeft.w + 20,
-            y: 70,
+            y: 80,
             w: width - (panelLeft.x + panelLeft.w + 20) - 30,
-            h: height - 100
+            h: height - 120
         };
 
-        this.add.rectangle(
-            panelRight.x, panelRight.y,
-            panelRight.w, panelRight.h,
-            0x111111, 0.8
-        ).setOrigin(0);
+        const panelRightG = this.add.graphics();
+        panelRightG.fillStyle(0x16181a, 0.85);
+        panelRightG.fillRoundedRect(panelRight.x, panelRight.y, panelRight.w, panelRight.h, 10);
+        panelRightG.lineStyle(1.5, 0x2d3135, 1);
+        panelRightG.strokeRoundedRect(panelRight.x, panelRight.y, panelRight.w, panelRight.h, 10);
 
         this.add.text(
             panelRight.x + panelRight.w / 2,
             panelRight.y + 20,
-            'CREATE\nSERVER',
+            'CREATE SERVER',
             {
-                fontFamily: 'Arial',
-                fontSize: '16px',
-                color: '#aaaaaa',
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '22px',
+                fontWeight: 'bold',
+                color: '#ffffff',
                 align: 'center'
             }
         ).setOrigin(0.5, 0);
 
         // ── Server Name Input ─────────────────────────────
-        this.add.text(panelRight.x + 15, panelRight.y + 80, 'SERVER NAME:', {
-            fontFamily: 'Arial',
-            fontSize: '11px',
-            color: '#888888'
+        this.add.text(panelRight.x + 20, panelRight.y + 80, 'SERVER NAME:', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         });
 
-        const inputBg = this.add.rectangle(
-            panelRight.x + 15,
-            panelRight.y + 100,
-            panelRight.w - 30,
-            30,
-            0x222222
-        ).setOrigin(0).setStrokeStyle(1, 0x444444);
+        // Input background (designed like a button field)
+        const inputContainer = this.add.container(panelRight.x + 20, panelRight.y + 105);
+        const inputW = panelRight.w - 40;
+        const inputH = 40;
+        const inputBg = this.add.graphics();
+        const drawInputBg = (color, alpha, borderColor) => {
+            inputBg.clear();
+            inputBg.fillStyle(color, alpha);
+            inputBg.fillRoundedRect(0, 0, inputW, inputH, 6);
+            inputBg.lineStyle(1.5, borderColor, 0.8);
+            inputBg.strokeRoundedRect(0, 0, inputW, inputH, 6);
+        };
+        drawInputBg(0x16181a, 0.6, 0x2d3135);
+        inputContainer.add(inputBg);
 
         this.serverNameValue = 'My Server';
 
         this.serverNameText = this.add.text(
-            panelRight.x + 22,
-            panelRight.y + 107,
+            15,
+            inputH / 2,
             this.serverNameValue,
             {
-                fontFamily: 'Arial',
-                fontSize: '12px',
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '18px',
                 color: '#ffffff'
             }
-        );
+        ).setOrigin(0, 0.5);
+        inputContainer.add(this.serverNameText);
 
-        inputBg.setInteractive({ useHandCursor: true });
-        inputBg.on('pointerdown', () => {
+        inputContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, inputW, inputH), Phaser.Geom.Rectangle.Contains);
+        inputContainer.on('pointerover', () => {
+            drawInputBg(0x22262b, 0.8, 0x8a99ad);
+        });
+        inputContainer.on('pointerout', () => {
+            drawInputBg(0x16181a, 0.6, 0x2d3135);
+        });
+        inputContainer.on('pointerdown', () => {
             const name = prompt('Enter server name:', this.serverNameValue);
             if (name && name.trim().length > 0) {
                 this.serverNameValue = name.trim().substring(0, 20);
@@ -192,128 +227,199 @@ export default class LobbyScene extends Phaser.Scene {
         });
 
         // ── Max Players Selector ──────────────────────────
-        this.add.text(panelRight.x + 15, panelRight.y + 150, 'MAX PLAYERS:', {
-            fontFamily: 'Arial',
-            fontSize: '11px',
-            color: '#888888'
+        this.add.text(panelRight.x + 20, panelRight.y + 170, 'MAX PLAYERS:', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         });
 
         this.maxPlayers = 4;
 
-        const minusBtn = this.add.text(
-            panelRight.x + 15,
-            panelRight.y + 172,
-            ' - ',
-            {
-                fontFamily: 'Arial',
-                fontSize: '15px',
-                color: '#ffffff',
-                backgroundColor: '#333',
-                padding: { x: 6, y: 4 }
-            }
-        )
-            .setInteractive({ useHandCursor: true });
+        // Minus Button
+        const minusContainer = this.add.container(panelRight.x + 20, panelRight.y + 195);
+        const selW = 35;
+        const selH = 35;
+        const minusBg = this.add.graphics();
+        const drawMinusBg = (color, alpha, borderColor) => {
+            minusBg.clear();
+            minusBg.fillStyle(color, alpha);
+            minusBg.fillRoundedRect(0, 0, selW, selH, 6);
+            minusBg.lineStyle(1.5, borderColor, 0.8);
+            minusBg.strokeRoundedRect(0, 0, selW, selH, 6);
+        };
+        drawMinusBg(0x16181a, 0.7, 0x2d3135);
+        minusContainer.add(minusBg);
 
+        const minusText = this.add.text(selW / 2, selH / 2, '−', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        minusContainer.add(minusText);
+
+        // Max Players Label
         this.maxPlayersText = this.add.text(
-            panelRight.x + 65,
-            panelRight.y + 175,
+            panelRight.x + 85,
+            panelRight.y + 212,
             String(this.maxPlayers),
             {
-                fontFamily: 'Arial',
-                fontSize: '15px',
+                fontFamily: '"Cormorant Garamond"',
+                fontSize: '22px',
+                fontWeight: 'bold',
                 color: '#ffffff'
             }
-        );
+        ).setOrigin(0.5);
 
-        const plusBtn = this.add.text(
-            panelRight.x + 95,
-            panelRight.y + 172,
-            ' + ',
-            {
-                fontFamily: 'Arial',
-                fontSize: '15px',
-                color: '#ffffff',
-                backgroundColor: '#333',
-                padding: { x: 6, y: 4 }
-            }
-        )
-            .setInteractive({ useHandCursor: true });
+        // Plus Button
+        const plusContainer = this.add.container(panelRight.x + 115, panelRight.y + 195);
+        const plusBg = this.add.graphics();
+        const drawPlusBg = (color, alpha, borderColor) => {
+            plusBg.clear();
+            plusBg.fillStyle(color, alpha);
+            plusBg.fillRoundedRect(0, 0, selW, selH, 6);
+            plusBg.lineStyle(1.5, borderColor, 0.8);
+            plusBg.strokeRoundedRect(0, 0, selW, selH, 6);
+        };
+        drawPlusBg(0x16181a, 0.7, 0x2d3135);
+        plusContainer.add(plusBg);
 
-        // ✅ Min 1, Max 10
-        minusBtn.on('pointerdown', () => {
+        const plusText = this.add.text(selW / 2, selH / 2, '+', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        plusContainer.add(plusText);
+
+        // Interaction for minus/plus
+        minusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
+        plusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
+
+        minusContainer.on('pointerover', () => drawMinusBg(0x22262b, 0.85, 0x8a99ad));
+        minusContainer.on('pointerout', () => drawMinusBg(0x16181a, 0.7, 0x2d3135));
+        minusContainer.on('pointerdown', () => {
+            this.playClick();
             if (this.maxPlayers > 1) {
                 this.maxPlayers--;
                 this.maxPlayersText.setText(String(this.maxPlayers));
             }
         });
 
-        plusBtn.on('pointerdown', () => {
+        plusContainer.on('pointerover', () => drawPlusBg(0x22262b, 0.85, 0x8a99ad));
+        plusContainer.on('pointerout', () => drawPlusBg(0x16181a, 0.7, 0x2d3135));
+        plusContainer.on('pointerdown', () => {
+            this.playClick();
             if (this.maxPlayers < 10) {
                 this.maxPlayers++;
                 this.maxPlayersText.setText(String(this.maxPlayers));
             }
         });
 
-        [minusBtn, plusBtn].forEach(btn => {
-            btn.on('pointerover', () => btn.setStyle({ backgroundColor: '#555' }));
-            btn.on('pointerout', () => btn.setStyle({ backgroundColor: '#333' }));
-        });
-
         // ── CREATE Button ─────────────────────────────────
-        const createBtn = this.add.text(
-            panelRight.x + panelRight.w / 2,
-            panelRight.y + panelRight.h - 60,
-            'CREATE',
-            {
-                fontFamily: 'Arial',
-                fontSize: '18px',
-                color: '#ffffff',
-                backgroundColor: '#228B22',
-                padding: { x: 20, y: 12 }
-            }
-        )
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
+        const createW = 180;
+        const createH = 50;
+        const createContainer = this.add.container(panelRight.x + panelRight.w / 2 - createW / 2, panelRight.y + panelRight.h - 80);
+        const createBg = this.add.graphics();
+        const drawCreateBg = (color, alpha, borderColor) => {
+            createBg.clear();
+            createBg.fillStyle(color, alpha);
+            createBg.fillRoundedRect(0, 0, createW, createH, 6);
+            createBg.lineStyle(1.5, borderColor, 0.8);
+            createBg.strokeRoundedRect(0, 0, createW, createH, 6);
+        };
+        // Use a subtle green-slate color tint for create
+        drawCreateBg(0x161f1a, 0.8, 0x2e5c35);
+        createContainer.add(createBg);
 
-        createBtn.on('pointerover', () => {
-            createBtn.setStyle({ backgroundColor: '#32CD32' });
-            createBtn.setScale(1.05);
+        const createText = this.add.text(createW / 2, createH / 2, 'CREATE', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        createContainer.add(createText);
+
+        createContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, createW, createH), Phaser.Geom.Rectangle.Contains);
+        
+        createContainer.on('pointerover', () => {
+            if (createContainer.fadeTween) createContainer.fadeTween.stop();
+            createContainer.fadeTween = this.tweens.add({
+                targets: createBg,
+                alpha: 1,
+                duration: 120,
+                ease: 'Quad.easeOut',
+                onStart: () => drawCreateBg(0x1e3624, 0.9, 0x44ff44)
+            });
         });
-        createBtn.on('pointerout', () => {
-            createBtn.setStyle({ backgroundColor: '#228B22' });
-            createBtn.setScale(1);
+        
+        createContainer.on('pointerout', () => {
+            if (createContainer.fadeTween) createContainer.fadeTween.stop();
+            createContainer.fadeTween = this.tweens.add({
+                targets: createBg,
+                alpha: 0.8,
+                duration: 200,
+                ease: 'Quad.easeOut',
+                onStart: () => drawCreateBg(0x161f1a, 0.8, 0x2e5c35)
+            });
         });
-        createBtn.on('pointerdown', () => {
+        
+        createContainer.on('pointerdown', () => {
             this.playClick(); 
             this.createServer();
-
         });
 
         // ── Refresh Button ────────────────────────────────
-        const refreshBtn = this.add.text(
-            panelLeft.x + panelLeft.w / 2,
-            panelLeft.y + panelLeft.h - 25,
-            '↻ REFRESH',
-            {
-                fontFamily: 'Arial',
-                fontSize: '12px',
-                color: '#4488ff',
-                backgroundColor: '#1a1a1a',
-                padding: { x: 10, y: 6 }
-            }
-        )
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
+        const refW = 160;
+        const refH = 40;
+        const refreshContainer = this.add.container(panelLeft.x + panelLeft.w / 2 - refW / 2, panelLeft.y + panelLeft.h - 60);
+        const refreshBg = this.add.graphics();
+        const drawRefreshBg = (color, alpha, borderColor) => {
+            refreshBg.clear();
+            refreshBg.fillStyle(color, alpha);
+            refreshBg.fillRoundedRect(0, 0, refW, refH, 6);
+            refreshBg.lineStyle(1.5, borderColor, 0.8);
+            refreshBg.strokeRoundedRect(0, 0, refW, refH, 6);
+        };
+        drawRefreshBg(0x16181a, 0.7, 0x2d3135);
+        refreshContainer.add(refreshBg);
 
-        refreshBtn.on('pointerover', () => {
-            refreshBtn.setStyle({ backgroundColor: '#333' });
-            refreshBtn.setScale(1.05);
+        const refreshText = this.add.text(refW / 2, refH / 2, '↻ REFRESH', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
+        }).setOrigin(0.5);
+        refreshContainer.add(refreshText);
+
+        refreshContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, refW, refH), Phaser.Geom.Rectangle.Contains);
+        
+        refreshContainer.on('pointerover', () => {
+            if (refreshContainer.fadeTween) refreshContainer.fadeTween.stop();
+            refreshContainer.fadeTween = this.tweens.add({
+                targets: refreshBg,
+                alpha: 1,
+                duration: 120,
+                ease: 'Quad.easeOut',
+                onStart: () => drawRefreshBg(0x22262b, 0.85, 0x8a99ad)
+            });
+            refreshText.setColor('#ffffff');
         });
-        refreshBtn.on('pointerout', () => {
-            refreshBtn.setStyle({ backgroundColor: '#1a1a1a' });
-            refreshBtn.setScale(1);
+        
+        refreshContainer.on('pointerout', () => {
+            if (refreshContainer.fadeTween) refreshContainer.fadeTween.stop();
+            refreshContainer.fadeTween = this.tweens.add({
+                targets: refreshBg,
+                alpha: 0.7,
+                duration: 200,
+                ease: 'Quad.easeOut',
+                onStart: () => drawRefreshBg(0x16181a, 0.7, 0x2d3135)
+            });
+            refreshText.setColor('#8a99ad');
         });
-        refreshBtn.on('pointerdown', () => {
+        
+        refreshContainer.on('pointerdown', () => {
             this.requestServerList();
             this.playClick(); 
         });
@@ -409,9 +515,9 @@ export default class LobbyScene extends Phaser.Scene {
                 startY + 60,
                 'No servers found.\nCreate one!',
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
-                    color: '#555555',
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '18px',
+                    color: '#8a99ad',
                     align: 'center'
                 }
             ).setOrigin(0.5);
@@ -422,20 +528,23 @@ export default class LobbyScene extends Phaser.Scene {
         this.serverList.forEach((server, index) => {
             const rowY = startY + index * rowH;
 
-            const rowBg = this.add.rectangle(
-                x + 5, rowY,
-                w - 10, rowH - 4,
-                index % 2 === 0 ? 0x1a1a1a : 0x1f1f1f
-            )
-                .setOrigin(0)
-                .setInteractive({ useHandCursor: true });
+            // Row background using Graphics
+            const rowBg = this.add.graphics();
+            const drawRow = (color, alpha, borderColor) => {
+                rowBg.clear();
+                rowBg.fillStyle(color, alpha);
+                rowBg.fillRoundedRect(x + 10, rowY, w - 20, rowH - 4, 6);
+                rowBg.lineStyle(1.5, borderColor, 0.8);
+                rowBg.strokeRoundedRect(x + 10, rowY, w - 20, rowH - 4, 6);
+            };
+            drawRow(0x16181a, 0.5, 0x2d3135);
 
             const nameText = this.add.text(
-                x + 15, rowY + 14,
+                x + 25, rowY + 12,
                 server.name || 'Unnamed',
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '16px',
                     color: '#ffffff'
                 }
             );
@@ -443,46 +552,48 @@ export default class LobbyScene extends Phaser.Scene {
             const isFull = server.players >= server.maxPlayers;
 
             const playersText = this.add.text(
-                x + w * 0.5, rowY + 14,
+                x + w * 0.5, rowY + 12,
                 `${server.players}/${server.maxPlayers}`,
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
-                    color: isFull ? '#ff4444' : '#44ff44'
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '16px',
+                    color: isFull ? '#ff4444' : '#8a99ad'
                 }
             );
 
             const statusText = this.add.text(
-                x + w * 0.75, rowY + 14,
+                x + w * 0.75, rowY + 12,
                 isFull ? 'FULL' : 'OPEN',
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '12px',
-                    color: isFull ? '#ff4444' : '#44ff44'
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '16px',
+                    color: isFull ? '#ff4444' : '#8a99ad'
                 }
             );
 
-            rowBg.on('pointerover', () => {
-                rowBg.setFillStyle(0x333333);
-                nameText.setColor('#ffff00');
+            // Invisible hit area for interactive behavior
+            const hitArea = this.add.rectangle(x + w / 2, rowY + (rowH - 4) / 2, w - 20, rowH - 4, 0x000000, 0)
+                .setOrigin(0.5)
+                .setInteractive({ useHandCursor: true });
+
+            hitArea.on('pointerover', () => {
+                drawRow(0x22262b, 0.8, 0x8a99ad);
             });
 
-            rowBg.on('pointerout', () => {
-                rowBg.setFillStyle(index % 2 === 0 ? 0x1a1a1a : 0x1f1f1f);
-                nameText.setColor('#ffffff');
+            hitArea.on('pointerout', () => {
+                drawRow(0x16181a, 0.5, 0x2d3135);
             });
 
-            rowBg.on('pointerdown', () => {
+            hitArea.on('pointerdown', () => {
                 this.playClick(); 
                 if (isFull) {
                     alert('Server is full!');
                     return;
                 }
                 this.joinServer(server.roomId);
-                
             });
 
-            this.serverListElements.push(rowBg, nameText, playersText, statusText);
+            this.serverListElements.push(rowBg, nameText, playersText, statusText, hitArea);
         });
     }
 
