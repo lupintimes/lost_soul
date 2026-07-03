@@ -6,37 +6,62 @@ export default class PreloadScene extends Phaser.Scene {
     preload() {
         const { width, height } = this.scale;
 
+        // Load logo immediately to start the fade effect as early as possible
+        this.load.image('logo', 'assets/logo.png');
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         //  LOADING BAR
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        const barW = 300;
-        const barH = 20;
+        const barW = 400;
+        const barH = 12;
         const barX = width / 2 - barW / 2;
-        const barY = height / 2;
+        const barY = height / 2 + 50;
 
-        this.add.rectangle(barX, barY, barW, barH, 0x222222).setOrigin(0);
-        const progressBar = this.add.rectangle(barX, barY, 0, barH, 0x44ff44).setOrigin(0);
+        // Progress bar background with border
+        const progressBg = this.add.graphics();
+        progressBg.fillStyle(0x16181a, 0.8);
+        progressBg.fillRoundedRect(barX, barY, barW, barH, 4);
+        progressBg.lineStyle(1.5, 0x2d3135, 1);
+        progressBg.strokeRoundedRect(barX - 1.5, barY - 1.5, barW + 3, barH + 3, 5);
 
-        const loadingText = this.add.text(width / 2, barY - 30, 'LOADING...', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '12px',
-            color: '#ffffff'
-        }).setOrigin(0.5);
+        // Progress bar graphics fill
+        const progressFill = this.add.graphics();
 
         const percentText = this.add.text(width / 2, barY + 35, '0%', {
-            fontFamily: '"Press Start 2P"',
-            fontSize: '10px',
-            color: '#888888'
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '20px',
+            color: '#8a99ad'
         }).setOrigin(0.5);
 
+        this.logoFadeComplete = false;
+        this.isLoadingComplete = false;
+
+        // Fade in logo as soon as it's loaded in the preload queue
+        this.load.on('filecomplete-image-logo', () => {
+            const logoImage = this.add.image(width / 2, barY - 120, 'logo').setOrigin(0.5).setScale(0.5).setAlpha(0);
+            this.tweens.add({
+                targets: logoImage,
+                alpha: 1,
+                duration: 1800,
+                ease: 'Quad.easeOut',
+                onComplete: () => {
+                    this.logoFadeComplete = true;
+                    if (this.checkTransition) this.checkTransition();
+                }
+            });
+        });
+
         this.load.on('progress', (value) => {
-            progressBar.width = barW * value;
+            progressFill.clear();
+            progressFill.fillStyle(0x8a99ad, 1); // Slate gray color from theme
+            if (value > 0) {
+                progressFill.fillRoundedRect(barX, barY, barW * value, barH, 4);
+            }
             percentText.setText(Math.round(value * 100) + '%');
         });
 
         this.load.on('complete', () => {
-            loadingText.setText('READY!');
             percentText.setText('100%');
         });
 
@@ -46,6 +71,7 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.image('bg', 'assets/background.webp');
         this.load.image('menu_bg', 'assets/background_menu.webp');
+
         this.load.image('border', 'assets/border.webp');
         this.load.image('bg_red', 'assets/background/red.webp');
         this.load.image('bg_yellow', 'assets/background/yellow.webp');
@@ -210,10 +236,14 @@ export default class PreloadScene extends Phaser.Scene {
 
         const checkTransition = () => {
             if (decodedCount >= totalToDecode) {
-                console.log('✅ All assets loaded, audio decoded, and animations created');
+                this.isLoadingComplete = true;
+            }
+            if (this.isLoadingComplete && this.logoFadeComplete) {
+                console.log('✅ All assets loaded, audio decoded, logo faded, and animations created');
                 this.scene.start('MenuScene');
             }
         };
+        this.checkTransition = checkTransition;
 
         this.sound.on('decoded', (key) => {
             if (audioKeys.includes(key)) {
@@ -244,13 +274,15 @@ export default class PreloadScene extends Phaser.Scene {
         // transition after a timeout or if decodeAudio is not supported
         if (!this.sound.decodeAudio || !this.sound.context) {
             console.log('⚠️ Web Audio not supported or decodeAudio unavailable, skipping decoding wait');
-            this.scene.start('MenuScene');
+            this.isLoadingComplete = true;
+            this.checkTransition();
         } else {
             // Also add a safety timeout (e.g., 2.5 seconds) in case of decoding errors
             this.time.delayedCall(2500, () => {
                 if (decodedCount < totalToDecode) {
                     console.warn('⚠️ Audio decoding timed out for some sounds, transitioning anyway...');
-                    this.scene.start('MenuScene');
+                    this.isLoadingComplete = true;
+                    this.checkTransition();
                 }
             });
         }
