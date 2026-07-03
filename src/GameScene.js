@@ -582,9 +582,10 @@ export default class GameScene extends Phaser.Scene {
                 this.scale.height / 2,
                 'JOINING MATCH...',
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '18px',
-                    color: '#ffff00'
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '22px',
+                    fontWeight: 'bold',
+                    color: '#8a99ad'
                 }
             )
                 .setOrigin(0.5)
@@ -1088,17 +1089,21 @@ export default class GameScene extends Phaser.Scene {
 
         const startX = 10;
         const startY = 120;
+        const rowH = 18;
+        const panelH = 24 + scores.length * rowH + 8;
 
-        const bg = this.add.rectangle(startX, startY, 240, 22 + scores.length * 18 + 6, 0x000000, 0.6)
-            .setOrigin(0)
-            .setScrollFactor(0)
-            .setDepth(99);
+        const bg = this.add.graphics().setScrollFactor(0).setDepth(99);
+        bg.fillStyle(0x16181a, 0.75);
+        bg.fillRoundedRect(startX, startY, 240, panelH, 6);
+        bg.lineStyle(1.5, 0x2d3135, 0.8);
+        bg.strokeRoundedRect(startX, startY, 240, panelH, 6);
         this.scoreboardElements.push(bg);
 
-        const header = this.add.text(startX + 10, startY + 4, 'SCOREBOARD', {
-            fontFamily: 'Arial',
-            fontSize: '11px',
-            color: '#ffff00'
+        const header = this.add.text(startX + 12, startY + 5, 'SCOREBOARD', {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#8a99ad'
         })
             .setScrollFactor(0)
             .setDepth(100);
@@ -1106,17 +1111,18 @@ export default class GameScene extends Phaser.Scene {
 
         scores.forEach((entry, index) => {
             const isMe = this.socket && entry.playerId === this.socket.id;
-            const color = isMe ? '#44ff44' : '#ffffff';
+            const color = isMe ? '#ffffff' : '#8a99ad';
             const prefix = isMe ? '► ' : '  ';
             const shortId = entry.playerId.substring(0, 6);
 
             const row = this.add.text(
-                startX + 10,
-                startY + 24 + (index * 18),
+                startX + 12,
+                startY + 24 + (index * rowH),
                 `${prefix}${shortId}  K:${entry.kills}  D:${entry.deaths}`,
                 {
-                    fontFamily: 'Arial',
-                    fontSize: '11px',
+                    fontFamily: '"Cormorant Garamond"',
+                    fontSize: '13px',
+                    fontWeight: isMe ? 'bold' : 'normal',
                     color: color
                 }
             )
@@ -1135,8 +1141,9 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         const msg = this.add.text(width / 2, height * 0.3, text, {
-            fontFamily: 'Arial',
-            fontSize: '26px',
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '32px',
+            fontWeight: 'bold',
             color: color,
             stroke: '#000000',
             strokeThickness: 4
@@ -2089,7 +2096,7 @@ export default class GameScene extends Phaser.Scene {
         const ry = y - Phaser.Math.Between(10, 30);
 
         const dmgText = this.add.text(rx, ry, text, {
-            fontFamily: 'Arial',
+            fontFamily: '"Cormorant Garamond"',
             fontSize: fontSize,
             color: color,
             stroke: strokeColor,
@@ -3017,8 +3024,9 @@ export default class GameScene extends Phaser.Scene {
                 flex-direction: column;
                 pointer-events: none;
                 z-index: 1000;
-                font-family: 'Silkscreen', monospace;
-                font-size: 8px;
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 14px;
+                font-weight: bold;
             }
             #game-chat-log {
                 flex-grow: 1;
@@ -3028,9 +3036,9 @@ export default class GameScene extends Phaser.Scene {
                 justify-content: flex-end;
                 margin-bottom: 8px;
                 padding: 8px;
-                background: rgba(0, 0, 0, 0.4);
-                border-radius: 4px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
+                background: rgba(22, 24, 26, 0.75);
+                border-radius: 6px;
+                border: 1px solid rgba(138, 153, 173, 0.15);
                 backdrop-filter: blur(4px);
                 scrollbar-width: none;
             }
@@ -3042,16 +3050,17 @@ export default class GameScene extends Phaser.Scene {
                 line-height: 1.4;
                 word-break: break-all;
                 animation: fadeInChat 0.2s ease-out forwards;
-                color: #ffffff;
+                color: #8a99ad;
             }
             .chat-message-system {
-                color: #ffff00;
+                color: #8a99ad;
+                font-style: italic;
             }
             .chat-message-me {
-                color: #44ff44;
+                color: #ffffff;
             }
             .chat-message-other {
-                color: #88ccff;
+                color: #8a99ad;
             }
             @keyframes fadeInChat {
                 from { opacity: 0; transform: translateY(4px); }
@@ -3064,17 +3073,17 @@ export default class GameScene extends Phaser.Scene {
             #game-chat-input {
                 width: 100%;
                 padding: 8px;
-                background: rgba(10, 10, 10, 0.9);
-                border: 1.5px solid #555;
-                border-radius: 4px;
+                background: rgba(22, 24, 26, 0.9);
+                border: 1.5px solid #2d3135;
+                border-radius: 6px;
                 color: #fff;
-                font-family: 'Silkscreen', monospace;
-                font-size: 8px;
+                font-family: 'Cormorant Garamond', serif;
+                font-size: 14px;
                 outline: none;
                 box-sizing: border-box;
             }
             #game-chat-input:focus {
-                border-color: #ffff00;
+                border-color: #8a99ad;
             }
         `;
         document.head.appendChild(style);
