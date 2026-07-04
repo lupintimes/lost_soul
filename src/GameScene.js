@@ -2608,6 +2608,7 @@ export default class GameScene extends Phaser.Scene {
                 align-items: center;
                 gap: 12px;
                 pointer-events: auto;
+                padding: 10px 15px;
             }
             .avatar-container {
                 width: 60px; height: 60px;
@@ -2618,7 +2619,7 @@ export default class GameScene extends Phaser.Scene {
                 border-radius: 6px;
             }
 
-            .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; padding: 10px 15px; }
+            .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
             .player-name { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 16px; margin: 0; color: #fff; line-height: 1; }
             
             .hp-bar-bg { width: 180px; height: 16px; background: #090a0b; overflow: hidden; position: relative; margin: 2px 0; border-radius: 4px; }
@@ -2693,7 +2694,7 @@ export default class GameScene extends Phaser.Scene {
             <div id="ui-player-panel">
                 <div class="avatar-container" style="background: transparent;">
                 </div>
-                <div class="player-stats pixel-panel">
+                <div class="player-stats">
                     <h3 class="player-name">HP</h3>
                     <div class="hp-bar-bg">
                         <div class="hp-bar-fill" id="ui-hp-fill"></div>
@@ -2925,6 +2926,15 @@ export default class GameScene extends Phaser.Scene {
 
         const char = PlayerData.character || 'p1';
 
+        // Draw background box for the avatar and player stats in Phaser, so it sits behind the sprite!
+        this.uiPlayerPanelBg = this.add.graphics()
+            .setScrollFactor(1)
+            .setDepth(98);
+        this.uiPlayerPanelBg.fillStyle(0x16181a, 0.75);
+        this.uiPlayerPanelBg.fillRoundedRect(15, 15, 285, 80, 6);
+        this.uiPlayerPanelBg.lineStyle(1.5, 0x2d3135, 1);
+        this.uiPlayerPanelBg.strokeRoundedRect(15, 15, 285, 80, 6);
+
         // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
         this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
             .setScrollFactor(1)
@@ -2941,6 +2951,15 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
+            
+            // Screen position of HUD Background
+            if (this.uiPlayerPanelBg) {
+                cam.getWorldPoint(0, 0, this._tempWorldPos);
+                this.uiPlayerPanelBg.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
+                this.uiPlayerPanelBg.setScale(1 / cam.zoom);
+            }
+
+            // Screen position of Avatar
             cam.getWorldPoint(60, 65, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
