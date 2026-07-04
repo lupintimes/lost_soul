@@ -87,14 +87,14 @@ export default class SettingsScene extends Phaser.Scene {
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ─── Music Control Slider ─────────────────────────
-        const musicY = panelY + 80;
+        const musicY = panelY + 90;
         this.createSlider(width / 2, musicY, 'MUSIC VOLUME', 
             () => PlayerData.musicVolume, 
             (val) => PlayerData.setMusicVolume(val)
         );
 
         // ─── SFX Control Slider ───────────────────────────
-        const sfxY = panelY + 190;
+        const sfxY = panelY + 200;
         this.createSlider(width / 2, sfxY, 'SFX VOLUME', 
             () => PlayerData.sfxVolume, 
             (val) => PlayerData.setSfxVolume(val)
@@ -190,7 +190,7 @@ export default class SettingsScene extends Phaser.Scene {
     }
 
     createSlider(x, y, label, getVal, setVal) {
-        this.add.text(x, y - 25, label, {
+        this.add.text(x, y - 30, label, {
             fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
