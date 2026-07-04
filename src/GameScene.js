@@ -2928,42 +2928,24 @@ export default class GameScene extends Phaser.Scene {
 
         // Draw background box for the avatar and player stats in Phaser, so it sits behind the sprite!
         this.uiPlayerPanelBg = this.add.graphics()
-            .setScrollFactor(1)
+            .setScrollFactor(0)
             .setDepth(98);
         this.uiPlayerPanelBg.fillStyle(0x16181a, 0.75);
         this.uiPlayerPanelBg.fillRoundedRect(15, 15, 285, 80, 6);
         this.uiPlayerPanelBg.lineStyle(1.5, 0x2d3135, 1);
         this.uiPlayerPanelBg.strokeRoundedRect(15, 15, 285, 80, 6);
 
-        // Avatar will be dynamically positioned to counteract camera zoom
-        this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
-            .setScrollFactor(1)
+        // Avatar
+        this.uiAvatarSprite = this.add.sprite(60, 65, `${char}_idle`)
+            .setScrollFactor(0)
             .setDepth(99);
+        this.uiAvatarSprite.setScale(0.18);
 
         this.uiAvatarSprite.anims.play(`${char}_preview`, true);
         const tint = PlayerData.getColorTint();
         if (tint) {
             this.uiAvatarSprite.setTint(tint);
         }
-
-        // Fix jitter: update positions AFTER camera and physics update!
-        this.events.on('postupdate', () => {
-            if (!this.uiAvatarSprite || !this.cameras.main) return;
-            const cam = this.cameras.main;
-            if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            
-            // Screen position of HUD Background
-            if (this.uiPlayerPanelBg) {
-                cam.getWorldPoint(0, 0, this._tempWorldPos);
-                this.uiPlayerPanelBg.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
-                this.uiPlayerPanelBg.setScale(1 / cam.zoom);
-            }
-
-            // Screen position of Avatar
-            cam.getWorldPoint(60, 65, this._tempWorldPos);
-            this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
-            this.uiAvatarSprite.setScale(0.18 / cam.zoom);
-        });
     }
 
     updateHUD() {
