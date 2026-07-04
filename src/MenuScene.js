@@ -126,7 +126,7 @@ export default class MenuScene extends Phaser.Scene {
         btnContainer.add(bgDefault);
 
         const bgHover = this.add.graphics();
-        drawBg(bgHover, 0x1b283a, 0.85, 0x7fa3c7);
+        drawBg(bgHover, 0x131922, 0.85, 0x4a5d73);
         bgHover.setAlpha(0);
         btnContainer.add(bgHover);
 
@@ -215,7 +215,7 @@ export default class MenuScene extends Phaser.Scene {
         const boxG = this.add.graphics().setDepth(11);
         boxG.fillStyle(0x0d121d, 0.95);
         boxG.fillRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
-        boxG.lineStyle(1.5, 0x7fa3c7, 0.9);
+        boxG.lineStyle(1.5, 0x4a5d73, 0.9);
         boxG.strokeRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
         elements.push(boxG);
 
