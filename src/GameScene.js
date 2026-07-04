@@ -2588,8 +2588,8 @@ export default class GameScene extends Phaser.Scene {
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
                 pointer-events: none;
-                font-family: 'Cormorant Garamond', serif;
-                font-weight: bold;
+                font-family: 'Rajdhani', sans-serif;
+                font-weight: 700;
                 color: white;
                 z-index: 100;
                 user-select: none;
@@ -2620,13 +2620,13 @@ export default class GameScene extends Phaser.Scene {
             }
 
             .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
-            .player-name { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 16px; margin: 0; color: #fff; line-height: 1; }
+            .player-name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; margin: 0; color: #fff; line-height: 1; }
             
             .hp-bar-bg { width: 180px; height: 16px; background: #090a0b; overflow: hidden; position: relative; margin: 2px 0; border-radius: 4px; }
             .hp-bar-fill { width: 100%; height: 100%; background: #2e7d32; transition: width 0.2s ease, background-color 0.2s ease; }
-            .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
+            .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
             
-            .kill-death { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; color: #8a99ad; display: flex; gap: 15px; margin-top: 2px; }
+            .kill-death { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #8a99ad; display: flex; gap: 15px; margin-top: 2px; }
             .kill-death span { display: flex; align-items: center; gap: 4px; }
 
             /* --- Top Right: Build Points --- */
@@ -2641,7 +2641,7 @@ export default class GameScene extends Phaser.Scene {
             .build-icon { width: 8px; height: 8px; background: #8a99ad; transform: rotate(45deg); }
             .build-bar-bg { width: 180px; height: 10px; background: #090a0b; border-radius: 4px; overflow: hidden; }
             .build-bar-fill { width: 60%; height: 100%; background: #8a99ad; transition: width 0.2s ease; }
-            .build-text { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; text-align: left; color: #8a99ad; margin-top: 2px; }
+            .build-text { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 11px; text-align: left; color: #8a99ad; margin-top: 2px; }
 
             /* --- Bottom: Hotbar --- */
             #ui-hotbar {
