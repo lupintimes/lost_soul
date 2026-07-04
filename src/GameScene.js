@@ -2935,7 +2935,7 @@ export default class GameScene extends Phaser.Scene {
         this.uiPlayerPanelBg.lineStyle(1.5, 0x2d3135, 1);
         this.uiPlayerPanelBg.strokeRoundedRect(15, 15, 285, 80, 6);
 
-        // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
+        // Avatar will be dynamically positioned to counteract camera zoom
         this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
             .setScrollFactor(1)
             .setDepth(99);
@@ -2945,10 +2945,10 @@ export default class GameScene extends Phaser.Scene {
         if (tint) {
             this.uiAvatarSprite.setTint(tint);
         }
-    }
 
-    updateHUD() {
-        if (this.uiAvatarSprite) {
+        // Fix jitter: update positions AFTER camera and physics update!
+        this.events.on('postupdate', () => {
+            if (!this.uiAvatarSprite || !this.cameras.main) return;
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
             
@@ -2963,8 +2963,10 @@ export default class GameScene extends Phaser.Scene {
             cam.getWorldPoint(60, 65, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
-        }
+        });
+    }
 
+    updateHUD() {
         const playerObj = this.mode === 'multiplayer' ? this.localPlayer : this.players[0];
         if (!playerObj) return;
 
