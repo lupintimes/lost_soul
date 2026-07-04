@@ -122,11 +122,11 @@ export default class MenuScene extends Phaser.Scene {
         };
 
         const bgDefault = this.add.graphics();
-        drawBg(bgDefault, 0x16181a, 0.7, 0x2d3135);
+        drawBg(bgDefault, 0x0d121d, 0.7, 0x1f2b3e);
         btnContainer.add(bgDefault);
 
         const bgHover = this.add.graphics();
-        drawBg(bgHover, 0x22262b, 0.85, 0x8a99ad);
+        drawBg(bgHover, 0x1b283a, 0.85, 0x7fa3c7);
         bgHover.setAlpha(0);
         btnContainer.add(bgHover);
 
@@ -156,7 +156,7 @@ export default class MenuScene extends Phaser.Scene {
             const subText = this.add.text(titleOffset, h / 2 + 16, subtitle, {
                 fontFamily: '"Cormorant Garamond"',
                 fontSize: '12px',
-                color: '#888888'
+                color: '#6e85a0'
             }).setOrigin(0, 0.5);
             btnContainer.add(subText);
         }
@@ -209,9 +209,9 @@ export default class MenuScene extends Phaser.Scene {
         
         // Rounded slate box with border
         const boxG = this.add.graphics().setDepth(11);
-        boxG.fillStyle(0x16181a, 0.95);
+        boxG.fillStyle(0x0d121d, 0.95);
         boxG.fillRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
-        boxG.lineStyle(1.5, 0x8a99ad, 0.9);
+        boxG.lineStyle(1.5, 0x7fa3c7, 0.9);
         boxG.strokeRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
         elements.push(boxG);
 
@@ -223,7 +223,7 @@ export default class MenuScene extends Phaser.Scene {
                 fontFamily: '"Cormorant Garamond"',
                 fontSize: '24px',
                 fontWeight: 'bold',
-                color: '#8a99ad'
+                color: '#7fa3c7'
             }
         )
             .setOrigin(0.5)
@@ -243,7 +243,7 @@ export default class MenuScene extends Phaser.Scene {
         });
         closeHitbox.on('pointerout', () => {
             closeText.setScale(1);
-            closeText.setColor('#8a99ad');
+            closeText.setColor('#7fa3c7');
         });
 
         const aboutText = this.add.text(
