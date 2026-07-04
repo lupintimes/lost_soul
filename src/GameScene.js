@@ -2684,7 +2684,7 @@ export default class GameScene extends Phaser.Scene {
                     <canvas id="ui-avatar-canvas" width="60" height="60"></canvas>
                 </div>
                 <div class="player-stats">
-                    <h3 class="player-name">HP</h3>
+                    <h3 class="player-name">PLAYER</h3>
                     <div class="hp-bar-bg">
                         <div class="hp-bar-fill" id="ui-hp-fill"></div>
                         <div class="hp-text" id="ui-hp-text">100 / 100</div>
