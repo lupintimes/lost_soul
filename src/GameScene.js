@@ -2614,7 +2614,7 @@ export default class GameScene extends Phaser.Scene {
                 width: 60px; height: 60px;
                 display: flex; justify-content: center; align-items: center;
                 overflow: hidden;
-                background: #533984;
+                background: #a8a8a838;
                 border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
             }
@@ -2672,18 +2672,6 @@ export default class GameScene extends Phaser.Scene {
             .hotbar-slot[data-type="slide"] { color: #7fa3c7; }
             .hotbar-slot.active .slot-label { color: currentColor; }
             .hotbar-slot.active .slot-key { color: currentColor; border-color: currentColor; }
-
-            /* --- Instructions Hint --- */
-            #ui-instructions {
-                position: absolute;
-                bottom: 110px; left: 50%; transform: translateX(-50%);
-                padding: 12px 20px;
-                display: flex; flex-direction: column; gap: 8px;
-                text-align: center;
-                transition: opacity 1.5s ease;
-            }
-            .inst-title { color: #fff; font-size: 18px; margin-bottom: 2px; }
-            .inst-text { color: #7fa3c7; font-size: 14px; line-height: 1.4; }
         `;
         document.head.appendChild(style);
 
@@ -2736,13 +2724,6 @@ export default class GameScene extends Phaser.Scene {
                     <div class="slot-label">SLIDE ⟶</div>
                 </div>
             </div>
-
-            <div id="ui-instructions" class="pixel-panel">
-                <div class="inst-title">CONTROLS HINT</div>
-                <div class="inst-text">• Move: A/D | Jump: W | High Jump: Q | Dash: SHIFT | Taunt: T</div>
-                <div class="inst-text">• Spell: R | Attack: SPACE</div>
-                <div class="inst-text">• Build Block: Left Click & Drag | Delete: Right Click (or X+Click)</div>
-            </div>
         `;
 
         document.body.appendChild(container);
@@ -2753,19 +2734,19 @@ export default class GameScene extends Phaser.Scene {
             const ctx = canvas.getContext('2d');
             const char = PlayerData.character || 'p1';
             const tint = PlayerData.getColorTint();
-            
+
             const tex = this.textures.exists(`${char}_idle`) ? this.textures.get(`${char}_idle`).getSourceImage() : null;
             if (tex) {
                 ctx.clearRect(0, 0, 60, 60);
                 // Draw first frame (520x420) scaled into 60x60
                 ctx.drawImage(tex, 0, 0, 520, 420, -7, 0, 74, 60);
-                
+
                 if (tint && tint !== 0xffffff) {
                     const tintStr = '#' + tint.toString(16).padStart(6, '0');
                     ctx.globalCompositeOperation = 'multiply';
                     ctx.fillStyle = tintStr;
                     ctx.fillRect(0, 0, 60, 60);
-                    
+
                     ctx.globalCompositeOperation = 'destination-in';
                     ctx.drawImage(tex, 0, 0, 520, 420, -7, 0, 74, 60);
                     ctx.globalCompositeOperation = 'source-over';
@@ -2793,14 +2774,6 @@ export default class GameScene extends Phaser.Scene {
         this.events.once('shutdown', () => window.removeEventListener('resize', syncUI));
         this.events.once('destroy', () => window.removeEventListener('resize', syncUI));
 
-        // Fade out instructions after 10 seconds
-        setTimeout(() => {
-            const inst = document.getElementById('ui-instructions');
-            if (inst) {
-                inst.style.opacity = '0';
-                setTimeout(() => { if (inst) inst.remove(); }, 1500);
-            }
-        }, 10000);
 
         this.updateBuildPointsUI();
     }
