@@ -2605,21 +2605,26 @@ export default class GameScene extends Phaser.Scene {
                 position: absolute;
                 top: 15px; left: 15px;
                 display: flex;
-                align-items: center;
-                gap: 12px;
+                align-items: stretch;
                 pointer-events: auto;
-                padding: 10px 15px;
             }
             .avatar-container {
-                width: 60px; height: 60px;
+                width: 60px;
                 display: flex; justify-content: center; align-items: center;
-                overflow: hidden;
                 background: transparent;
                 border: 2px solid #2d3135;
-                border-radius: 6px;
+                border-right: none;
+                border-radius: 6px 0 0 6px;
             }
 
-            .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+            .player-stats { 
+                background: rgba(22, 24, 26, 0.85);
+                border: 2px solid #2d3135;
+                border-left: none;
+                border-radius: 0 6px 6px 0;
+                padding: 10px 15px;
+                display: flex; flex-direction: column; gap: 4px; justify-content: center; 
+            }
             .player-name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; margin: 0; color: #fff; line-height: 1; }
             
             .hp-bar-bg { width: 180px; height: 16px; background: rgba(22, 24, 26, 0.85); border: 1px solid #2d3135; overflow: hidden; position: relative; margin: 2px 0; border-radius: 4px; }
@@ -2691,8 +2696,8 @@ export default class GameScene extends Phaser.Scene {
         container.id = 'game-ui-container';
         
         container.innerHTML = `
-            <div id="ui-player-panel" class="pixel-panel">
-                <div class="avatar-container" style="background: transparent;">
+            <div id="ui-player-panel">
+                <div class="avatar-container">
                 </div>
                 <div class="player-stats">
                     <h3 class="player-name">HP</h3>
@@ -2942,7 +2947,23 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            cam.getWorldPoint(60, 65, this._tempWorldPos);
+
+            const domAvatar = document.querySelector('.avatar-container');
+            if (domAvatar) {
+                const rect = domAvatar.getBoundingClientRect();
+                const canvasRect = this.sys.game.canvas.getBoundingClientRect();
+                
+                const rx = rect.left - canvasRect.left + rect.width / 2;
+                const ry = rect.top - canvasRect.top + rect.height / 2;
+                
+                const scaleX = 1280 / canvasRect.width;
+                const scaleY = 720 / canvasRect.height;
+                
+                cam.getWorldPoint(rx * scaleX, ry * scaleY, this._tempWorldPos);
+            } else {
+                cam.getWorldPoint(60, 65, this._tempWorldPos);
+            }
+
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
         }
