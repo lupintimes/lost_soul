@@ -2609,6 +2609,7 @@ export default class GameScene extends Phaser.Scene {
                 gap: 12px;
                 pointer-events: auto;
                 padding: 10px 15px;
+                background: linear-gradient(to right, transparent 80px, rgba(22, 24, 26, 0.75) 80px);
             }
             .avatar-container {
                 width: 60px; height: 60px;
@@ -2926,6 +2927,11 @@ export default class GameScene extends Phaser.Scene {
 
         const char = PlayerData.character || 'p1';
 
+        // Avatar background fill
+        this.uiAvatarBg = this.add.graphics()
+            .setScrollFactor(1)
+            .setDepth(999);
+
         // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
         this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
             .setScrollFactor(1)
@@ -2945,6 +2951,20 @@ export default class GameScene extends Phaser.Scene {
             cam.getWorldPoint(60, 65, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
+
+            if (this.uiAvatarBg) {
+                this.uiAvatarBg.clear();
+                this.uiAvatarBg.fillStyle(0x16181a, 0.75);
+                const size = 58 / cam.zoom;
+                const r = 6 / cam.zoom;
+                this.uiAvatarBg.fillRoundedRect(
+                    this._tempWorldPos.x - size / 2,
+                    this._tempWorldPos.y - size / 2,
+                    size,
+                    size,
+                    r
+                );
+            }
         }
 
         const playerObj = this.mode === 'multiplayer' ? this.localPlayer : this.players[0];
