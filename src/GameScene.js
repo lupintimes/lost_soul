@@ -2608,19 +2608,19 @@ export default class GameScene extends Phaser.Scene {
                 align-items: center;
                 gap: 12px;
                 pointer-events: auto;
-                padding: 10px 15px;
-                background: linear-gradient(to right, transparent 80px, rgba(22, 24, 26, 0.75) 80px);
             }
             .avatar-container {
                 width: 60px; height: 60px;
                 display: flex; justify-content: center; align-items: center;
-                overflow: hidden;
-                background: transparent;
+            }
+
+            .player-stats { 
+                display: flex; flex-direction: column; gap: 4px; justify-content: center; 
+                padding: 10px 15px;
+                background: rgba(22, 24, 26, 0.75);
                 border: 1.5px solid #2d3135;
                 border-radius: 6px;
             }
-
-            .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
             .player-name { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 16px; margin: 0; color: #fff; line-height: 1; }
             
             .hp-bar-bg { width: 180px; height: 16px; background: #090a0b; overflow: hidden; position: relative; margin: 2px 0; border-radius: 4px; }
@@ -2692,10 +2692,10 @@ export default class GameScene extends Phaser.Scene {
         container.id = 'game-ui-container';
 
         container.innerHTML = `
-            <div id="ui-player-panel" class="pixel-panel">
-                <div class="avatar-container" style="background: transparent;">
+            <div id="ui-player-panel">
+                <div class="avatar-container">
                 </div>
-                <div class="player-stats">
+                <div class="player-stats pixel-panel">
                     <h3 class="player-name">HP</h3>
                     <div class="hp-bar-bg">
                         <div class="hp-bar-fill" id="ui-hp-fill"></div>
@@ -2948,16 +2948,24 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            cam.getWorldPoint(60, 65, this._tempWorldPos);
+            cam.getWorldPoint(45, 45, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
 
             if (this.uiAvatarBg) {
                 this.uiAvatarBg.clear();
                 this.uiAvatarBg.fillStyle(0x16181a, 0.75);
-                const size = 58 / cam.zoom;
+                const size = 60 / cam.zoom;
                 const r = 6 / cam.zoom;
                 this.uiAvatarBg.fillRoundedRect(
+                    this._tempWorldPos.x - size / 2,
+                    this._tempWorldPos.y - size / 2,
+                    size,
+                    size,
+                    r
+                );
+                this.uiAvatarBg.lineStyle(1.5 / cam.zoom, 0x2d3135, 1);
+                this.uiAvatarBg.strokeRoundedRect(
                     this._tempWorldPos.x - size / 2,
                     this._tempWorldPos.y - size / 2,
                     size,
