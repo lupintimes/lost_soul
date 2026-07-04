@@ -44,7 +44,7 @@ export default class GameScene extends Phaser.Scene {
 
     }
 
-    preload() {}
+    preload() { }
 
     createTeleporters() {
         const portalKeys = ['portal_gold', 'portal_pink', 'portal_teal', 'portal_purple', 'portal_gray'];
@@ -188,7 +188,7 @@ export default class GameScene extends Phaser.Scene {
                     if (p.jelly) p.jelly.destroy();
 
                     this.platforms.splice(i, 1);
-                    
+
                     // Notify server of deletion
                     if (this.mode === 'multiplayer' && this.socket && p.id) {
                         this.socket.emit('removeObstacle', { id: p.id });
@@ -196,19 +196,19 @@ export default class GameScene extends Phaser.Scene {
 
                     // Compute remaining pieces of the obstacle outside the selection rectangle
                     const pieces = this.subtractRect(p, rect);
-                    
+
                     // Create and sync remaining split pieces
                     pieces.forEach((piece, index) => {
                         const subId = p.id ? `${p.id}_sub_${index}_${Date.now()}` : `${p.creatorId}_sub_${Date.now()}_${index}`;
                         this.createObstacle(piece, p.opacity || 0.9, subId, p.creatorId, false, p.tint, p.blockType);
 
                         if (this.mode === 'multiplayer' && this.socket) {
-                            this.socket.emit('createObstacle', { 
-                                id: subId, 
-                                rect: piece, 
-                                opacity: p.opacity || 0.9, 
-                                creatorId: p.creatorId, 
-                                tint: p.tint, 
+                            this.socket.emit('createObstacle', {
+                                id: subId,
+                                rect: piece,
+                                opacity: p.opacity || 0.9,
+                                creatorId: p.creatorId,
+                                tint: p.tint,
                                 blockType: p.blockType,
                                 createdAt: Date.now()
                             });
@@ -236,7 +236,7 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.isDeletingByRegion) {
             const rect = this.getRect(this.startPoint, world);
-            
+
             // If the selection rectangle is extremely small, treat it as a single point deletion
             if (rect.w < 5 && rect.h < 5) {
                 this.removeobstacle(pointer);
@@ -1002,7 +1002,7 @@ export default class GameScene extends Phaser.Scene {
         const remoteChar = playerInfo.character || 'p1';
         const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false, remoteChar);
         remotePlayer.sprite.setTint(0xff6666);
-        
+
         // Play idle animation immediately upon spawning
         remotePlayer.sprite.anims.play(`${remoteChar}_idle_anim`, true);
 
@@ -1399,10 +1399,10 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.lastState !== this.localPlayer.state;
 
                 if (hasChanged && (now - this.lastEmitTime) > 50) {
-                    this.socket.emit('playerMovement', { 
-                        x, 
-                        y, 
-                        flipX, 
+                    this.socket.emit('playerMovement', {
+                        x,
+                        y,
+                        flipX,
                         anim,
                         isShieldActive: this.localPlayer.isShieldActive,
                         isRageActive: this.localPlayer.isRageActive,
@@ -1497,7 +1497,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnInitialEnemies(playerSpawn) {
-        const candidates = this.spawnPoints.filter(spawn => 
+        const candidates = this.spawnPoints.filter(spawn =>
             !(playerSpawn && spawn.x === playerSpawn.x && spawn.y === playerSpawn.y)
         );
         const shuffled = Phaser.Utils.Array.Shuffle(candidates);
@@ -1744,27 +1744,27 @@ export default class GameScene extends Phaser.Scene {
     drawJelly(graphics, w, h, opacity, tint, warnRedProgress = 0) {
         graphics.clear();
         const r = Math.min(w, h, 14);
-        
+
         const baseColor = (tint !== null && tint !== undefined) ? tint : 0xffd700;
-        
+
         // 1. Outer glow border
         graphics.lineStyle(4, baseColor, opacity);
         // 2. Jelly main body fill (semi-translucent custom tint color)
         graphics.fillStyle(baseColor, 0.75 * opacity);
-        
+
         // Drawing coordinates are relative to the graphics center (0,0)
         graphics.strokeRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
         graphics.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r);
-        
+
         // 3. Inner glossy core shimmer
         graphics.fillStyle(baseColor, 0.35 * opacity);
         graphics.fillRoundedRect(-w / 2 + 6, -h / 2 + 6, w - 12, h - 12, Math.max(2, r - 4));
-        
+
         // 4. Glare/reflection highlight (always white)
         const glareH = Math.min(8, h * 0.2);
         graphics.fillStyle(0xffffff, 0.45 * opacity);
         graphics.fillRoundedRect(-w / 2 + 8, -h / 2 + 6, w - 16, glareH, Math.max(1, r - 6));
-        
+
         // 5. Subtle Jelly bubbles (fewer, smaller, and lower opacity)
         if (w > 45 && h > 45) {
             // Bubble 1 (bottom left-ish)
@@ -1772,7 +1772,7 @@ export default class GameScene extends Phaser.Scene {
             graphics.strokeCircle(-w / 4, h / 4, 3);
             graphics.fillStyle(0xffffff, 0.4 * opacity);
             graphics.fillCircle(-w / 4 - 0.8, h / 4 - 0.8, 0.7);
-            
+
             // Bubble 2 (top right-ish)
             graphics.lineStyle(0.8, 0xffffff, 0.2 * opacity);
             graphics.strokeCircle(w / 3, -h / 6, 2);
@@ -1791,7 +1791,7 @@ export default class GameScene extends Phaser.Scene {
 
         // 1. Semi-translucent frozen body fill (the ice itself)
         graphics.fillStyle(baseColor, 0.6 * opacity);
-        
+
         // 2. Frozen block outer border
         graphics.lineStyle(3, 0xffffff, 0.85 * opacity);
         graphics.strokeRoundedRect(-w / 2 + 1.5, -h / 2 + 1.5, w - 3, h - 3, r);
@@ -1809,7 +1809,7 @@ export default class GameScene extends Phaser.Scene {
         // 5. Crystalline Frost Cracks (Internal ice fractures based on crackRatio)
         if (w > 30 && h > 30 && crackRatio > 0) {
             graphics.lineStyle(1.0, 0xffffff, 0.65 * opacity); // Higher opacity/brightness for cracks
-            
+
             // Crack 1: Top-Left to Center-Right
             graphics.beginPath();
             graphics.moveTo(-w / 3, -h / 6);
@@ -1861,7 +1861,7 @@ export default class GameScene extends Phaser.Scene {
 
         // 1. Solid industrial background block
         graphics.fillStyle(baseColor, 0.9 * opacity);
-        
+
         // 2. Heavy outer plate outline
         graphics.lineStyle(2.5, 0x0f172a, 1.0 * opacity);
         graphics.strokeRoundedRect(-w / 2 + 1.25, -h / 2 + 1.25, w - 2.5, h - 2.5, r);
@@ -1947,7 +1947,7 @@ export default class GameScene extends Phaser.Scene {
 
     startJellyIdle(jellyVisual) {
         if (!jellyVisual || !jellyVisual.active) return;
-        
+
         this.tweens.add({
             targets: jellyVisual,
             scaleY: 1.03,
@@ -1961,16 +1961,16 @@ export default class GameScene extends Phaser.Scene {
 
     wobbleBlock(platform) {
         if (!platform || !platform.jelly || platform.isWobbling) return;
-        
+
         platform.isWobbling = true;
-        
+
         // Kill the idle tween
         this.tweens.killTweensOf(platform.jelly);
-        
+
         // Immediate light squish (no delay, milder scale)
         platform.jelly.scaleY = 0.85;
         platform.jelly.scaleX = 1.15;
-        
+
         // Spring back to normal with wobble/elastic bounce
         this.tweens.add({
             targets: platform.jelly,
@@ -2036,7 +2036,7 @@ export default class GameScene extends Phaser.Scene {
                 this.safePlaySound('sfx_bubble_break', volume);
             }
             this.createBubbleBlastParticles(cx, cy, p.w, p.h, p.tint || 0xffd700);
-            
+
             const shakeIntensity = 0.005 * factor;
             if (shakeIntensity > 0.0001) {
                 this.cameras.main.shake(150, shakeIntensity);
@@ -2302,7 +2302,7 @@ export default class GameScene extends Phaser.Scene {
                     const remaining = totalLife - age;
                     const pulseSpeed = remaining > 1000 ? 15 : 30;
                     const scale = 1 + 0.03 * Math.sin((now / 1000) * pulseSpeed);
-                    
+
                     const shake = remaining > 1000 ? 1 : 2.5;
                     const offsetX = Phaser.Math.Between(-shake, shake);
                     const offsetY = Phaser.Math.Between(-shake, shake);
@@ -2475,7 +2475,7 @@ export default class GameScene extends Phaser.Scene {
             jelly = this.add.graphics({ x: cx, y: cy });
             this.drawJelly(jelly, rect.w, rect.h, opacity, tint);
             this.startJellyIdle(jelly);
-            
+
             warnOverlay = this.add.graphics({ x: cx, y: cy });
             const r = Math.min(rect.w, rect.h, 14);
             warnOverlay.fillStyle(0xff0000, 1);
@@ -2689,7 +2689,7 @@ export default class GameScene extends Phaser.Scene {
 
         const container = document.createElement('div');
         container.id = 'game-ui-container';
-        
+
         container.innerHTML = `
             <div id="ui-player-panel" class="pixel-panel">
                 <div class="avatar-container" style="background: transparent;">
@@ -2781,7 +2781,7 @@ export default class GameScene extends Phaser.Scene {
     updateBuildPointsUI() {
         const buildFill = document.getElementById('ui-build-fill');
         const buildText = document.getElementById('ui-build-text');
-        
+
         if (!buildFill || !buildText) return;
 
         const used = this.getUsedBuildPoints();
@@ -2923,14 +2923,14 @@ export default class GameScene extends Phaser.Scene {
     createHUD() {
         // Obsolete: HUD and instructions are now handled entirely by DOM UI (initDOMUI)
         // We only use this to render the animated avatar sprite behind the DOM UI
-        
+
         const char = PlayerData.character || 'p1';
-        
+
         // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
         this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
             .setScrollFactor(1)
             .setDepth(99);
-            
+
         this.uiAvatarSprite.anims.play(`${char}_preview`, true);
         const tint = PlayerData.getColorTint();
         if (tint) {
@@ -2942,7 +2942,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            cam.getWorldPoint(60, 65, this._tempWorldPos);
+            cam.getWorldPoint(60, 56, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
         }
@@ -2982,7 +2982,7 @@ export default class GameScene extends Phaser.Scene {
             } else if (pct < 0.6) {
                 colorHex = '#f59e0b';
             }
-            
+
             // Only update CSS string if color changed to avoid style reflows
             if (cache.lastHpColor !== colorHex) {
                 cache.hpFill.style.backgroundColor = colorHex;
