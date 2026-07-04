@@ -29,10 +29,13 @@ export default class PreloadScene extends Phaser.Scene {
         const progressFill = this.add.graphics();
 
         const percentText = this.add.text(width / 2, barY + 35, '0%', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: 'Rajdhani',
             fontSize: '20px',
             color: '#7fa3c7'
         }).setOrigin(0.5);
+
+        // Force browser to load Rajdhani font before scene transition
+        this.add.text(-100, -100, 'preload_font', { fontFamily: 'Rajdhani' });
 
         this.logoFadeComplete = false;
         this.isLoadingComplete = false;

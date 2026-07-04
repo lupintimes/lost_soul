@@ -102,7 +102,7 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Graphics Quality Control ─────────────────────
         const graphicsY = panelY + 310;
-        this.add.text(width / 2, graphicsY - 30, 'GRAPHICS QUALITY', {
+        this.add.text(width / 2, graphicsY - 42, 'GRAPHICS QUALITY', {
             fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
