@@ -68,7 +68,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x1b283a, 0.85, 0xff4444);
+            drawBackBg(0x131922, 0.85, 0xff4444);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
@@ -213,7 +213,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         inputContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, inputW, inputH), Phaser.Geom.Rectangle.Contains);
         inputContainer.on('pointerover', () => {
-            drawInputBg(0x1b283a, 0.8, 0x7fa3c7);
+            drawInputBg(0x131922, 0.8, 0x4a5d73);
         });
         inputContainer.on('pointerout', () => {
             drawInputBg(0x0d121d, 0.6, 0x1f2b3e);
@@ -297,7 +297,7 @@ export default class LobbyScene extends Phaser.Scene {
         minusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
         plusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
 
-        minusContainer.on('pointerover', () => drawMinusBg(0x1b283a, 0.85, 0x7fa3c7));
+        minusContainer.on('pointerover', () => drawMinusBg(0x131922, 0.85, 0x4a5d73));
         minusContainer.on('pointerout', () => drawMinusBg(0x0d121d, 0.7, 0x1f2b3e));
         minusContainer.on('pointerdown', () => {
             this.playClick();
@@ -307,7 +307,7 @@ export default class LobbyScene extends Phaser.Scene {
             }
         });
 
-        plusContainer.on('pointerover', () => drawPlusBg(0x1b283a, 0.85, 0x7fa3c7));
+        plusContainer.on('pointerover', () => drawPlusBg(0x131922, 0.85, 0x4a5d73));
         plusContainer.on('pointerout', () => drawPlusBg(0x0d121d, 0.7, 0x1f2b3e));
         plusContainer.on('pointerdown', () => {
             this.playClick();
@@ -402,7 +402,7 @@ export default class LobbyScene extends Phaser.Scene {
                 alpha: 1,
                 duration: 120,
                 ease: 'Quad.easeOut',
-                onStart: () => drawRefreshBg(0x1b283a, 0.85, 0x7fa3c7)
+                onStart: () => drawRefreshBg(0x131922, 0.85, 0x4a5d73)
             });
             refreshText.setColor('#ffffff');
         });
@@ -577,7 +577,7 @@ export default class LobbyScene extends Phaser.Scene {
                 .setInteractive({ useHandCursor: true });
 
             hitArea.on('pointerover', () => {
-                drawRow(0x1b283a, 0.8, 0x7fa3c7);
+                drawRow(0x131922, 0.8, 0x4a5d73);
             });
 
             hitArea.on('pointerout', () => {
