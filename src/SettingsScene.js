@@ -76,9 +76,9 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Settings Panel ──────────────────────────────
         const panelW = 500;
-        const panelH = 350;
+        const panelH = 400;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + 20;
+        const panelY = height / 2 - panelH / 2 + 30;
 
         const panelG = this.add.graphics();
         panelG.fillStyle(0x0d121d, 0.85);
@@ -86,94 +86,180 @@ export default class SettingsScene extends Phaser.Scene {
         panelG.lineStyle(1.5, 0x2e3d52, 1);
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
-        // ─── Music Control Row ────────────────────────────
+        // ─── Music Control Slider ─────────────────────────
         const musicY = panelY + 80;
-        this.add.text(width / 2, musicY - 30, 'MUSIC VOLUME', {
+        this.createSlider(width / 2, musicY, 'MUSIC VOLUME', 
+            () => PlayerData.musicVolume, 
+            (val) => PlayerData.setMusicVolume(val)
+        );
+
+        // ─── SFX Control Slider ───────────────────────────
+        const sfxY = panelY + 190;
+        this.createSlider(width / 2, sfxY, 'SFX VOLUME', 
+            () => PlayerData.sfxVolume, 
+            (val) => PlayerData.setSfxVolume(val)
+        );
+
+        // ─── Graphics Quality Control ─────────────────────
+        const graphicsY = panelY + 310;
+        this.add.text(width / 2, graphicsY - 30, 'GRAPHICS QUALITY', {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#7fa3c7'
         }).setOrigin(0.5);
 
-        // Controls container
-        const mMinus = this.createSelectorButton(width / 2 - 80, musicY, '−', () => {
-            PlayerData.setMusicVolume(PlayerData.musicVolume - 0.1);
-            this.musicText.setText(`${Math.round(PlayerData.musicVolume * 100)}%`);
-            this.playClick();
-        });
-        
-        this.musicText = this.add.text(width / 2, musicY, `${Math.round(PlayerData.musicVolume * 100)}%`, {
+        const btnW = 100;
+        const btnH = 35;
+
+        // Low Quality Button
+        const lowContainer = this.add.container(width / 2 - 60 - btnW / 2, graphicsY - btnH / 2);
+        const lowBg = this.add.graphics();
+        const lowText = this.add.text(btnW / 2, btnH / 2, 'LOW', {
             fontFamily: '"Cormorant Garamond"',
-            fontSize: '24px',
+            fontSize: '16px',
             fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
+        lowContainer.add(lowBg);
+        lowContainer.add(lowText);
 
-        const mPlus = this.createSelectorButton(width / 2 + 80, musicY, '+', () => {
-            PlayerData.setMusicVolume(PlayerData.musicVolume + 0.1);
-            this.musicText.setText(`${Math.round(PlayerData.musicVolume * 100)}%`);
-            this.playClick();
-        });
-
-        // ─── SFX Control Row ──────────────────────────────
-        const sfxY = panelY + 220;
-        this.add.text(width / 2, sfxY - 30, 'SFX VOLUME', {
+        // High Quality Button
+        const highContainer = this.add.container(width / 2 + 60 - btnW / 2, graphicsY - btnH / 2);
+        const highBg = this.add.graphics();
+        const highText = this.add.text(btnW / 2, btnH / 2, 'HIGH', {
             fontFamily: '"Cormorant Garamond"',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            color: '#7fa3c7'
-        }).setOrigin(0.5);
-
-        // Controls container
-        const sMinus = this.createSelectorButton(width / 2 - 80, sfxY, '−', () => {
-            PlayerData.setSfxVolume(PlayerData.sfxVolume - 0.1);
-            this.sfxText.setText(`${Math.round(PlayerData.sfxVolume * 100)}%`);
-            this.playClick();
-        });
-        
-        this.sfxText = this.add.text(width / 2, sfxY, `${Math.round(PlayerData.sfxVolume * 100)}%`, {
-            fontFamily: '"Cormorant Garamond"',
-            fontSize: '24px',
+            fontSize: '16px',
             fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
+        highContainer.add(highBg);
+        highContainer.add(highText);
 
-        const sPlus = this.createSelectorButton(width / 2 + 80, sfxY, '+', () => {
-            PlayerData.setSfxVolume(PlayerData.sfxVolume + 0.1);
-            this.sfxText.setText(`${Math.round(PlayerData.sfxVolume * 100)}%`);
+        const drawQualityButtons = () => {
+            const isLow = PlayerData.graphicsQuality === 'low';
+            
+            // Draw Low
+            lowBg.clear();
+            lowBg.fillStyle(isLow ? 0x17212e : 0x0d121d, 0.85);
+            lowBg.fillRoundedRect(0, 0, btnW, btnH, 6);
+            lowBg.lineStyle(1.5, isLow ? 0x7dd3fc : 0x2e3d52, 0.9);
+            lowBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+            lowText.setColor(isLow ? '#ffffff' : '#7fa3c7');
+
+            // Draw High
+            highBg.clear();
+            highBg.fillStyle(!isLow ? 0x17212e : 0x0d121d, 0.85);
+            highBg.fillRoundedRect(0, 0, btnW, btnH, 6);
+            highBg.lineStyle(1.5, !isLow ? 0x7dd3fc : 0x2e3d52, 0.9);
+            highBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+            highText.setColor(!isLow ? '#ffffff' : '#7fa3c7');
+        };
+
+        drawQualityButtons();
+
+        lowContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+        lowContainer.on('pointerover', () => {
+            if (PlayerData.graphicsQuality !== 'low') {
+                lowBg.lineStyle(1.5, 0xffffff, 0.5);
+                lowBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+            }
+        });
+        lowContainer.on('pointerout', () => drawQualityButtons());
+        lowContainer.on('pointerdown', () => {
+            PlayerData.setGraphicsQuality('low');
+            this.game.canvas.style.imageRendering = 'pixelated';
+            drawQualityButtons();
+            this.playClick();
+        });
+
+        highContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+        highContainer.on('pointerover', () => {
+            if (PlayerData.graphicsQuality === 'low') {
+                highBg.lineStyle(1.5, 0xffffff, 0.5);
+                highBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+            }
+        });
+        highContainer.on('pointerout', () => drawQualityButtons());
+        highContainer.on('pointerdown', () => {
+            PlayerData.setGraphicsQuality('high');
+            this.game.canvas.style.imageRendering = 'auto';
+            drawQualityButtons();
             this.playClick();
         });
     }
 
-    createSelectorButton(x, y, label, callback) {
-        const btnW = 35;
-        const btnH = 35;
-        const container = this.add.container(x - btnW / 2, y - btnH / 2);
-        
-        const bg = this.add.graphics();
-        const drawBg = (color, alpha, borderColor) => {
-            bg.clear();
-            bg.fillStyle(color, alpha);
-            bg.fillRoundedRect(0, 0, btnW, btnH, 6);
-            bg.lineStyle(1.5, borderColor, 0.8);
-            bg.strokeRoundedRect(0, 0, btnW, btnH, 6);
-        };
-        drawBg(0x0d121d, 0.7, 0x2e3d52);
-        container.add(bg);
-
-        const text = this.add.text(btnW / 2, btnH / 2, label, {
+    createSlider(x, y, label, getVal, setVal) {
+        this.add.text(x, y - 25, label, {
             fontFamily: '"Cormorant Garamond"',
-            fontSize: '20px',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: '#7fa3c7'
+        }).setOrigin(0.5);
+
+        const trackW = 200;
+        const trackH = 6;
+        
+        // Draw track
+        const track = this.add.graphics();
+        const drawTrack = () => {
+            track.clear();
+            // Default track background
+            track.fillStyle(0x2e3d52, 0.7);
+            track.fillRoundedRect(-trackW / 2, -trackH / 2, trackW, trackH, 3);
+            
+            // Fill track based on current volume
+            const val = getVal();
+            track.fillStyle(0x7dd3fc, 0.9);
+            track.fillRoundedRect(-trackW / 2, -trackH / 2, trackW * val, trackH, 3);
+        };
+        
+        const sliderContainer = this.add.container(x, y);
+        sliderContainer.add(track);
+        drawTrack();
+
+        // Drag handle
+        const handle = this.add.circle(-trackW / 2 + trackW * getVal(), 0, 10, 0xffffff);
+        handle.setStrokeStyle(1.5, 0x7dd3fc);
+        handle.setInteractive({ useHandCursor: true });
+        this.input.setDraggable(handle);
+        
+        sliderContainer.add(handle);
+
+        const percentText = this.add.text(x + trackW / 2 + 35, y, `${Math.round(getVal() * 100)}%`, {
+            fontFamily: '"Cormorant Garamond"',
+            fontSize: '18px',
             fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
-        container.add(text);
 
-        container.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
-        container.on('pointerover', () => drawBg(0x17212e, 0.85, 0x7dd3fc));
-        container.on('pointerout', () => drawBg(0x0d121d, 0.7, 0x2e3d52));
-        container.on('pointerdown', callback);
+        handle.on('drag', (pointer, dragX, dragY) => {
+            // Constrain relative X coordinate inside container
+            const minX = -trackW / 2;
+            const maxX = trackW / 2;
+            const clampedX = Phaser.Math.Clamp(dragX, minX, maxX);
+            handle.x = clampedX;
+            
+            const percent = (clampedX - minX) / trackW;
+            setVal(percent);
+            percentText.setText(`${Math.round(percent * 100)}%`);
+            drawTrack();
+        });
 
-        return container;
+        // Clickable Track Area
+        const clickArea = this.add.rectangle(0, 0, trackW, 20, 0xffffff, 0);
+        clickArea.setInteractive({ useHandCursor: true });
+        sliderContainer.add(clickArea);
+        sliderContainer.sendToBack(clickArea);
+        
+        clickArea.on('pointerdown', (pointer, localX, localY) => {
+            const relativeX = localX - trackW / 2;
+            handle.x = relativeX;
+            const percent = localX / trackW;
+            setVal(percent);
+            percentText.setText(`${Math.round(percent * 100)}%`);
+            drawTrack();
+            this.playClick();
+        });
     }
 }
