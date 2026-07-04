@@ -4,6 +4,7 @@ import CustomizeScene from './CustomizeScene.js';
 import LobbyScene from './LobbyScene.js';
 import GameScene from './GameScene.js';
 import SettingsScene from './SettingsScene.js';
+import PlayerData from './PlayerData.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -31,5 +32,10 @@ const config = {
 };
 
 document.fonts.ready.then(() => {
-    window.game = new Phaser.Game(config);
+    const game = new Phaser.Game(config);
+    window.game = game;
+    // Set initial graphics quality rendering
+    if (PlayerData.graphicsQuality === 'low') {
+        game.canvas.style.imageRendering = 'pixelated';
+    }
 });

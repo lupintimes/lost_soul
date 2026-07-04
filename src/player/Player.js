@@ -742,7 +742,7 @@ export default class Player {
 
         // 🔶 Spell projectile trail: spawn fading dots of signature color along trajectory
         const trailTimer = this.scene.time.addEvent({
-            delay: 30,
+            delay: PlayerData.graphicsQuality === 'low' ? 90 : 30,
             loop: true,
             callback: () => {
                 if (!spell || !spell.active) {
