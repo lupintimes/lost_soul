@@ -8,8 +8,11 @@ export default class CustomizeScene extends Phaser.Scene {
 
     playClick() {
         try {
+            if (this.sound.context && this.sound.context.state === 'suspended') {
+                this.sound.context.resume();
+            }
             if (this.cache.audio.exists('sfx_click')) {
-                this.sound.play('sfx_click', { volume: 0.3 });
+                this.sound.play('sfx_click', { volume: 0.3 * PlayerData.sfxVolume });
             }
         } catch (e) {
             // ignore

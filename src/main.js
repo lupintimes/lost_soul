@@ -3,6 +3,7 @@ import MenuScene from './MenuScene.js';
 import CustomizeScene from './CustomizeScene.js';
 import LobbyScene from './LobbyScene.js';
 import GameScene from './GameScene.js';
+import SettingsScene from './SettingsScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -26,7 +27,7 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: [PreloadScene, MenuScene, CustomizeScene, LobbyScene, GameScene]
+    scene: [PreloadScene, MenuScene, SettingsScene, CustomizeScene, LobbyScene, GameScene]
 };
 
 document.fonts.ready.then(() => {

@@ -14,7 +14,7 @@ export default class GameScene extends Phaser.Scene {
     safePlaySound(key, volume = 0.5) {
         try {
             if (this.cache.audio.exists(key)) {
-                this.sound.play(key, { volume });
+                this.sound.play(key, { volume: volume * PlayerData.sfxVolume });
             }
         } catch (e) {
             // ignore

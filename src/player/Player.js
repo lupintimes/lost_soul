@@ -1,6 +1,7 @@
 import Controls from './Controls.js';
 import CombatSystem from '../systems/CombatSystem.js';
 import HealthSystem from '../systems/HealthSystem.js';
+import PlayerData from '../PlayerData.js';
 
 
 export default class Player {
@@ -10,7 +11,7 @@ export default class Player {
     playSound(key, volume = 0.5) {
         try {
             if (this.scene.cache.audio.exists(key)) {
-                this.scene.sound.play(key, { volume });
+                this.scene.sound.play(key, { volume: volume * PlayerData.sfxVolume });
             }
         } catch (e) {
             // Silently ignore missing audio

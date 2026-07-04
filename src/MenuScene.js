@@ -7,8 +7,11 @@ export default class MenuScene extends Phaser.Scene {
 
     playClick() {
         try {
+            if (this.sound.context && this.sound.context.state === 'suspended') {
+                this.sound.context.resume();
+            }
             if (this.cache.audio.exists('sfx_click')) {
-                this.sound.play('sfx_click', { volume: 0.3 });
+                this.sound.play('sfx_click', { volume: 0.3 * PlayerData.sfxVolume });
             }
         } catch (e) {
             // ignore
@@ -18,6 +21,9 @@ export default class MenuScene extends Phaser.Scene {
     create() {
         this.cameras.main.setRoundPixels(false);
         const { width, height } = this.scale;
+
+        // Start BGM loop
+        PlayerData.startMusic(this);
 
         // 🖼️ Background
         this.add.image(0, 0, 'menu_bg')
@@ -61,8 +67,8 @@ export default class MenuScene extends Phaser.Scene {
 
         // Bottom buttons
         this.createButton(width * 0.05, height - 70, '⚙', '', null, () => {
-            // Settings placeholder
             this.playClick();
+            this.scene.start('SettingsScene');
         }, true);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
