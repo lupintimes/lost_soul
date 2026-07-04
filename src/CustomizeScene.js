@@ -60,7 +60,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x1b283a, 0.85, 0xff4444);
+            drawBackBg(0x131922, 0.85, 0xff4444);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
@@ -157,7 +157,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 tbBg.lineStyle(1.5, borderColor, 0.8);
                 tbBg.strokeRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
             };
-            drawTabBg(isActive ? 0x1b283a : 0x0d121d, isActive ? 0.85 : 0.6, isActive ? 0x7fa3c7 : 0x1f2b3e);
+            drawTabBg(isActive ? 0x131922 : 0x0d121d, isActive ? 0.85 : 0.6, isActive ? 0x4a5d73 : 0x1f2b3e);
             tabContainer.add(tbBg);
 
             const tabText = this.add.text(0, 0, tabName, {
@@ -176,7 +176,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             tabContainer.on('pointerover', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x1b283a, 0.7, 0x7fa3c7);
+                    drawTabBg(0x131922, 0.7, 0x4a5d73);
                     tabText.setColor('#ffffff');
                 }
             });
@@ -195,7 +195,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 this.tabButtons.forEach(tb => {
                     const isNowActive = tb.tabKey === this.activeTab;
-                    tb.drawTabBg(isNowActive ? 0x1b283a : 0x0d121d, isNowActive ? 0.85 : 0.6, isNowActive ? 0x7fa3c7 : 0x1f2b3e);
+                    tb.drawTabBg(isNowActive ? 0x131922 : 0x0d121d, isNowActive ? 0.85 : 0.6, isNowActive ? 0x4a5d73 : 0x1f2b3e);
                     tb.tabText.setColor(isNowActive ? '#ffffff' : '#7fa3c7');
                 });
             });
@@ -291,7 +291,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 rowBg.lineStyle(1.5, borderColor, 0.8);
                 rowBg.strokeRoundedRect(x, iy, w, itemH - 5, 6);
             };
-            drawRow(isSelected ? 0x1b283a : 0x0d121d, isSelected ? 0.85 : 0.5, isSelected ? 0x7fa3c7 : 0x1f2b3e);
+            drawRow(isSelected ? 0x131922 : 0x0d121d, isSelected ? 0.85 : 0.5, isSelected ? 0x4a5d73 : 0x1f2b3e);
             scrollContainer.add(rowBg);
 
             // Color indicator dot
@@ -356,7 +356,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             hitArea.on('pointerover', () => {
                 if (!isSelected) {
-                    drawRow(0x1b283a, 0.8, 0x7fa3c7);
+                    drawRow(0x131922, 0.8, 0x4a5d73);
                     nameText.setColor('#ffffff');
                 }
             });
@@ -503,7 +503,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / listTotalH) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x7fa3c7).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x4a5d73).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -522,7 +522,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Handle drag behavior
             handle.setInteractive({ useHandCursor: true, draggable: true });
             handle.on('pointerover', () => handle.setFillStyle(0xffffff));
-            handle.on('pointerout', () => handle.setFillStyle(0x7fa3c7));
+            handle.on('pointerout', () => handle.setFillStyle(0x4a5d73));
 
             handle.on('drag', (pointer, dragX, dragY) => {
                 let localY = dragY - maskY;
@@ -680,7 +680,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / totalHeight) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x7fa3c7).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x4a5d73).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -700,7 +700,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Handle drag behavior
             handle.setInteractive({ useHandCursor: true, draggable: true });
             handle.on('pointerover', () => handle.setFillStyle(0xffffff));
-            handle.on('pointerout', () => handle.setFillStyle(0x7fa3c7));
+            handle.on('pointerout', () => handle.setFillStyle(0x4a5d73));
 
             handle.on('drag', (pointer, dragX, dragY) => {
                 let localY = dragY - maskY;
