@@ -2588,17 +2588,17 @@ export default class GameScene extends Phaser.Scene {
                 position: absolute;
                 top: 0; left: 0; width: 100%; height: 100%;
                 pointer-events: none;
-                font-family: 'Rajdhani', sans-serif;
-                font-weight: 700;
+                font-family: 'Cormorant Garamond', serif;
+                font-weight: bold;
                 color: white;
                 z-index: 100;
                 user-select: none;
             }
 
             .pixel-panel {
-                background: rgba(10, 5, 15, 0.85);
-                border: 2px solid #3b2a5c;
-                border-radius: 4px;
+                background: rgba(22, 24, 26, 0.75);
+                border: 1.5px solid #2d3135;
+                border-radius: 6px;
             }
 
             #ui-player-panel {
@@ -2615,18 +2615,18 @@ export default class GameScene extends Phaser.Scene {
                 display: flex; justify-content: center; align-items: center;
                 overflow: hidden;
                 background: transparent;
-                border: 2px solid #555;
-                border-radius: 4px;
+                border: 1.5px solid #2d3135;
+                border-radius: 6px;
             }
 
             .player-stats { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
-            .player-name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; margin: 0; color: #fff; line-height: 1; }
+            .player-name { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 16px; margin: 0; color: #fff; line-height: 1; }
             
-            .hp-bar-bg { width: 180px; height: 16px; background: #111; overflow: hidden; position: relative; margin: 2px 0; border-radius: 3px; }
-            .hp-bar-fill { width: 100%; height: 100%; background: #22c55e; transition: width 0.2s ease, background-color 0.2s ease; }
-            .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
+            .hp-bar-bg { width: 180px; height: 16px; background: #090a0b; overflow: hidden; position: relative; margin: 2px 0; border-radius: 4px; }
+            .hp-bar-fill { width: 100%; height: 100%; background: #2e7d32; transition: width 0.2s ease, background-color 0.2s ease; }
+            .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
             
-            .kill-death { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #ccc; display: flex; gap: 15px; margin-top: 2px; }
+            .kill-death { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; color: #8a99ad; display: flex; gap: 15px; margin-top: 2px; }
             .kill-death span { display: flex; align-items: center; gap: 4px; }
 
             /* --- Top Right: Build Points --- */
@@ -2638,10 +2638,10 @@ export default class GameScene extends Phaser.Scene {
                 pointer-events: auto;
             }
             .build-header { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #fff; }
-            .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
-            .build-bar-bg { width: 180px; height: 10px; background: #111; border-radius: 3px; overflow: hidden; }
-            .build-bar-fill { width: 60%; height: 100%; background: #0ea5e9; transition: width 0.2s ease; }
-            .build-text { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 11px; text-align: left; color: #ddd; margin-top: 2px; }
+            .build-icon { width: 8px; height: 8px; background: #8a99ad; transform: rotate(45deg); }
+            .build-bar-bg { width: 180px; height: 10px; background: #090a0b; border-radius: 4px; overflow: hidden; }
+            .build-bar-fill { width: 60%; height: 100%; background: #8a99ad; transition: width 0.2s ease; }
+            .build-text { font-family: 'Cormorant Garamond', serif; font-weight: bold; font-size: 13px; text-align: left; color: #8a99ad; margin-top: 2px; }
 
             /* --- Bottom: Hotbar --- */
             #ui-hotbar {
@@ -2653,23 +2653,23 @@ export default class GameScene extends Phaser.Scene {
             .hotbar-slot {
                 width: 64px; height: 64px;
                 display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-                background: rgba(10, 5, 15, 0.85);
-                border: 2px solid #333;
-                border-radius: 4px;
+                background: rgba(22, 24, 26, 0.75);
+                border: 1.5px solid #2d3135;
+                border-radius: 6px;
                 position: relative;
                 cursor: pointer;
             }
             .hotbar-slot[data-type="normal"].active { border-color: #fff; }
-            .hotbar-slot[data-type="bounce"].active { border-color: #fbbf24; }
-            .hotbar-slot[data-type="slide"].active { border-color: #0ea5e9; }
+            .hotbar-slot[data-type="bounce"].active { border-color: #8a99ad; }
+            .hotbar-slot[data-type="slide"].active { border-color: #8a99ad; }
 
-            .slot-key { position: absolute; top: 4px; left: 4px; font-size: 6px; color: #aaa; border: 1px solid #555; border-radius: 2px; padding: 2px 4px; }
+            .slot-key { position: absolute; top: 4px; left: 4px; font-size: 9px; color: #aaa; border: 1.5px solid #2d3135; border-radius: 3px; padding: 2px 4px; }
             .slot-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 6px; }
-            .slot-label { font-size: 6px; color: #aaa; text-align: center; }
+            .slot-label { font-size: 9px; color: #aaa; text-align: center; }
 
             .hotbar-slot[data-type="normal"] { color: #fff; }
-            .hotbar-slot[data-type="bounce"] { color: #fbbf24; }
-            .hotbar-slot[data-type="slide"] { color: #0ea5e9; }
+            .hotbar-slot[data-type="bounce"] { color: #8a99ad; }
+            .hotbar-slot[data-type="slide"] { color: #8a99ad; }
             .hotbar-slot.active .slot-label { color: currentColor; }
             .hotbar-slot.active .slot-key { color: currentColor; border-color: currentColor; }
 
@@ -2682,8 +2682,8 @@ export default class GameScene extends Phaser.Scene {
                 text-align: center;
                 transition: opacity 1.5s ease;
             }
-            .inst-title { color: #fff; font-size: 16px; margin-bottom: 2px; }
-            .inst-text { color: #ccc; font-size: 14px; line-height: 1.4; }
+            .inst-title { color: #fff; font-size: 18px; margin-bottom: 2px; }
+            .inst-text { color: #8a99ad; font-size: 14px; line-height: 1.4; }
         `;
         document.head.appendChild(style);
 
@@ -2797,8 +2797,8 @@ export default class GameScene extends Phaser.Scene {
             buildFill.style.backgroundColor = '#f59e0b';
             buildFill.style.boxShadow = '0 0 10px #f59e0b';
         } else {
-            buildFill.style.backgroundColor = '#06b6d4';
-            buildFill.style.boxShadow = '0 0 10px #06b6d4';
+            buildFill.style.backgroundColor = '#8a99ad';
+            buildFill.style.boxShadow = '0 0 10px #8a99ad';
         }
 
         const formatNum = (num) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
