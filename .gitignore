@@ -35,6 +35,9 @@ Thumbs.db
 tmp/
 temp/
 
+#scrath files
+scratch/
+
 # Build / Export folders
 dist/
 build/
