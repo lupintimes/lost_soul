@@ -227,7 +227,7 @@ export default class MenuScene extends Phaser.Scene {
             height / 2 - (boxH / 2) + 25,
             '✕',
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: 'Rajdhani',
                 fontSize: '24px',
                 fontWeight: 'bold',
                 color: '#7fa3c7'
@@ -257,7 +257,7 @@ export default class MenuScene extends Phaser.Scene {
             width / 2, height / 2 - 35,
             "LOST SOUL\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: 'Rajdhani',
                 fontSize: '20px',
                 color: '#ffffff',
                 align: 'center',
