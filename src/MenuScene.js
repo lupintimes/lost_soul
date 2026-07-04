@@ -132,11 +132,15 @@ export default class MenuScene extends Phaser.Scene {
 
         // Icon Text
         if (icon) {
-            const iconText = this.add.text(isSmall && !title ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
-                fontFamily: '"Cormorant Garamond"',
+            const isGear = isSmall && !title;
+            const iconText = this.add.text(isGear ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
+                fontFamily: isGear ? 'Arial, sans-serif' : '"Cormorant Garamond"',
                 fontSize: isSmall ? (!title ? '28px' : '16px') : '24px',
                 color: '#ffffff'
             }).setOrigin(0.5);
+            if (isGear) {
+                iconText.y -= 2; // Offset slightly for visual centering
+            }
             btnContainer.add(iconText);
         }
 
