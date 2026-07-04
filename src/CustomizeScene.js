@@ -32,7 +32,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // 🏷️ Title
         this.add.text(width / 2, 35, 'CUSTOMIZE', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '36px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -54,7 +54,7 @@ export default class CustomizeScene extends Phaser.Scene {
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -90,7 +90,7 @@ export default class CustomizeScene extends Phaser.Scene {
         previewPanelG.strokeRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
 
         this.add.text(previewX, previewY - 130, 'PREVIEW', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -106,14 +106,14 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Info labels
         this.charLabel = this.add.text(previewX, previewY + 80, PlayerData.getCharacterInfo().name, {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '22px',
             fontWeight: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
         this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '14px',
             color: '#7fa3c7'
         }).setOrigin(0.5);
@@ -164,7 +164,7 @@ export default class CustomizeScene extends Phaser.Scene {
             tabContainer.add(tbBg);
 
             const tabText = this.add.text(0, 0, tabName, {
-                fontFamily: ''Rajdhani'',
+                fontFamily: 'Rajdhani',
                 fontSize: '15px',
                 fontWeight: 'bold',
                 color: isActive ? '#ffffff' : '#7fa3c7'
@@ -304,7 +304,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Item name
             const nameText = this.add.text(x + 40, iy + 6, item.name, {
-                fontFamily: ''Rajdhani'',
+                fontFamily: 'Rajdhani',
                 fontSize: '16px',
                 fontWeight: 'bold',
                 color: isSelected ? '#ffffff' : '#7fa3c7'
@@ -314,7 +314,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Description (for characters)
             if (item.desc) {
                 const descText = this.add.text(x + 40, iy + 25, item.desc, {
-                    fontFamily: ''Rajdhani'',
+                    fontFamily: 'Rajdhani',
                     fontSize: '13px',
                     color: '#666666'
                 });
@@ -324,7 +324,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Selected checkmark
             if (isSelected) {
                 const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2, '✓', {
-                    fontFamily: ''Rajdhani'',
+                    fontFamily: 'Rajdhani',
                     fontSize: '18px',
                     fontWeight: 'bold',
                     color: '#7fa3c7'
@@ -461,7 +461,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 // Character name + HP badge
                 const nameT = this.add.text(x + 12, cardY + 4, `${data.label}  ABILITIES`, {
-                    fontFamily: ''Rajdhani'',
+                    fontFamily: 'Rajdhani',
                     fontSize: '14px',
                     fontWeight: 'bold',
                     color: hexCol
@@ -469,7 +469,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 scrollContainer.add(nameT);
 
                 const hpT = this.add.text(x + w - 12, cardY + 4, `HP  ${data.hp}`, {
-                    fontFamily: ''Rajdhani'',
+                    fontFamily: 'Rajdhani',
                     fontSize: '14px',
                     fontWeight: 'bold',
                     color: '#ffffff'
@@ -480,7 +480,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 data.lines.forEach((line, li) => {
                     const isKey = !line.startsWith(' ');
                     const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
-                        fontFamily: ''Rajdhani'',
+                        fontFamily: 'Rajdhani',
                         fontSize: '14px',
                         color: isKey ? '#ffffff' : '#7fa3c7'
                     });
@@ -584,7 +584,7 @@ export default class CustomizeScene extends Phaser.Scene {
             this.instrContainer.add(headerBg);
 
             const headerText = this.add.text(x + 10, curY + 3, title, {
-                fontFamily: ''Rajdhani'',
+                fontFamily: 'Rajdhani',
                 fontSize: '15px',
                 fontWeight: 'bold',
                 color: hexColor
@@ -596,7 +596,7 @@ export default class CustomizeScene extends Phaser.Scene {
             lines.forEach(line => {
                 const isBullet = line.startsWith('•');
                 const lineText = this.add.text(x + (isBullet ? 14 : 8), curY, line, {
-                    fontFamily: ''Rajdhani'',
+                    fontFamily: 'Rajdhani',
                     fontSize: '14px',
                     color: isBullet ? '#ffffff' : hexColor,
                     wordWrap: { width: w - 24 }

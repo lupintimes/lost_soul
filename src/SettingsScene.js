@@ -31,7 +31,7 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Title ────────────────────────────────────────
         this.add.text(width / 2, 50, 'SETTINGS', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '36px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -53,7 +53,7 @@ export default class SettingsScene extends Phaser.Scene {
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -103,7 +103,7 @@ export default class SettingsScene extends Phaser.Scene {
         // ─── Graphics Quality Control ─────────────────────
         const graphicsY = panelY + 310;
         this.add.text(width / 2, graphicsY - 30, 'GRAPHICS QUALITY', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -116,7 +116,7 @@ export default class SettingsScene extends Phaser.Scene {
         const lowContainer = this.add.container(width / 2 - 60 - btnW / 2, graphicsY - btnH / 2);
         const lowBg = this.add.graphics();
         const lowText = this.add.text(btnW / 2, btnH / 2, 'LOW', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -128,7 +128,7 @@ export default class SettingsScene extends Phaser.Scene {
         const highContainer = this.add.container(width / 2 + 60 - btnW / 2, graphicsY - btnH / 2);
         const highBg = this.add.graphics();
         const highText = this.add.text(btnW / 2, btnH / 2, 'HIGH', {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -191,7 +191,7 @@ export default class SettingsScene extends Phaser.Scene {
 
     createSlider(x, y, label, getVal, setVal) {
         this.add.text(x, y - 25, label, {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -227,7 +227,7 @@ export default class SettingsScene extends Phaser.Scene {
         sliderContainer.add(handle);
 
         const percentText = this.add.text(x + trackW / 2 + 35, y, `${Math.round(getVal() * 100)}%`, {
-            fontFamily: ''Rajdhani'',
+            fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
             color: '#ffffff'
