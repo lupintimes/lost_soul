@@ -47,25 +47,25 @@ export default class CustomizeScene extends Phaser.Scene {
             backBg.lineStyle(1.5, borderColor, 0.8);
             backBg.strokeRoundedRect(0, 0, backW, backH, 6);
         };
-        drawBackBg(0x16181a, 0.7, 0x2d3135);
+        drawBackBg(0x0d121d, 0.7, 0x1f2b3e);
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#8a99ad'
+            color: '#7fa3c7'
         }).setOrigin(0.5);
         backBtnContainer.add(backText);
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x22262b, 0.85, 0xff4444);
+            drawBackBg(0x1b283a, 0.85, 0xff4444);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
-            drawBackBg(0x16181a, 0.7, 0x2d3135);
-            backText.setColor('#8a99ad');
+            drawBackBg(0x0d121d, 0.7, 0x1f2b3e);
+            backText.setColor('#7fa3c7');
         });
         backBtnContainer.on('pointerdown', () => {
             this.playClick(); 
@@ -81,16 +81,16 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Preview panel with rounded corners and border
         const previewPanelG = this.add.graphics();
-        previewPanelG.fillStyle(0x16181a, 0.85);
+        previewPanelG.fillStyle(0x0d121d, 0.85);
         previewPanelG.fillRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
-        previewPanelG.lineStyle(1.5, 0x2d3135, 1);
+        previewPanelG.lineStyle(1.5, 0x1f2b3e, 1);
         previewPanelG.strokeRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
 
         this.add.text(previewX, previewY - 130, 'PREVIEW', {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '18px',
             fontWeight: 'bold',
-            color: '#8a99ad'
+            color: '#7fa3c7'
         }).setOrigin(0.5);
 
         // Character preview sprite — plays idle + blink
@@ -112,7 +112,7 @@ export default class CustomizeScene extends Phaser.Scene {
         this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '14px',
-            color: '#8a99ad'
+            color: '#7fa3c7'
         }).setOrigin(0.5);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -125,9 +125,9 @@ export default class CustomizeScene extends Phaser.Scene {
         const panelH = height - 120;
 
         const panelG = this.add.graphics();
-        panelG.fillStyle(0x16181a, 0.85);
+        panelG.fillStyle(0x0d121d, 0.85);
         panelG.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
-        panelG.lineStyle(1.5, 0x2d3135, 1);
+        panelG.lineStyle(1.5, 0x1f2b3e, 1);
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -157,14 +157,14 @@ export default class CustomizeScene extends Phaser.Scene {
                 tbBg.lineStyle(1.5, borderColor, 0.8);
                 tbBg.strokeRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
             };
-            drawTabBg(isActive ? 0x22262b : 0x16181a, isActive ? 0.85 : 0.6, isActive ? 0x8a99ad : 0x2d3135);
+            drawTabBg(isActive ? 0x1b283a : 0x0d121d, isActive ? 0.85 : 0.6, isActive ? 0x7fa3c7 : 0x1f2b3e);
             tabContainer.add(tbBg);
 
             const tabText = this.add.text(0, 0, tabName, {
                 fontFamily: '"Cormorant Garamond"',
                 fontSize: '15px',
                 fontWeight: 'bold',
-                color: isActive ? '#ffffff' : '#8a99ad'
+                color: isActive ? '#ffffff' : '#7fa3c7'
             }).setOrigin(0.5);
             tabContainer.add(tabText);
 
@@ -176,15 +176,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             tabContainer.on('pointerover', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x22262b, 0.7, 0x8a99ad);
+                    drawTabBg(0x1b283a, 0.7, 0x7fa3c7);
                     tabText.setColor('#ffffff');
                 }
             });
             
             tabContainer.on('pointerout', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x16181a, 0.6, 0x2d3135);
-                    tabText.setColor('#8a99ad');
+                    drawTabBg(0x0d121d, 0.6, 0x1f2b3e);
+                    tabText.setColor('#7fa3c7');
                 }
             });
 
@@ -195,8 +195,8 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 this.tabButtons.forEach(tb => {
                     const isNowActive = tb.tabKey === this.activeTab;
-                    tb.drawTabBg(isNowActive ? 0x22262b : 0x16181a, isNowActive ? 0.85 : 0.6, isNowActive ? 0x8a99ad : 0x2d3135);
-                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#8a99ad');
+                    tb.drawTabBg(isNowActive ? 0x1b283a : 0x0d121d, isNowActive ? 0.85 : 0.6, isNowActive ? 0x7fa3c7 : 0x1f2b3e);
+                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#7fa3c7');
                 });
             });
 
@@ -291,7 +291,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 rowBg.lineStyle(1.5, borderColor, 0.8);
                 rowBg.strokeRoundedRect(x, iy, w, itemH - 5, 6);
             };
-            drawRow(isSelected ? 0x22262b : 0x16181a, isSelected ? 0.85 : 0.5, isSelected ? 0x8a99ad : 0x2d3135);
+            drawRow(isSelected ? 0x1b283a : 0x0d121d, isSelected ? 0.85 : 0.5, isSelected ? 0x7fa3c7 : 0x1f2b3e);
             scrollContainer.add(rowBg);
 
             // Color indicator dot
@@ -304,7 +304,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 fontFamily: '"Cormorant Garamond"',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                color: isSelected ? '#ffffff' : '#8a99ad'
+                color: isSelected ? '#ffffff' : '#7fa3c7'
             });
             scrollContainer.add(nameText);
 
@@ -324,7 +324,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontFamily: '"Cormorant Garamond"',
                     fontSize: '18px',
                     fontWeight: 'bold',
-                    color: '#8a99ad'
+                    color: '#7fa3c7'
                 }).setOrigin(0.5);
                 scrollContainer.add(check);
             }
@@ -344,7 +344,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     iy + (itemH - 5) / 2,
                     30, 30,
                     item.tint || 0xffffff
-                ).setStrokeStyle(1.5, 0x2d3135);
+                ).setStrokeStyle(1.5, 0x1f2b3e);
                 scrollContainer.add(previewBox);
             }
 
@@ -356,15 +356,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             hitArea.on('pointerover', () => {
                 if (!isSelected) {
-                    drawRow(0x22262b, 0.8, 0x8a99ad);
+                    drawRow(0x1b283a, 0.8, 0x7fa3c7);
                     nameText.setColor('#ffffff');
                 }
             });
 
             hitArea.on('pointerout', () => {
                 if (!isSelected) {
-                    drawRow(0x16181a, 0.5, 0x2d3135);
-                    nameText.setColor('#8a99ad');
+                    drawRow(0x0d121d, 0.5, 0x1f2b3e);
+                    nameText.setColor('#7fa3c7');
                 }
             });
 
@@ -442,7 +442,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 // Card background graphics with character-specific colored border
                 const cardG = this.add.graphics();
-                cardG.fillStyle(0x16181a, 0.9);
+                cardG.fillStyle(0x0d121d, 0.9);
                 cardG.fillRoundedRect(x, cardY, w, cardH, 8);
                 cardG.lineStyle(1.5, data.color, 0.8);
                 cardG.strokeRoundedRect(x, cardY, w, cardH, 8);
@@ -479,7 +479,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
                         fontFamily: '"Cormorant Garamond"',
                         fontSize: '14px',
-                        color: isKey ? '#ffffff' : '#8a99ad'
+                        color: isKey ? '#ffffff' : '#7fa3c7'
                     });
                     scrollContainer.add(lt);
                 });
@@ -494,16 +494,16 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x16181a, 0.6);
+            track.fillStyle(0x0d121d, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x2d3135, 1);
+            track.lineStyle(1.5, 0x1f2b3e, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / listTotalH) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x8a99ad).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x7fa3c7).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -522,7 +522,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Handle drag behavior
             handle.setInteractive({ useHandCursor: true, draggable: true });
             handle.on('pointerover', () => handle.setFillStyle(0xffffff));
-            handle.on('pointerout', () => handle.setFillStyle(0x8a99ad));
+            handle.on('pointerout', () => handle.setFillStyle(0x7fa3c7));
 
             handle.on('drag', (pointer, dragX, dragY) => {
                 let localY = dragY - maskY;
@@ -574,7 +574,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Section header using rounded rect
             const headerBg = this.add.graphics();
-            headerBg.fillStyle(0x16181a, 0.95);
+            headerBg.fillStyle(0x0d121d, 0.95);
             headerBg.fillRoundedRect(x, curY, w, 24, 6);
             headerBg.lineStyle(1.5, color, 0.7);
             headerBg.strokeRoundedRect(x, curY, w, 24, 6);
@@ -671,16 +671,16 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x16181a, 0.6);
+            track.fillStyle(0x0d121d, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x2d3135, 1);
+            track.lineStyle(1.5, 0x1f2b3e, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / totalHeight) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x8a99ad).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x7fa3c7).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -700,7 +700,7 @@ export default class CustomizeScene extends Phaser.Scene {
             // Handle drag behavior
             handle.setInteractive({ useHandCursor: true, draggable: true });
             handle.on('pointerover', () => handle.setFillStyle(0xffffff));
-            handle.on('pointerout', () => handle.setFillStyle(0x8a99ad));
+            handle.on('pointerout', () => handle.setFillStyle(0x7fa3c7));
 
             handle.on('drag', (pointer, dragX, dragY) => {
                 let localY = dragY - maskY;
