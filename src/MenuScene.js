@@ -138,9 +138,6 @@ export default class MenuScene extends Phaser.Scene {
                 fontSize: isSmall ? (!title ? '28px' : '16px') : '24px',
                 color: '#ffffff'
             }).setOrigin(0.5);
-            if (isGear) {
-                iconText.y -= 2; // Offset slightly for visual centering
-            }
             btnContainer.add(iconText);
         }
 
