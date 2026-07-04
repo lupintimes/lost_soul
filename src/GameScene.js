@@ -585,7 +585,7 @@ export default class GameScene extends Phaser.Scene {
                     fontFamily: '"Cormorant Garamond"',
                     fontSize: '22px',
                     fontWeight: 'bold',
-                    color: '#8a99ad'
+                    color: '#7fa3c7'
                 }
             )
                 .setOrigin(0.5)
@@ -710,7 +710,7 @@ export default class GameScene extends Phaser.Scene {
         this.socket.on('disconnectUser', (playerId) => {
             console.log('👤 disconnectUser:', playerId);
             this.removeRemotePlayer(playerId);
-            this.showKillMessage('PLAYER LEFT', '#888888');
+            this.showKillMessage('PLAYER LEFT', '#6e85a0');
         });
 
         // 4. Player moved — ✅ THIS IS THE CRITICAL ONE
@@ -1093,9 +1093,9 @@ export default class GameScene extends Phaser.Scene {
         const panelH = 24 + scores.length * rowH + 8;
 
         const bg = this.add.graphics().setScrollFactor(0).setDepth(99);
-        bg.fillStyle(0x16181a, 0.75);
+        bg.fillStyle(0x0d121d, 0.75);
         bg.fillRoundedRect(startX, startY, 240, panelH, 6);
-        bg.lineStyle(1.5, 0x2d3135, 0.8);
+        bg.lineStyle(1.5, 0x1f2b3e, 0.8);
         bg.strokeRoundedRect(startX, startY, 240, panelH, 6);
         this.scoreboardElements.push(bg);
 
@@ -1103,7 +1103,7 @@ export default class GameScene extends Phaser.Scene {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#8a99ad'
+            color: '#7fa3c7'
         })
             .setScrollFactor(0)
             .setDepth(100);
@@ -1111,7 +1111,7 @@ export default class GameScene extends Phaser.Scene {
 
         scores.forEach((entry, index) => {
             const isMe = this.socket && entry.playerId === this.socket.id;
-            const color = isMe ? '#ffffff' : '#8a99ad';
+            const color = isMe ? '#ffffff' : '#7fa3c7';
             const prefix = isMe ? '► ' : '  ';
             const shortId = entry.playerId.substring(0, 6);
 
@@ -2596,8 +2596,8 @@ export default class GameScene extends Phaser.Scene {
             }
 
             .pixel-panel {
-                background: rgba(22, 24, 26, 0.75);
-                border: 1.5px solid #2d3135;
+                background: rgba(13, 18, 29, 0.75);
+                border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
             }
 
@@ -2615,7 +2615,7 @@ export default class GameScene extends Phaser.Scene {
                 display: flex; justify-content: center; align-items: center;
                 overflow: hidden;
                 background: #533984;
-                border: 1.5px solid #2d3135;
+                border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
             }
 
@@ -2626,7 +2626,7 @@ export default class GameScene extends Phaser.Scene {
             .hp-bar-fill { width: 100%; height: 100%; background: #2e7d32; transition: width 0.2s ease, background-color 0.2s ease; }
             .hp-text { position: absolute; width: 100%; text-align: center; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; line-height: 16px; text-shadow: 1px 1px 2px #000; top: 0; left: 0; }
             
-            .kill-death { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #8a99ad; display: flex; gap: 15px; margin-top: 2px; }
+            .kill-death { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12px; color: #7fa3c7; display: flex; gap: 15px; margin-top: 2px; }
             .kill-death span { display: flex; align-items: center; gap: 4px; }
 
             /* --- Top Right: Build Points --- */
@@ -2653,23 +2653,23 @@ export default class GameScene extends Phaser.Scene {
             .hotbar-slot {
                 width: 64px; height: 64px;
                 display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-                background: rgba(22, 24, 26, 0.75);
-                border: 1.5px solid #2d3135;
+                background: rgba(13, 18, 29, 0.75);
+                border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
                 position: relative;
                 cursor: pointer;
             }
             .hotbar-slot[data-type="normal"].active { border-color: #fff; }
-            .hotbar-slot[data-type="bounce"].active { border-color: #8a99ad; }
-            .hotbar-slot[data-type="slide"].active { border-color: #8a99ad; }
+            .hotbar-slot[data-type="bounce"].active { border-color: #7fa3c7; }
+            .hotbar-slot[data-type="slide"].active { border-color: #7fa3c7; }
 
-            .slot-key { position: absolute; top: 4px; left: 4px; font-size: 9px; color: #aaa; border: 1.5px solid #2d3135; border-radius: 3px; padding: 2px 4px; }
+            .slot-key { position: absolute; top: 4px; left: 4px; font-size: 9px; color: #aaa; border: 1.5px solid #1f2b3e; border-radius: 3px; padding: 2px 4px; }
             .slot-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 6px; }
             .slot-label { font-size: 9px; color: #aaa; text-align: center; }
 
             .hotbar-slot[data-type="normal"] { color: #fff; }
-            .hotbar-slot[data-type="bounce"] { color: #8a99ad; }
-            .hotbar-slot[data-type="slide"] { color: #8a99ad; }
+            .hotbar-slot[data-type="bounce"] { color: #7fa3c7; }
+            .hotbar-slot[data-type="slide"] { color: #7fa3c7; }
             .hotbar-slot.active .slot-label { color: currentColor; }
             .hotbar-slot.active .slot-key { color: currentColor; border-color: currentColor; }
 
@@ -2683,7 +2683,7 @@ export default class GameScene extends Phaser.Scene {
                 transition: opacity 1.5s ease;
             }
             .inst-title { color: #fff; font-size: 18px; margin-bottom: 2px; }
-            .inst-text { color: #8a99ad; font-size: 14px; line-height: 1.4; }
+            .inst-text { color: #7fa3c7; font-size: 14px; line-height: 1.4; }
         `;
         document.head.appendChild(style);
 
@@ -3060,7 +3060,7 @@ export default class GameScene extends Phaser.Scene {
                 justify-content: flex-end;
                 margin-bottom: 8px;
                 padding: 8px;
-                background: rgba(22, 24, 26, 0.75);
+                background: rgba(13, 18, 29, 0.75);
                 border-radius: 6px;
                 border: 1px solid rgba(138, 153, 173, 0.15);
                 backdrop-filter: blur(4px);
@@ -3074,17 +3074,17 @@ export default class GameScene extends Phaser.Scene {
                 line-height: 1.4;
                 word-break: break-all;
                 animation: fadeInChat 0.2s ease-out forwards;
-                color: #8a99ad;
+                color: #7fa3c7;
             }
             .chat-message-system {
-                color: #8a99ad;
+                color: #7fa3c7;
                 font-style: italic;
             }
             .chat-message-me {
                 color: #ffffff;
             }
             .chat-message-other {
-                color: #8a99ad;
+                color: #7fa3c7;
             }
             @keyframes fadeInChat {
                 from { opacity: 0; transform: translateY(4px); }
@@ -3097,8 +3097,8 @@ export default class GameScene extends Phaser.Scene {
             #game-chat-input {
                 width: 100%;
                 padding: 8px;
-                background: rgba(22, 24, 26, 0.9);
-                border: 1.5px solid #2d3135;
+                background: rgba(13, 18, 29, 0.9);
+                border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
                 color: #fff;
                 font-family: 'Cormorant Garamond', serif;
@@ -3107,7 +3107,7 @@ export default class GameScene extends Phaser.Scene {
                 box-sizing: border-box;
             }
             #game-chat-input:focus {
-                border-color: #8a99ad;
+                border-color: #7fa3c7;
             }
         `;
         document.head.appendChild(style);
