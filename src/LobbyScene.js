@@ -41,7 +41,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ─── Title ────────────────────────────────────────
         this.add.text(width / 2, 35, 'MULTIPLAYER LOBBY', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '36px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -63,7 +63,7 @@ export default class LobbyScene extends Phaser.Scene {
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -100,7 +100,7 @@ export default class LobbyScene extends Phaser.Scene {
         panelLeftG.strokeRoundedRect(panelLeft.x, panelLeft.y, panelLeft.w, panelLeft.h, 10);
 
         this.add.text(panelLeft.x + 20, panelLeft.y + 15, 'AVAILABLE SERVERS', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '20px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -109,19 +109,19 @@ export default class LobbyScene extends Phaser.Scene {
         const headerY = panelLeft.y + 45;
 
         this.add.text(panelLeft.x + 20, headerY, 'NAME', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.5, headerY, 'PLAYERS', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.75, headerY, 'STATUS', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -145,7 +145,7 @@ export default class LobbyScene extends Phaser.Scene {
             this.listConfig.startY + 60,
             'Connecting...',
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: ''Rajdhani'',
                 fontSize: '18px',
                 color: '#7fa3c7'
             }
@@ -170,7 +170,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 20,
             'CREATE SERVER',
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: ''Rajdhani'',
                 fontSize: '22px',
                 fontWeight: 'bold',
                 color: '#ffffff',
@@ -180,7 +180,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Server Name Input ─────────────────────────────
         this.add.text(panelRight.x + 20, panelRight.y + 80, 'SERVER NAME:', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -208,7 +208,7 @@ export default class LobbyScene extends Phaser.Scene {
             inputH / 2,
             this.serverNameValue,
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: ''Rajdhani'',
                 fontSize: '18px',
                 color: '#ffffff'
             }
@@ -232,7 +232,7 @@ export default class LobbyScene extends Phaser.Scene {
 
         // ── Max Players Selector ──────────────────────────
         this.add.text(panelRight.x + 20, panelRight.y + 170, 'MAX PLAYERS:', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -256,7 +256,7 @@ export default class LobbyScene extends Phaser.Scene {
         minusContainer.add(minusBg);
 
         const minusText = this.add.text(selW / 2, selH / 2, '−', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '20px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -269,7 +269,7 @@ export default class LobbyScene extends Phaser.Scene {
             panelRight.y + 212,
             String(this.maxPlayers),
             {
-                fontFamily: '"Cormorant Garamond"',
+                fontFamily: ''Rajdhani'',
                 fontSize: '22px',
                 fontWeight: 'bold',
                 color: '#ffffff'
@@ -290,7 +290,7 @@ export default class LobbyScene extends Phaser.Scene {
         plusContainer.add(plusBg);
 
         const plusText = this.add.text(selW / 2, selH / 2, '+', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '20px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -338,7 +338,7 @@ export default class LobbyScene extends Phaser.Scene {
         createContainer.add(createBg);
 
         const createText = this.add.text(createW / 2, createH / 2, 'CREATE', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '20px',
             fontWeight: 'bold',
             color: '#ffffff'
@@ -390,7 +390,7 @@ export default class LobbyScene extends Phaser.Scene {
         refreshContainer.add(refreshBg);
 
         const refreshText = this.add.text(refW / 2, refH / 2, '↻ REFRESH', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: ''Rajdhani'',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -519,7 +519,7 @@ export default class LobbyScene extends Phaser.Scene {
                 startY + 60,
                 'No servers found.\nCreate one!',
                 {
-                    fontFamily: '"Cormorant Garamond"',
+                    fontFamily: ''Rajdhani'',
                     fontSize: '18px',
                     color: '#7fa3c7',
                     align: 'center'
@@ -547,7 +547,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + 25, rowY + 12,
                 server.name || 'Unnamed',
                 {
-                    fontFamily: '"Cormorant Garamond"',
+                    fontFamily: ''Rajdhani'',
                     fontSize: '16px',
                     color: '#ffffff'
                 }
@@ -559,7 +559,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + w * 0.5, rowY + 12,
                 `${server.players}/${server.maxPlayers}`,
                 {
-                    fontFamily: '"Cormorant Garamond"',
+                    fontFamily: ''Rajdhani'',
                     fontSize: '16px',
                     color: isFull ? '#ff4444' : '#7fa3c7'
                 }
@@ -569,7 +569,7 @@ export default class LobbyScene extends Phaser.Scene {
                 x + w * 0.75, rowY + 12,
                 isFull ? 'FULL' : 'OPEN',
                 {
-                    fontFamily: '"Cormorant Garamond"',
+                    fontFamily: ''Rajdhani'',
                     fontSize: '16px',
                     color: isFull ? '#ff4444' : '#7fa3c7'
                 }
