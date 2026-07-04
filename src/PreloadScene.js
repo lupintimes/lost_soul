@@ -20,9 +20,9 @@ export default class PreloadScene extends Phaser.Scene {
 
         // Progress bar background with border
         const progressBg = this.add.graphics();
-        progressBg.fillStyle(0x16181a, 0.8);
+        progressBg.fillStyle(0x0d121d, 0.8);
         progressBg.fillRoundedRect(barX, barY, barW, barH, 4);
-        progressBg.lineStyle(1.5, 0x2d3135, 1);
+        progressBg.lineStyle(1.5, 0x1f2b3e, 1);
         progressBg.strokeRoundedRect(barX - 1.5, barY - 1.5, barW + 3, barH + 3, 5);
 
         // Progress bar graphics fill
@@ -31,7 +31,7 @@ export default class PreloadScene extends Phaser.Scene {
         const percentText = this.add.text(width / 2, barY + 35, '0%', {
             fontFamily: '"Cormorant Garamond"',
             fontSize: '20px',
-            color: '#8a99ad'
+            color: '#7fa3c7'
         }).setOrigin(0.5);
 
         this.logoFadeComplete = false;
@@ -54,7 +54,7 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.on('progress', (value) => {
             progressFill.clear();
-            progressFill.fillStyle(0x8a99ad, 1); // Slate gray color from theme
+            progressFill.fillStyle(0x7fa3c7, 1); // Slate gray color from theme
             if (value > 0) {
                 progressFill.fillRoundedRect(barX, barY, barW * value, barH, 4);
             }
