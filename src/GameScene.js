@@ -2638,10 +2638,10 @@ export default class GameScene extends Phaser.Scene {
                 pointer-events: auto;
             }
             .build-header { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #fff; }
-            .build-icon { width: 8px; height: 8px; background: #8a99ad; transform: rotate(45deg); }
+            .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
             .build-bar-bg { width: 180px; height: 10px; background: #090a0b; border-radius: 4px; overflow: hidden; }
-            .build-bar-fill { width: 60%; height: 100%; background: #8a99ad; transition: width 0.2s ease; }
-            .build-text { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 11px; text-align: left; color: #8a99ad; margin-top: 2px; }
+            .build-bar-fill { width: 60%; height: 100%; background: #0ea5e9; transition: width 0.2s ease; }
+            .build-text { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 11px; text-align: left; color: #ddd; margin-top: 2px; }
 
             /* --- Bottom: Hotbar --- */
             #ui-hotbar {
@@ -2824,8 +2824,8 @@ export default class GameScene extends Phaser.Scene {
             buildFill.style.backgroundColor = '#f59e0b';
             buildFill.style.boxShadow = '0 0 10px #f59e0b';
         } else {
-            buildFill.style.backgroundColor = '#8a99ad';
-            buildFill.style.boxShadow = '0 0 10px #8a99ad';
+            buildFill.style.backgroundColor = '#0ea5e9';
+            buildFill.style.boxShadow = '0 0 10px #0ea5e9';
         }
 
         const formatNum = (num) => Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
