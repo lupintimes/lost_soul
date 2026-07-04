@@ -2929,7 +2929,7 @@ export default class GameScene extends Phaser.Scene {
         // Avatar will be dynamically positioned in updateHUD to counteract camera zoom
         this.uiAvatarSprite = this.add.sprite(0, 0, `${char}_idle`)
             .setScrollFactor(1)
-            .setDepth(99);
+            .setDepth(1000);
 
         this.uiAvatarSprite.anims.play(`${char}_preview`, true);
         const tint = PlayerData.getColorTint();
@@ -2942,7 +2942,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            cam.getWorldPoint(62, 57, this._tempWorldPos);
+            cam.getWorldPoint(60, 65, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
         }
