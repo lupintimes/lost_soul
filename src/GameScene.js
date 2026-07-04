@@ -2942,7 +2942,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.uiAvatarSprite) {
             const cam = this.cameras.main;
             if (!this._tempWorldPos) this._tempWorldPos = new Phaser.Math.Vector2();
-            cam.getWorldPoint(60, 56, this._tempWorldPos);
+            cam.getWorldPoint(62, 57, this._tempWorldPos);
             this.uiAvatarSprite.setPosition(this._tempWorldPos.x, this._tempWorldPos.y);
             this.uiAvatarSprite.setScale(0.18 / cam.zoom);
         }
