@@ -1132,8 +1132,19 @@ export default class GameScene extends Phaser.Scene {
             const isMe = this.socket && entry.playerId === this.socket.id;
             const color = isMe ? '#ffffff' : '#7fa3c7';
             const prefix = isMe ? '► ' : '  ';
-            const rawAlias = isMe ? (PlayerData.alias || entry.alias) : entry.alias;
-            const displayName = rawAlias ? rawAlias.substring(0, 8).toUpperCase() : entry.playerId.substring(0, 6);
+
+            let nameVal = entry.playerId.substring(0, 6);
+            if (isMe) {
+                nameVal = PlayerData.alias ? PlayerData.alias : 'YOU';
+            } else {
+                const remote = this.otherPlayerMap[entry.playerId];
+                if (remote && remote.alias) {
+                    nameVal = remote.alias;
+                } else if (entry.alias) {
+                    nameVal = entry.alias;
+                }
+            }
+            const displayName = nameVal.substring(0, 8).toUpperCase();
 
             const row = this.add.text(
                 startX + 12,
