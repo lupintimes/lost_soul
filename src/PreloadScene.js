@@ -31,7 +31,7 @@ export default class PreloadScene extends Phaser.Scene {
         const percentText = this.add.text(width / 2, barY + 35, '0%', {
             fontFamily: 'Rajdhani',
             fontSize: '20px',
-            color: '#7fa3c7'
+            color: '#ffffff'
         }).setOrigin(0.5);
 
         // Force browser to load Rajdhani font before scene transition
