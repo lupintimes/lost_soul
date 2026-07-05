@@ -3203,9 +3203,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.addSystemMessage('SYSTEM: PRESS ENTER TO CHAT.');
 
-        // Scale and position chat relative to the game canvas bounds
-        this.resizeChat();
-        this.scale.on('resize', this.resizeChat, this);
     }
 
     addChatMessage(senderId, message) {
@@ -3253,30 +3250,9 @@ export default class GameScene extends Phaser.Scene {
         }
     }
 
-    resizeChat() {
-        if (!this.chatContainer) return;
-        const canvas = this.sys.game.canvas;
-        const rect = canvas.getBoundingClientRect();
 
-        const scaleX = (rect.width / 1280) || 1;
-        const scaleY = (rect.height / 720) || 1;
-
-        this.chatContainer.style.left = `${rect.left + 20 * scaleX}px`;
-        this.chatContainer.style.bottom = `${window.innerHeight - rect.bottom + 80 * scaleY}px`;
-        this.chatContainer.style.width = `${360 * scaleX}px`;
-        this.chatContainer.style.height = `${200 * scaleY}px`;
-        this.chatContainer.style.fontSize = `${14 * scaleX}px`;
-
-        const input = document.getElementById('game-chat-input');
-        if (input) {
-            input.style.fontSize = `${14 * scaleX}px`;
-        }
-    }
 
     cleanupChat() {
-        // Remove scale resize listener
-        this.scale.off('resize', this.resizeChat, this);
-
         const style = document.getElementById('game-chat-styles');
         if (style) style.remove();
 
