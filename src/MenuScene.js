@@ -110,6 +110,29 @@ export default class MenuScene extends Phaser.Scene {
         if (tint) {
             previewSprite.setTint(tint);
         }
+
+        // ─── Social Media Icons (Bottom Right) ─────────────
+        const discord = this.add.image(width - 90, height - 40, 'discord')
+            .setScale(0.5)
+            .setInteractive({ useHandCursor: true });
+        
+        discord.on('pointerover', () => discord.setScale(0.6));
+        discord.on('pointerout', () => discord.setScale(0.5));
+        discord.on('pointerdown', () => {
+            this.playClick();
+            window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
+        });
+
+        const xBtn = this.add.image(width - 40, height - 40, 'x_icon')
+            .setScale(0.5)
+            .setInteractive({ useHandCursor: true });
+
+        xBtn.on('pointerover', () => xBtn.setScale(0.6));
+        xBtn.on('pointerout', () => xBtn.setScale(0.5));
+        xBtn.on('pointerdown', () => {
+            this.playClick();
+            console.log("Add X link later");
+        });
     }
 
     // 🔘 Button Creator
@@ -212,7 +235,7 @@ export default class MenuScene extends Phaser.Scene {
         elements.push(overlay);
 
         const boxW = width * 0.5;
-        const boxH = height * 0.55;
+        const boxH = height * 0.4;
         
         // Rounded slate box with border
         const boxG = this.add.graphics().setDepth(11);
@@ -254,7 +277,7 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         const aboutText = this.add.text(
-            width / 2, height / 2 - 35,
+            width / 2, height / 2,
             "LOST SOUL\n\nA fast-paced sword combat game.\nFight, dash, and master abilities.\nMore updates coming soon!",
             {
                 fontFamily: 'Rajdhani',
@@ -268,33 +291,6 @@ export default class MenuScene extends Phaser.Scene {
             .setOrigin(0.5)
             .setDepth(12);
         elements.push(aboutText);
-
-        const discord = this.add.image(width / 2 - 60, height / 2 + 95, 'discord')
-            .setScale(0.5)
-            .setInteractive({ useHandCursor: true })
-            .setDepth(12);
-        elements.push(discord);
-
-        discord.on('pointerover', () => discord.setScale(0.6));
-        discord.on('pointerout', () => discord.setScale(0.5));
-        discord.on('pointerdown', () => {
-            this.playClick();
-            window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
-        });
-
-        const xBtn = this.add.image(width / 2 + 60, height / 2 + 95, 'x_icon')
-            .setScale(0.5)
-            .setInteractive({ useHandCursor: true })
-            .setDepth(12);
-        elements.push(xBtn);
-
-        xBtn.on('pointerover', () => xBtn.setScale(0.6));
-        xBtn.on('pointerout', () => xBtn.setScale(0.5));
-        xBtn.on('pointerdown', () => {
-            this.playClick();
-            console.log("Add X link later");
-        });
-
         closeHitbox.on('pointerdown', () => {
             this.playClick();
             elements.forEach(el => el.destroy());
