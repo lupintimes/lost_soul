@@ -1003,7 +1003,24 @@ export default class GameScene extends Phaser.Scene {
 
         const remoteChar = playerInfo.character || 'p1';
         const remotePlayer = new Player(this, playerInfo.x, playerInfo.y, playerInfo.playerId, false, remoteChar);
-        remotePlayer.sprite.setTint(0xff6666);
+        
+        // Store remote player details
+        remotePlayer.alias = playerInfo.alias;
+        remotePlayer.color = playerInfo.color;
+
+        // Apply remote player color preference tint
+        let remoteTint = null;
+        if (playerInfo.color) {
+            const colorObj = PlayerData.colors.find(c => c.id === playerInfo.color);
+            if (colorObj && colorObj.tint !== null) {
+                remoteTint = colorObj.tint;
+            }
+        }
+        if (remoteTint !== null) {
+            remotePlayer.sprite.setTint(remoteTint);
+        } else {
+            remotePlayer.sprite.setTint(0xff6666); // Fallback red
+        }
 
         // Play idle animation immediately upon spawning
         remotePlayer.sprite.anims.play(`${remoteChar}_idle_anim`, true);
@@ -1115,12 +1132,12 @@ export default class GameScene extends Phaser.Scene {
             const isMe = this.socket && entry.playerId === this.socket.id;
             const color = isMe ? '#ffffff' : '#7fa3c7';
             const prefix = isMe ? '► ' : '  ';
-            const shortId = entry.playerId.substring(0, 6);
+            const displayName = entry.alias ? entry.alias.substring(0, 8).toUpperCase() : entry.playerId.substring(0, 6);
 
             const row = this.add.text(
                 startX + 12,
                 startY + 24 + (index * rowH),
-                `${prefix}${shortId}  K:${entry.kills}  D:${entry.deaths}`,
+                `${prefix}${displayName.padEnd(8)}  K:${entry.kills}  D:${entry.deaths}`,
                 {
                     fontFamily: 'Rajdhani',
                     fontSize: '13px',
@@ -3249,7 +3266,16 @@ export default class GameScene extends Phaser.Scene {
         const isMe = this.socket && senderId === this.socket.id;
         const shortId = senderId.substring(0, 6);
         const nameColorClass = isMe ? 'chat-message-me' : 'chat-message-other';
-        const displayName = isMe ? 'YOU' : shortId;
+        
+        let displayName = shortId;
+        if (isMe) {
+            displayName = PlayerData.alias ? PlayerData.alias.toUpperCase() : 'YOU';
+        } else {
+            const remote = this.otherPlayerMap[senderId];
+            if (remote && remote.alias) {
+                displayName = remote.alias.toUpperCase();
+            }
+        }
 
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message';

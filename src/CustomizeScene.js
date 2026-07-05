@@ -105,6 +105,24 @@ export default class CustomizeScene extends Phaser.Scene {
         if (tint) this.previewSprite.setTint(tint);
 
         // Info labels
+        this.aliasLabel = this.add.text(previewX, previewY - 90, `ALIAS: ${PlayerData.alias.toUpperCase()}`, {
+            fontFamily: 'Rajdhani',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            color: '#ffdd66'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        this.aliasLabel.on('pointerover', () => this.aliasLabel.setColor('#ffffff'));
+        this.aliasLabel.on('pointerout', () => this.aliasLabel.setColor('#ffdd66'));
+        this.aliasLabel.on('pointerdown', () => {
+            this.playClick();
+            const newAlias = prompt('Enter player alias/nickname:', PlayerData.alias);
+            if (newAlias && newAlias.trim().length > 0) {
+                PlayerData.setAlias(newAlias.trim().substring(0, 12));
+                this.aliasLabel.setText(`ALIAS: ${PlayerData.alias.toUpperCase()}`);
+            }
+        });
+
         this.charLabel = this.add.text(previewX, previewY + 80, PlayerData.getCharacterInfo().name, {
             fontFamily: 'Rajdhani',
             fontSize: '22px',

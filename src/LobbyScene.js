@@ -616,7 +616,9 @@ export default class LobbyScene extends Phaser.Scene {
         socket.emit('createServer', {
             name: this.serverNameValue,
             maxPlayers: this.maxPlayers,
-            character: this.selectedCharacter
+            character: this.selectedCharacter,
+            alias: PlayerData.alias,
+            color: PlayerData.color
         });
     }
 
@@ -628,7 +630,12 @@ export default class LobbyScene extends Phaser.Scene {
             return;
         }
 
-        socket.emit('joinServer', { roomId, character: this.selectedCharacter });
+        socket.emit('joinServer', {
+            roomId,
+            character: this.selectedCharacter,
+            alias: PlayerData.alias,
+            color: PlayerData.color
+        });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

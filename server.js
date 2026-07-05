@@ -141,6 +141,8 @@ io.on('connection', (socket) => {
             kills: 0,
             deaths: 0,
             character: pChar,
+            color: data.color || 'slate',
+            alias: data.alias || 'Host_' + socket.id.substring(0, 4),
             state: 'idle',
             isInvincible: true
         };
@@ -198,6 +200,8 @@ io.on('connection', (socket) => {
             kills: 0,
             deaths: 0,
             character: pChar,
+            color: data.color || 'slate',
+            alias: data.alias || 'Guest_' + socket.id.substring(0, 4),
             state: 'idle',
             isInvincible: true
         };
@@ -419,6 +423,7 @@ io.on('connection', (socket) => {
 
         const scoreboard = Object.values(rooms[roomId].players).map(p => ({
             playerId: p.playerId,
+            alias: p.alias,
             kills: p.kills,
             deaths: p.deaths,
             health: p.health
@@ -723,6 +728,7 @@ function leaveCurrentRoom(socket) {
 
         const scoreboard = Object.values(room.players).map(p => ({
             playerId: p.playerId,
+            alias: p.alias,
             kills: p.kills,
             deaths: p.deaths,
             health: p.health

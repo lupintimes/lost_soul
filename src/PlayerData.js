@@ -3,12 +3,14 @@ let savedColor = 'slate';
 let savedMusic = '0.5';
 let savedSfx = '0.5';
 let savedGraphics = 'high';
+let savedAlias = 'Guest' + Math.floor(1000 + Math.random() * 9000);
 try {
     savedCharacter = localStorage.getItem('lost_soul_character') || 'p1';
     savedColor = localStorage.getItem('lost_soul_color') || 'slate';
     savedMusic = localStorage.getItem('lost_soul_music') || '0.5';
     savedSfx = localStorage.getItem('lost_soul_sfx') || '0.5';
     savedGraphics = localStorage.getItem('lost_soul_graphics') || 'high';
+    savedAlias = localStorage.getItem('lost_soul_alias') || savedAlias;
 } catch (e) {
     // Safe fallback if localStorage is not accessible
 }
@@ -19,6 +21,14 @@ const PlayerData = {
     musicVolume: parseFloat(savedMusic),
     sfxVolume: parseFloat(savedSfx),
     graphicsQuality: savedGraphics,
+    alias: savedAlias,
+
+    setAlias(name) {
+        this.alias = name;
+        try {
+            localStorage.setItem('lost_soul_alias', name);
+        } catch (e) {}
+    },
 
     setMusicVolume(vol) {
         this.musicVolume = Math.max(0, Math.min(1, vol));
