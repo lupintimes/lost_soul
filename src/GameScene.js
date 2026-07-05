@@ -3035,11 +3035,16 @@ export default class GameScene extends Phaser.Scene {
                 justify-content: flex-end;
                 margin-bottom: 8px;
                 padding: 8px;
-                background: rgba(13, 18, 29, 0.75);
+                background: transparent;
                 border-radius: 6px;
-                border: 1px solid rgba(138, 153, 173, 0.15);
-                backdrop-filter: blur(4px);
+                border: 1.5px solid transparent;
                 scrollbar-width: none;
+                transition: background 0.2s ease, border-color 0.2s ease, backdrop-filter 0.2s ease;
+            }
+            #game-chat-container.active #game-chat-log {
+                background: rgba(13, 18, 29, 0.6);
+                border-color: rgba(138, 153, 173, 0.2);
+                backdrop-filter: blur(4px);
             }
             #game-chat-log::-webkit-scrollbar {
                 display: none;
@@ -3050,6 +3055,15 @@ export default class GameScene extends Phaser.Scene {
                 word-break: break-all;
                 animation: fadeInChat 0.2s ease-out forwards;
                 color: #7fa3c7;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+                opacity: 1;
+                transition: opacity 1s ease;
+            }
+            .chat-message.faded {
+                opacity: 0;
+            }
+            #game-chat-container.active .chat-message {
+                opacity: 1 !important;
             }
             .chat-message-system {
                 color: #7fa3c7;
@@ -3120,6 +3134,9 @@ export default class GameScene extends Phaser.Scene {
         const closeChat = () => {
             this.isChatActive = false;
             this.chatInputContainer.style.display = 'none';
+            if (this.chatContainer) {
+                this.chatContainer.classList.remove('active');
+            }
             this.chatInput.value = '';
             this.chatInput.blur();
             if (this.localPlayer) {
@@ -3173,6 +3190,9 @@ export default class GameScene extends Phaser.Scene {
             if (!this.isChatActive) {
                 this.isChatActive = true;
                 this.chatInputContainer.style.display = 'block';
+                if (this.chatContainer) {
+                    this.chatContainer.classList.add('active');
+                }
 
                 // Disable Phaser keyboard inputs from updating player
                 if (this.localPlayer) {
@@ -3228,6 +3248,11 @@ export default class GameScene extends Phaser.Scene {
 
         this.chatLog.appendChild(msgDiv);
         this.chatLog.scrollTop = this.chatLog.scrollHeight;
+
+        // Auto-fade message after 8 seconds
+        setTimeout(() => {
+            if (msgDiv) msgDiv.classList.add('faded');
+        }, 8000);
     }
 
     addSystemMessage(message) {
@@ -3239,6 +3264,11 @@ export default class GameScene extends Phaser.Scene {
 
         this.chatLog.appendChild(msgDiv);
         this.chatLog.scrollTop = this.chatLog.scrollHeight;
+
+        // Auto-fade system message after 8 seconds
+        setTimeout(() => {
+            if (msgDiv) msgDiv.classList.add('faded');
+        }, 8000);
     }
 
     cleanupDOMUI() {
