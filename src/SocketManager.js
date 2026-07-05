@@ -5,7 +5,7 @@ const SocketManager = {
     connect(url) {
         if (!url) {
             const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-            url = isLocal ? 'http://localhost:3000' : 'https://lost-soul-server.onrender.com';
+            url = isLocal ? 'http://localhost:8081' : 'https://lost-soul-server.onrender.com';
         }
         if (this.socket && this.socket.connected) {
             console.log('♻️ Reusing existing socket:', this.socket.id);
