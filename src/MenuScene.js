@@ -65,10 +65,26 @@ export default class MenuScene extends Phaser.Scene {
             this.showAbout();
         });
 
-        // Bottom buttons
-        this.createButton(width * 0.05, height - 70, '⚙', '', null, () => {
-            this.playClick();
+        // Bottom buttons (Settings, Discord, X Toolbar)
+        const bottomY = height - 70;
+        const buttonSpacing = 60;
+        let bottomX = width * 0.05;
+
+        // Settings
+        this.createButton(bottomX, bottomY, '⚙', '', null, () => {
             this.scene.start('SettingsScene');
+        }, true);
+        bottomX += buttonSpacing;
+
+        // Discord
+        this.createButton(bottomX, bottomY, 'image:discord', '', null, () => {
+            window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
+        }, true);
+        bottomX += buttonSpacing;
+
+        // X
+        this.createButton(bottomX, bottomY, 'image:x_icon', '', null, () => {
+            console.log("Add X link later");
         }, true);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -110,29 +126,6 @@ export default class MenuScene extends Phaser.Scene {
         if (tint) {
             previewSprite.setTint(tint);
         }
-
-        // ─── Social Media Icons (Bottom Right) ─────────────
-        const discord = this.add.image(width - 90, height - 40, 'discord')
-            .setScale(0.5)
-            .setInteractive({ useHandCursor: true });
-        
-        discord.on('pointerover', () => discord.setScale(0.6));
-        discord.on('pointerout', () => discord.setScale(0.5));
-        discord.on('pointerdown', () => {
-            this.playClick();
-            window.open('https://discord.gg/ka8rz9ZkRX', '_blank');
-        });
-
-        const xBtn = this.add.image(width - 40, height - 40, 'x_icon')
-            .setScale(0.5)
-            .setInteractive({ useHandCursor: true });
-
-        xBtn.on('pointerover', () => xBtn.setScale(0.6));
-        xBtn.on('pointerout', () => xBtn.setScale(0.5));
-        xBtn.on('pointerdown', () => {
-            this.playClick();
-            console.log("Add X link later");
-        });
     }
 
     // 🔘 Button Creator
@@ -159,15 +152,23 @@ export default class MenuScene extends Phaser.Scene {
         bgHover.setAlpha(0);
         btnContainer.add(bgHover);
 
-        // Icon Text
+        // Icon / Sprite rendering
         if (icon) {
-            const isGear = isSmall && !title;
-            const iconText = this.add.text(isGear ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
-                fontFamily: isGear ? 'Arial, sans-serif' : '"Cormorant Garamond"',
-                fontSize: isSmall ? (!title ? '28px' : '16px') : '24px',
-                color: '#ffffff'
-            }).setOrigin(0.5);
-            btnContainer.add(iconText);
+            if (icon.startsWith('image:')) {
+                const texKey = icon.replace('image:', '');
+                const iconSprite = this.add.image(w / 2, h / 2, texKey)
+                    .setScale(0.5);
+                btnContainer.add(iconSprite);
+                btnContainer.iconSprite = iconSprite;
+            } else {
+                const isGear = isSmall && !title;
+                const iconText = this.add.text(isGear ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
+                    fontFamily: isGear ? 'Arial, sans-serif' : '"Cormorant Garamond"',
+                    fontSize: isSmall ? (!title ? '28px' : '16px') : '24px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                btnContainer.add(iconText);
+            }
         }
 
         // Title
@@ -203,6 +204,14 @@ export default class MenuScene extends Phaser.Scene {
                 duration: 120,
                 ease: 'Quad.easeOut'
             });
+            if (btnContainer.iconSprite) {
+                this.tweens.add({
+                    targets: btnContainer.iconSprite,
+                    scale: 0.6,
+                    duration: 120,
+                    ease: 'Quad.easeOut'
+                });
+            }
         });
         
         btnContainer.on('pointerout', () => {
@@ -213,6 +222,14 @@ export default class MenuScene extends Phaser.Scene {
                 duration: 250,
                 ease: 'Quad.easeOut'
             });
+            if (btnContainer.iconSprite) {
+                this.tweens.add({
+                    targets: btnContainer.iconSprite,
+                    scale: 0.5,
+                    duration: 250,
+                    ease: 'Quad.easeOut'
+                });
+            }
         });
         
         btnContainer.on('pointerdown', () => {
