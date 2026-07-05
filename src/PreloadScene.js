@@ -19,20 +19,20 @@ export default class PreloadScene extends Phaser.Scene {
         const barY = height / 2 + 50;
 
         // Progress bar background with border
-        const progressBg = this.add.graphics();
+        const progressBg = this.add.graphics().setAlpha(0);
         progressBg.fillStyle(0x0d121d, 0.8);
         progressBg.fillRoundedRect(barX, barY, barW, barH, 4);
         progressBg.lineStyle(1.5, 0x1f2b3e, 1);
         progressBg.strokeRoundedRect(barX - 1.5, barY - 1.5, barW + 3, barH + 3, 5);
 
         // Progress bar graphics fill
-        const progressFill = this.add.graphics();
+        const progressFill = this.add.graphics().setAlpha(0);
 
         const percentText = this.add.text(width / 2, barY + 35, '0%', {
             fontFamily: 'Rajdhani',
             fontSize: '20px',
             color: '#ffffff'
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setAlpha(0);
 
         // Force browser to load Rajdhani font before scene transition
         this.add.text(-100, -100, 'preload_font', { fontFamily: 'Rajdhani' });
@@ -44,7 +44,7 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.on('filecomplete-image-logo', () => {
             const logoImage = this.add.image(width / 2, barY - 120, 'logo').setOrigin(0.5).setScale(0.5).setAlpha(0);
             this.tweens.add({
-                targets: logoImage,
+                targets: [logoImage, progressBg, progressFill, percentText],
                 alpha: 1,
                 duration: 1800,
                 ease: 'Quad.easeOut',
