@@ -3047,6 +3047,7 @@ export default class GameScene extends Phaser.Scene {
                 backdrop-filter: blur(4px);
                 scrollbar-width: thin;
                 scrollbar-color: rgba(127, 163, 199, 0.4) transparent;
+                pointer-events: auto;
             }
             #game-chat-log::-webkit-scrollbar {
                 width: 6px;
