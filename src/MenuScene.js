@@ -168,6 +168,7 @@ export default class MenuScene extends Phaser.Scene {
                     color: '#ffffff'
                 }).setOrigin(0.5);
                 btnContainer.add(iconText);
+                btnContainer.iconText = iconText;
             }
         }
 
@@ -212,6 +213,14 @@ export default class MenuScene extends Phaser.Scene {
                     ease: 'Quad.easeOut'
                 });
             }
+            if (btnContainer.iconText) {
+                this.tweens.add({
+                    targets: btnContainer.iconText,
+                    scale: 1.2,
+                    duration: 120,
+                    ease: 'Quad.easeOut'
+                });
+            }
         });
         
         btnContainer.on('pointerout', () => {
@@ -226,6 +235,14 @@ export default class MenuScene extends Phaser.Scene {
                 this.tweens.add({
                     targets: btnContainer.iconSprite,
                     scale: 0.25,
+                    duration: 250,
+                    ease: 'Quad.easeOut'
+                });
+            }
+            if (btnContainer.iconText) {
+                this.tweens.add({
+                    targets: btnContainer.iconText,
+                    scale: 1.0,
                     duration: 250,
                     ease: 'Quad.easeOut'
                 });
