@@ -1100,7 +1100,7 @@ export default class GameScene extends Phaser.Scene {
         this.scoreboardElements.push(bg);
 
         const header = this.add.text(startX + 12, startY + 5, 'SCOREBOARD', {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
             color: '#7fa3c7'
@@ -1120,7 +1120,7 @@ export default class GameScene extends Phaser.Scene {
                 startY + 24 + (index * rowH),
                 `${prefix}${shortId}  K:${entry.kills}  D:${entry.deaths}`,
                 {
-                    fontFamily: '"Cormorant Garamond"',
+                    fontFamily: 'Rajdhani',
                     fontSize: '13px',
                     fontWeight: isMe ? 'bold' : 'normal',
                     color: color
@@ -1141,7 +1141,7 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         const msg = this.add.text(width / 2, height * 0.3, text, {
-            fontFamily: '"Cormorant Garamond"',
+            fontFamily: 'Rajdhani',
             fontSize: '32px',
             fontWeight: 'bold',
             color: color,
@@ -3021,7 +3021,7 @@ export default class GameScene extends Phaser.Scene {
                 flex-direction: column;
                 pointer-events: none;
                 z-index: 1000;
-                font-family: 'Cormorant Garamond', serif;
+                font-family: 'Rajdhani', sans-serif;
                 font-size: 14px;
                 font-weight: bold;
             }
@@ -3074,7 +3074,7 @@ export default class GameScene extends Phaser.Scene {
                 border: 1.5px solid #1f2b3e;
                 border-radius: 6px;
                 color: #fff;
-                font-family: 'Cormorant Garamond', serif;
+                font-family: 'Rajdhani', sans-serif;
                 font-size: 14px;
                 outline: none;
                 box-sizing: border-box;
