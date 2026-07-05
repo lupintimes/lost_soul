@@ -570,7 +570,12 @@ export default class GameScene extends Phaser.Scene {
             this.spawnInitialEnemies(playerSpawn);
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
 
-        } else if (this.mode === 'multiplayer') {
+        }
+
+        this.initDOMUI();
+        this.createHUD();
+
+        if (this.mode === 'multiplayer') {
             if (!this.socket || !this.socket.connected) {
                 console.error('❌ No socket! Going back to lobby.');
                 this.scene.start('LobbyScene');
@@ -593,6 +598,7 @@ export default class GameScene extends Phaser.Scene {
                 .setDepth(999);
 
             this.setupMultiplayer();
+            this.initChat();
         }
 
         // ─── Obstacle Limit Configuration ────────────────
@@ -629,12 +635,6 @@ export default class GameScene extends Phaser.Scene {
                 this.scene.start('MenuScene');
             }
         });
-
-        this.initDOMUI();
-        if (this.mode === 'multiplayer') {
-            this.initChat();
-        }
-        this.createHUD();
 
     }
 
@@ -3015,8 +3015,8 @@ export default class GameScene extends Phaser.Scene {
         style.textContent = `
             #game-chat-container {
                 position: absolute;
-                bottom: 15px;
-                left: 15px;
+                bottom: 20px;
+                left: 20px;
                 width: 360px;
                 height: 200px;
                 display: flex;
@@ -3107,12 +3107,8 @@ export default class GameScene extends Phaser.Scene {
 
         container.appendChild(inputContainer);
         
-        const uiContainer = document.getElementById('game-ui-container');
-        if (uiContainer) {
-            uiContainer.appendChild(container);
-        } else {
-            document.body.appendChild(container);
-        }
+        const uiContainer = document.getElementById('game-ui-container') || document.body;
+        uiContainer.appendChild(container);
 
         this.chatContainer = container;
         this.chatLog = log;
