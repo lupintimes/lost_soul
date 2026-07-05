@@ -3015,8 +3015,8 @@ export default class GameScene extends Phaser.Scene {
         style.textContent = `
             #game-chat-container {
                 position: absolute;
-                bottom: 20px;
-                left: 20px;
+                bottom: 15px;
+                left: 15px;
                 width: 360px;
                 height: 200px;
                 display: flex;
@@ -3106,6 +3106,7 @@ export default class GameScene extends Phaser.Scene {
         inputContainer.appendChild(input);
 
         container.appendChild(inputContainer);
+        
         const uiContainer = document.getElementById('game-ui-container');
         if (uiContainer) {
             uiContainer.appendChild(container);
