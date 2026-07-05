@@ -3097,7 +3097,6 @@ export default class GameScene extends Phaser.Scene {
                 to { opacity: 1; transform: translateY(0); }
             }
             #game-chat-input-container {
-                display: none;
                 pointer-events: auto;
             }
             #game-chat-input {
@@ -3148,9 +3147,32 @@ export default class GameScene extends Phaser.Scene {
         this.isChatActive = false;
 
         // 3. Register input events and keyboard listeners
+        const openChat = () => {
+            if (this.isChatActive) return;
+            this.isChatActive = true;
+            if (this.chatContainer) {
+                this.chatContainer.classList.add('active');
+            }
+
+            // Disable Phaser keyboard inputs from updating player
+            if (this.localPlayer) {
+                this.localPlayer.isControlled = false;
+                // Reset velocities so player doesn't slide endlessly while typing
+                if (this.localPlayer.sprite && this.localPlayer.sprite.body) {
+                    this.localPlayer.sprite.setVelocityX(0);
+                    this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_idle_anim`, true);
+                }
+            }
+
+            // Disable Phaser's keyboard plugin completely so it doesn't intercept keys!
+            if (this.input && this.input.keyboard) {
+                this.input.keyboard.enabled = false;
+            }
+        };
+
         const closeChat = () => {
+            if (!this.isChatActive) return;
             this.isChatActive = false;
-            this.chatInputContainer.style.display = 'none';
             if (this.chatContainer) {
                 this.chatContainer.classList.remove('active');
             }
@@ -3164,6 +3186,8 @@ export default class GameScene extends Phaser.Scene {
                 this.input.keyboard.enabled = true;
             }
         };
+
+        input.addEventListener('focus', openChat);
 
         input.addEventListener('blur', () => {
             // Wait slightly to check if blur was caused by Enter/Esc closing it already,
@@ -3205,28 +3229,7 @@ export default class GameScene extends Phaser.Scene {
         this.input.keyboard.on('keydown-ENTER', () => {
             if (this.mode !== 'multiplayer') return;
             if (!this.isChatActive) {
-                this.isChatActive = true;
-                this.chatInputContainer.style.display = 'block';
-                if (this.chatContainer) {
-                    this.chatContainer.classList.add('active');
-                }
-
-                // Disable Phaser keyboard inputs from updating player
-                if (this.localPlayer) {
-                    this.localPlayer.isControlled = false;
-                    // Reset velocities so player doesn't slide endlessly while typing
-                    if (this.localPlayer.sprite && this.localPlayer.sprite.body) {
-                        this.localPlayer.sprite.setVelocityX(0);
-                        this.localPlayer.sprite.anims.play(`${this.localPlayer.character}_idle_anim`, true);
-                    }
-                }
-
-                // Disable Phaser's keyboard plugin completely so it doesn't intercept keys!
-                if (this.input && this.input.keyboard) {
-                    this.input.keyboard.enabled = false;
-                }
-
-                // Focus the HTML input after a short tick to ensure it is visible first
+                openChat();
                 setTimeout(() => {
                     this.chatInput.focus();
                 }, 10);
