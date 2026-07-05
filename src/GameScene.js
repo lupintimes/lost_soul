@@ -3013,7 +3013,7 @@ export default class GameScene extends Phaser.Scene {
         style.textContent = `
             #game-chat-container {
                 position: absolute;
-                bottom: 80px;
+                bottom: 20px;
                 left: 20px;
                 width: 360px;
                 height: 200px;
