@@ -593,7 +593,6 @@ export default class GameScene extends Phaser.Scene {
                 .setDepth(999);
 
             this.setupMultiplayer();
-            this.initChat();
         }
 
         // ─── Obstacle Limit Configuration ────────────────
@@ -632,6 +631,9 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.initDOMUI();
+        if (this.mode === 'multiplayer') {
+            this.initChat();
+        }
         this.createHUD();
 
     }
@@ -3104,7 +3106,12 @@ export default class GameScene extends Phaser.Scene {
         inputContainer.appendChild(input);
 
         container.appendChild(inputContainer);
-        document.body.appendChild(container);
+        const uiContainer = document.getElementById('game-ui-container');
+        if (uiContainer) {
+            uiContainer.appendChild(container);
+        } else {
+            document.body.appendChild(container);
+        }
 
         this.chatContainer = container;
         this.chatLog = log;
