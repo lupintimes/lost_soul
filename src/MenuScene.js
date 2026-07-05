@@ -157,7 +157,7 @@ export default class MenuScene extends Phaser.Scene {
             if (icon.startsWith('image:')) {
                 const texKey = icon.replace('image:', '');
                 const iconSprite = this.add.image(w / 2, h / 2, texKey)
-                    .setScale(0.5);
+                    .setScale(0.25);
                 btnContainer.add(iconSprite);
                 btnContainer.iconSprite = iconSprite;
             } else {
@@ -207,7 +207,7 @@ export default class MenuScene extends Phaser.Scene {
             if (btnContainer.iconSprite) {
                 this.tweens.add({
                     targets: btnContainer.iconSprite,
-                    scale: 0.6,
+                    scale: 0.3,
                     duration: 120,
                     ease: 'Quad.easeOut'
                 });
@@ -225,7 +225,7 @@ export default class MenuScene extends Phaser.Scene {
             if (btnContainer.iconSprite) {
                 this.tweens.add({
                     targets: btnContainer.iconSprite,
-                    scale: 0.5,
+                    scale: 0.25,
                     duration: 250,
                     ease: 'Quad.easeOut'
                 });
