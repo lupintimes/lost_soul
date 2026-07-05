@@ -3045,9 +3045,25 @@ export default class GameScene extends Phaser.Scene {
                 background: rgba(13, 18, 29, 0.6);
                 border-color: rgba(138, 153, 173, 0.2);
                 backdrop-filter: blur(4px);
+                scrollbar-width: thin;
+                scrollbar-color: rgba(127, 163, 199, 0.4) transparent;
             }
             #game-chat-log::-webkit-scrollbar {
-                display: none;
+                width: 6px;
+            }
+            #game-chat-log::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            #game-chat-log::-webkit-scrollbar-thumb {
+                background: transparent;
+                border-radius: 3px;
+                transition: background-color 0.2s ease;
+            }
+            #game-chat-container.active #game-chat-log::-webkit-scrollbar-thumb {
+                background: rgba(127, 163, 199, 0.4);
+            }
+            #game-chat-container.active #game-chat-log::-webkit-scrollbar-thumb:hover {
+                background: rgba(127, 163, 199, 0.7);
             }
             .chat-message {
                 margin: 4px 0;
