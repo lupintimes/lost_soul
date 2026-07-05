@@ -3241,8 +3241,6 @@ export default class GameScene extends Phaser.Scene {
             this.addChatMessage(data.senderId, data.message);
         });
 
-        this.addSystemMessage('SYSTEM: PRESS ENTER TO CHAT.');
-
     }
 
     addChatMessage(senderId, message) {
