@@ -57,7 +57,7 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.on('progress', (value) => {
             progressFill.clear();
-            progressFill.fillStyle(0x7fa3c7, 1); // Slate gray color from theme
+            progressFill.fillStyle(0xffffff, 1); // White color matching the logo
             if (value > 0) {
                 progressFill.fillRoundedRect(barX, barY, barW * value, barH, 4);
             }
