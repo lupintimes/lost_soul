@@ -4,10 +4,12 @@ const SocketManager = {
 
     connect(url) {
         if (!url) {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-            url = isLocal ? 'http://localhost:8081' : 'https://lost-soul-server.onrender.com';
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                url = 'http://localhost:8081';
+            } else {
+                url = 'https://lost-soul-server.onrender.com';
+            }
         }
-
         if (this.socket && this.socket.connected) {
             console.log('♻️ Reusing existing socket:', this.socket.id);
             return this.socket;
@@ -19,7 +21,6 @@ const SocketManager = {
             this.socket = null;
         }
 
-        console.log('🔌 Connecting to socket server at:', url);
         this.socket = io(url);
 
         this.socket.on('connect', () => {

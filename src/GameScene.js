@@ -698,9 +698,6 @@ export default class GameScene extends Phaser.Scene {
 
             this.multiplayerReady = true;
             this.socket.emit('getScoreboard');
-
-            // Broadcast our alias and color preference to existing players in the room
-            this.socket.emit('chatMessage', { message: `__sync_alias__:${PlayerData.alias || 'Guest'}:${PlayerData.color || 'slate'}` });
         });
 
         // 2. New player
@@ -709,9 +706,6 @@ export default class GameScene extends Phaser.Scene {
             this.addRemotePlayer(playerInfo);
             this.showKillMessage('PLAYER JOINED!', '#4488ff');
             this.socket.emit('getScoreboard');
-
-            // Send our alias to the joining player
-            this.socket.emit('chatMessage', { message: `__sync_alias__:${PlayerData.alias || 'Guest'}:${PlayerData.color || 'slate'}` });
         });
 
         // 3. Player left
@@ -731,6 +725,16 @@ export default class GameScene extends Phaser.Scene {
                 return;
             }
             if (!remote || !remote.sprite || !remote.sprite.active) return;
+
+            // Sync alias and color preferences if received
+            if (playerInfo.alias) remote.alias = playerInfo.alias;
+            if (playerInfo.color) {
+                remote.color = playerInfo.color;
+                const colorObj = PlayerData.colors.find(c => c.id === playerInfo.color);
+                if (colorObj && colorObj.tint !== null) {
+                    remote.sprite.setTint(colorObj.tint);
+                }
+            }
 
             remote.targetX = playerInfo.x;
             remote.targetY = playerInfo.y;
@@ -3273,34 +3277,6 @@ export default class GameScene extends Phaser.Scene {
 
         // 4. Socket Listener
         this.socket.on('chatMessage', (data) => {
-            if (data.message && data.message.startsWith('__sync_alias__::') || (data.message && data.message.startsWith('__sync_alias__:'))) {
-                // Support both single and double colon prefix splits safely
-                const cleanMsg = data.message.replace(/^__sync_alias__::?/, '');
-                const parts = cleanMsg.split(':');
-                const aliasVal = parts[0];
-                const colorVal = parts[1];
-                
-                const remote = this.otherPlayerMap[data.senderId];
-                if (remote) {
-                    remote.alias = aliasVal;
-                    remote.color = colorVal;
-                    
-                    let remoteTint = null;
-                    if (colorVal) {
-                        const colorObj = PlayerData.colors.find(c => c.id === colorVal);
-                        if (colorObj && colorObj.tint !== null) {
-                            remoteTint = colorObj.tint;
-                        }
-                    }
-                    if (remoteTint !== null) {
-                        remote.sprite.setTint(remoteTint);
-                    }
-                }
-                
-                // Force scoreboard refresh to display the newly loaded names
-                this.socket.emit('getScoreboard');
-                return;
-            }
             this.addChatMessage(data.senderId, data.message);
         });
 
