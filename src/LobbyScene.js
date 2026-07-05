@@ -438,7 +438,7 @@ export default class LobbyScene extends Phaser.Scene {
 
     connectToLobby() {
         // Use SocketManager — it reuses the connection if already open
-        const socket = SocketManager.connect('https://lost-soul-server.onrender.com');
+        const socket = SocketManager.connect();
 
         // Remove old lobby listeners before adding new ones
         socket.off('serverList');

@@ -1132,7 +1132,8 @@ export default class GameScene extends Phaser.Scene {
             const isMe = this.socket && entry.playerId === this.socket.id;
             const color = isMe ? '#ffffff' : '#7fa3c7';
             const prefix = isMe ? '► ' : '  ';
-            const displayName = entry.alias ? entry.alias.substring(0, 8).toUpperCase() : entry.playerId.substring(0, 6);
+            const rawAlias = isMe ? (PlayerData.alias || entry.alias) : entry.alias;
+            const displayName = rawAlias ? rawAlias.substring(0, 8).toUpperCase() : entry.playerId.substring(0, 6);
 
             const row = this.add.text(
                 startX + 12,
