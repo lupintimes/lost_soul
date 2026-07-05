@@ -164,7 +164,7 @@ export default class MenuScene extends Phaser.Scene {
                 const isGear = isSmall && !title;
                 const iconText = this.add.text(isGear ? w / 2 : (isSmall ? 20 : 30), h / 2, icon, {
                     fontFamily: isGear ? 'Arial, sans-serif' : '"Cormorant Garamond"',
-                    fontSize: isSmall ? (!title ? '34px' : '16px') : '24px',
+                    fontSize: isSmall ? (!title ? '38px' : '16px') : '24px',
                     color: '#ffffff'
                 }).setOrigin(0.5);
                 btnContainer.add(iconText);
