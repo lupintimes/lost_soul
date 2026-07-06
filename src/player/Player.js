@@ -159,6 +159,30 @@ export default class Player {
                 }
             }
         });
+
+        // Setup overhead name tag for multiplayer / custom alias visibility
+        if (!this.isEnemy) {
+            const shortId = this.playerId ? this.playerId.substring(0, 6) : '';
+            let startName = '';
+            if (this.isControlled) {
+                const myAlias = PlayerData.alias || 'YOU';
+                startName = shortId ? `${myAlias} (${shortId})` : myAlias;
+            } else {
+                const peerAlias = this.alias;
+                startName = peerAlias 
+                    ? `${peerAlias} (${shortId})` 
+                    : (shortId || 'PLAYER');
+            }
+            
+            this.nameLabel = scene.add.text(x, y - 80, startName.toUpperCase(), {
+                fontFamily: 'Rajdhani',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                color: this.isControlled ? '#ffffff' : '#ffd700',
+                stroke: '#000000',
+                strokeThickness: 3
+            }).setOrigin(0.5).setDepth(11);
+        }
     }
 
     // ⚔️ MULTIPLAYER HIT DETECTION
@@ -185,6 +209,11 @@ export default class Player {
 
     update() {
         if (!this.sprite || !this.sprite.body) return;
+
+        if (this.nameLabel && this.sprite && this.sprite.active) {
+            this.nameLabel.setPosition(this.sprite.x, this.sprite.y - 80);
+            this.nameLabel.setVisible(this.state !== 'dead');
+        }
 
         // Run abilities visuals/status effects update for all clients/players
         this.updateAbilitiesVisuals();
@@ -1452,7 +1481,7 @@ export default class Player {
                 if (index !== -1) this.scene.enemies.splice(index, 1);
                 this.sprite.destroy();
                 if (this.health && this.health.bar) this.health.bar.destroy();
-
+                if (this.nameLabel) this.nameLabel.destroy();
             }
             else {
                 if (this.scene.mode === 'solo') {
@@ -1465,6 +1494,7 @@ export default class Player {
 
                     this.sprite.destroy();
                     if (this.health && this.health.bar) this.health.bar.destroy();
+                    if (this.nameLabel) this.nameLabel.destroy();
 
                     // ✅ Only then respawn
                     this.scene.time.delayedCall(1500, () => {
@@ -1473,6 +1503,15 @@ export default class Player {
                 }
             }
         });
+    }
+
+    setAlias(aliasName) {
+        this.alias = aliasName;
+        if (this.nameLabel) {
+            const shortId = this.playerId ? this.playerId.substring(0, 6) : '';
+            const newText = shortId ? `${aliasName} (${shortId})` : aliasName;
+            this.nameLabel.setText(newText.toUpperCase());
+        }
     }
 
     isOnGround() {
