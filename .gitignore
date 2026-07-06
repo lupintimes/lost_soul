@@ -70,3 +70,4 @@ thumbnail.png
 # pnpm-lock.yaml
 # Exported Game Files
 export/
+export_t/
