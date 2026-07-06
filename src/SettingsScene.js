@@ -5,6 +5,12 @@ export default class SettingsScene extends Phaser.Scene {
         super('SettingsScene');
     }
 
+    init(data) {
+        this.returnScene = (data && data.returnScene) ? data.returnScene : 'MenuScene';
+        this.isOverlay = (data && data.isOverlay) ? data.isOverlay : false;
+    }
+
+
     playClick() {
         try {
             if (this.sound.context && this.sound.context.state === 'suspended') {
@@ -23,9 +29,11 @@ export default class SettingsScene extends Phaser.Scene {
         const { width, height } = this.scale;
 
         // ─── Background ───────────────────────────────────
-        this.add.image(0, 0, 'menu_bg')
-            .setOrigin(0)
-            .setDisplaySize(width, height);
+        if (!this.isOverlay) {
+            this.add.image(0, 0, 'menu_bg')
+                .setOrigin(0)
+                .setDisplaySize(width, height);
+        }
 
         this.add.rectangle(0, 0, width, height, 0x090a0b, 0.75).setOrigin(0);
 
@@ -71,14 +79,19 @@ export default class SettingsScene extends Phaser.Scene {
         });
         backBtnContainer.on('pointerdown', () => {
             this.playClick();
-            this.scene.start('MenuScene');
+            if (this.isOverlay) {
+                this.scene.stop('SettingsScene');
+                this.scene.resume(this.returnScene);
+            } else {
+                this.scene.start(this.returnScene);
+            }
         });
 
         // ─── Settings Panel ──────────────────────────────
         const panelW = 500;
-        const panelH = 400;
+        const panelH = this.isOverlay ? 430 : 400;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + 30;
+        const panelY = height / 2 - panelH / 2 + (this.isOverlay ? 15 : 30);
 
         const panelG = this.add.graphics();
         panelG.fillStyle(0x0d121d, 0.85);
@@ -187,6 +200,68 @@ export default class SettingsScene extends Phaser.Scene {
             drawQualityButtons();
             this.playClick();
         });
+
+        // ─── Keyboard Control (ESC to exit settings) ─────
+        this.input.keyboard.on('keydown-ESC', () => {
+            this.playClick();
+            if (this.isOverlay) {
+                this.scene.stop('SettingsScene');
+                this.scene.resume(this.returnScene);
+            } else {
+                this.scene.start(this.returnScene);
+            }
+        });
+
+        // ─── Leave Game Button (Only in Overlay mode) ───
+        if (this.isOverlay) {
+            const leaveY = panelY + 390;
+            const leaveBtn = this.add.container(width / 2 - 100, leaveY - 17);
+            const btnW = 200;
+            const btnH = 35;
+            
+            const leaveBg = this.add.graphics();
+            const drawLeaveBg = (color, alpha, borderColor) => {
+                leaveBg.clear();
+                leaveBg.fillStyle(color, alpha);
+                leaveBg.fillRoundedRect(0, 0, btnW, btnH, 6);
+                leaveBg.lineStyle(1.5, borderColor, 0.8);
+                leaveBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+            };
+            drawLeaveBg(0x3f1a1a, 0.7, 0x882222);
+            leaveBtn.add(leaveBg);
+
+            const leaveText = this.add.text(btnW / 2, btnH / 2, 'LEAVE GAME', {
+                fontFamily: 'Rajdhani',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                color: '#ff8888'
+            }).setOrigin(0.5);
+            leaveBtn.add(leaveText);
+
+            leaveBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+            leaveBtn.on('pointerover', () => {
+                drawLeaveBg(0x5a1f1f, 0.9, 0xff4444);
+                leaveText.setColor('#ffffff');
+            });
+            leaveBtn.on('pointerout', () => {
+                drawLeaveBg(0x3f1a1a, 0.7, 0x882222);
+                leaveText.setColor('#ff8888');
+            });
+            leaveBtn.on('pointerdown', () => {
+                this.playClick();
+                this.scene.stop('SettingsScene');
+                const gameScene = this.scene.get(this.returnScene);
+                if (gameScene) {
+                    if (gameScene.mode === 'multiplayer') {
+                        gameScene.leaveMultiplayer();
+                    } else {
+                        gameScene.cleanupChat();
+                        gameScene.cleanupDOMUI();
+                        gameScene.scene.start('MenuScene');
+                    }
+                }
+            });
+        }
     }
 
     createSlider(x, y, label, getVal, setVal) {

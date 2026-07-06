@@ -300,6 +300,13 @@ export default class GameScene extends Phaser.Scene {
         this.events.on('shutdown', () => { this.cleanupChat(); this.cleanupDOMUI(); });
         this.events.on('destroy', () => { this.cleanupChat(); this.cleanupDOMUI(); });
 
+        this.events.on('resume', () => {
+            const gameUI = document.getElementById('game-ui-container');
+            if (gameUI) gameUI.style.display = 'block';
+            const chatUI = document.getElementById('game-chat-container');
+            if (chatUI) chatUI.style.display = 'block';
+        });
+
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
         this.roomId = data.roomId || null;
@@ -629,11 +636,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.isChatActive) return;
-            if (this.mode === 'multiplayer') {
-                this.leaveMultiplayer();
-            } else {
-                this.scene.start('MenuScene');
-            }
+            this.openSettings();
         });
 
     }
@@ -2677,10 +2680,27 @@ export default class GameScene extends Phaser.Scene {
             /* --- Top Right: Build Points --- */
             #ui-build-panel {
                 position: absolute;
-                top: 15px; right: 15px;
+                top: 15px; right: 75px;
                 padding: 12px 15px;
                 display: flex; flex-direction: column; gap: 10px;
                 pointer-events: auto;
+            }
+
+            #ui-settings-btn {
+                position: absolute;
+                top: 15px; right: 15px;
+                width: 45px; height: 45px;
+                display: flex; align-items: center; justify-content: center;
+                pointer-events: auto;
+                cursor: pointer;
+                font-size: 24px;
+                line-height: 45px;
+                transition: background 0.2s ease, border-color 0.2s ease, transform 0.3s ease;
+            }
+            #ui-settings-btn:hover {
+                background: rgba(23, 33, 46, 0.85);
+                border-color: #7fa3c7;
+                transform: rotate(45deg);
             }
             .build-header { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #fff; }
             .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
@@ -2750,6 +2770,10 @@ export default class GameScene extends Phaser.Scene {
                     <div class="build-bar-fill" id="ui-build-fill"></div>
                 </div>
                 <div class="build-text" id="ui-build-text">300,000 / 500,000</div>
+            </div>
+
+            <div id="ui-settings-btn" class="pixel-panel" onclick="window.game.scene.getScene('GameScene').openSettings();" title="Settings">
+                ⚙️
             </div>
 
             <div id="ui-hotbar">
@@ -3369,6 +3393,16 @@ export default class GameScene extends Phaser.Scene {
         setTimeout(() => {
             if (msgDiv) msgDiv.classList.add('faded');
         }, 8000);
+    }
+
+    openSettings() {
+        this.safePlaySound('sfx_click', 0.3);
+        this.scene.pause('GameScene');
+        const gameUI = document.getElementById('game-ui-container');
+        if (gameUI) gameUI.style.display = 'none';
+        const chatUI = document.getElementById('game-chat-container');
+        if (chatUI) chatUI.style.display = 'none';
+        this.scene.launch('SettingsScene', { returnScene: 'GameScene', isOverlay: true });
     }
 
     cleanupDOMUI() {
