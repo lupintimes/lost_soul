@@ -1,4 +1,5 @@
 import PlayerData from './PlayerData.js';
+import SocketManager from './SocketManager.js';
 
 export default class MenuScene extends Phaser.Scene {
     constructor() {
@@ -19,6 +20,13 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
+        // Pre-connect to socket server at menu load to decrease matchmaking latency
+        try {
+            SocketManager.connect();
+        } catch (e) {
+            console.warn('⚠️ Socket pre-connection failed:', e);
+        }
+
         this.cameras.main.setRoundPixels(false);
         const { width, height } = this.scale;
 
