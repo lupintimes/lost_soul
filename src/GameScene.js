@@ -118,6 +118,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     handlePointerDown(pointer) {
+        if (this.scene.isActive('SettingsScene')) return;
         const world = pointer.positionToCamera(this.cameras.main);
         this.startPoint = world;
         this.isDrawing = true;
@@ -125,6 +126,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     handlePointerMove(pointer) {
+        if (this.scene.isActive('SettingsScene')) return;
         if (!this.isDrawing) return;
         const world = pointer.positionToCamera(this.cameras.main);
 
@@ -231,6 +233,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     handlePointerUp(pointer) {
+        if (this.scene.isActive('SettingsScene')) {
+            this.isDrawing = false;
+            this.preview.clear();
+            return;
+        }
         if (!this.isDrawing) return;
         const world = pointer.positionToCamera(this.cameras.main);
 
@@ -299,13 +306,6 @@ export default class GameScene extends Phaser.Scene {
         // Clean up DOM chat elements on scene shutdown or destroy
         this.events.on('shutdown', () => { this.cleanupChat(); this.cleanupDOMUI(); });
         this.events.on('destroy', () => { this.cleanupChat(); this.cleanupDOMUI(); });
-
-        this.events.on('resume', () => {
-            const gameUI = document.getElementById('game-ui-container');
-            if (gameUI) gameUI.style.display = 'block';
-            const chatUI = document.getElementById('game-chat-container');
-            if (chatUI) chatUI.style.display = 'block';
-        });
 
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
@@ -636,6 +636,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.isChatActive) return;
+            if (this.scene.isActive('SettingsScene')) return;
             this.openSettings();
         });
 
@@ -2680,27 +2681,10 @@ export default class GameScene extends Phaser.Scene {
             /* --- Top Right: Build Points --- */
             #ui-build-panel {
                 position: absolute;
-                top: 15px; right: 75px;
+                top: 15px; right: 15px;
                 padding: 12px 15px;
                 display: flex; flex-direction: column; gap: 10px;
                 pointer-events: auto;
-            }
-
-            #ui-settings-btn {
-                position: absolute;
-                top: 15px; right: 15px;
-                width: 45px; height: 45px;
-                display: flex; align-items: center; justify-content: center;
-                pointer-events: auto;
-                cursor: pointer;
-                font-size: 24px;
-                line-height: 45px;
-                transition: background 0.2s ease, border-color 0.2s ease, transform 0.3s ease;
-            }
-            #ui-settings-btn:hover {
-                background: rgba(23, 33, 46, 0.85);
-                border-color: #7fa3c7;
-                transform: rotate(45deg);
             }
             .build-header { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #fff; }
             .build-icon { width: 8px; height: 8px; background: #0ea5e9; transform: rotate(45deg); }
@@ -2737,6 +2721,33 @@ export default class GameScene extends Phaser.Scene {
             .hotbar-slot[data-type="slide"] { color: #7fa3c7; }
             .hotbar-slot.active .slot-label { color: currentColor; }
             .hotbar-slot.active .slot-key { color: currentColor; border-color: currentColor; }
+
+            /* --- Top Right: Settings Button --- */
+            #ui-settings-btn {
+                position: absolute;
+                top: 15px;
+                right: 240px;
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                pointer-events: auto;
+                background: rgba(13, 18, 29, 0.75);
+                border: 1.5px solid #1f2b3e;
+                border-radius: 6px;
+                font-size: 20px;
+                transition: all 0.2s ease;
+            }
+            #ui-settings-btn:hover {
+                border-color: #7fa3c7;
+                background: rgba(23, 33, 46, 0.9);
+                transform: scale(1.05);
+            }
+            #ui-settings-btn:active {
+                transform: scale(0.95);
+            }
         `;
         document.head.appendChild(style);
 
@@ -2744,6 +2755,10 @@ export default class GameScene extends Phaser.Scene {
         container.id = 'game-ui-container';
 
         container.innerHTML = `
+            <div id="ui-settings-btn" class="pixel-panel" onclick="window.game.scene.getScene('GameScene').openSettings();">
+                ⚙️
+            </div>
+
             <div id="ui-player-panel" class="pixel-panel">
                 <div class="avatar-container">
                     <canvas id="ui-avatar-canvas" width="60" height="60"></canvas>
@@ -2770,10 +2785,6 @@ export default class GameScene extends Phaser.Scene {
                     <div class="build-bar-fill" id="ui-build-fill"></div>
                 </div>
                 <div class="build-text" id="ui-build-text">300,000 / 500,000</div>
-            </div>
-
-            <div id="ui-settings-btn" class="pixel-panel" onclick="window.game.scene.getScene('GameScene').openSettings();" title="Settings">
-                ⚙️
             </div>
 
             <div id="ui-hotbar">
@@ -3069,6 +3080,27 @@ export default class GameScene extends Phaser.Scene {
             cache.uiDeaths.textContent = this.deathCount;
             cache.lastDeaths = this.deathCount;
         }
+    }
+
+    openSettings() {
+        if (this.scene.isActive('SettingsScene')) return;
+        this.safePlaySound('sfx_click', 0.3);
+        
+        const container = document.getElementById('game-ui-container');
+        if (container) {
+            container.style.visibility = 'hidden';
+        }
+        
+        this.scene.launch('SettingsScene', { fromScene: 'GameScene' });
+        this.scene.bringToTop('SettingsScene');
+        
+        const settingsScene = this.scene.get('SettingsScene');
+        settingsScene.events.once('shutdown', () => {
+            const container = document.getElementById('game-ui-container');
+            if (container) {
+                container.style.visibility = 'visible';
+            }
+        });
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3393,16 +3425,6 @@ export default class GameScene extends Phaser.Scene {
         setTimeout(() => {
             if (msgDiv) msgDiv.classList.add('faded');
         }, 8000);
-    }
-
-    openSettings() {
-        this.safePlaySound('sfx_click', 0.3);
-        this.scene.pause('GameScene');
-        const gameUI = document.getElementById('game-ui-container');
-        if (gameUI) gameUI.style.display = 'none';
-        const chatUI = document.getElementById('game-chat-container');
-        if (chatUI) chatUI.style.display = 'none';
-        this.scene.launch('SettingsScene', { returnScene: 'GameScene', isOverlay: true });
     }
 
     cleanupDOMUI() {

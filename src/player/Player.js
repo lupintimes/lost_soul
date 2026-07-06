@@ -346,6 +346,17 @@ export default class Player {
             return;
         }
 
+        if (this.scene && this.scene.scene && this.scene.scene.isActive('SettingsScene')) {
+            if (this.sprite && this.sprite.body) {
+                this.sprite.setVelocityX(this.sprite.body.velocity.x * 0.8);
+                if (this.state !== 'dead' && this.state !== 'hurt' && this.state !== 'idle') {
+                    this.state = 'idle';
+                    this.sprite.anims.play(`${this.character}_idle`, true);
+                }
+            }
+            return;
+        }
+
         if (this.state === 'taunt') {
             // Allow interrupting taunt with movement, jump, attack, dash, or spell
             if (this.controls.left.isDown || this.controls.right.isDown || 
