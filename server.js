@@ -11,6 +11,60 @@ const io = new Server(server, {
     }
 });
 
+let geckosServer;
+import('@geckos.io/server').then(({ geckos }) => {
+    geckosServer = geckos({
+        authorization: async (auth, request) => {
+            return true;
+        },
+        cors: {
+            origin: "*",
+        }
+    });
+
+    geckosServer.addServer(server);
+    console.log('🚀 Geckos.io UDP Server integrated with HTTP Server');
+
+    geckosServer.onConnection(channel => {
+        console.log(`🔌 Geckos UDP connection: ${channel.id}`);
+
+        channel.on('joinRoom', (data) => {
+            const { roomId, playerId } = data;
+            channel.roomId = roomId;
+            channel.playerId = playerId;
+            channel.join(roomId);
+            console.log(`🚪 Geckos channel ${channel.id} joined room ${roomId} for player ${playerId}`);
+        });
+
+        channel.on('playerMovement', (movementData) => {
+            const roomId = channel.roomId;
+            const playerId = channel.playerId;
+            if (!roomId || !rooms[roomId] || !rooms[roomId].players[playerId]) return;
+
+            const player = rooms[roomId].players[playerId];
+            player.x = movementData.x;
+            player.y = movementData.y;
+            player.flipX = movementData.flipX;
+            player.anim = movementData.anim;
+            player.isShieldActive = movementData.isShieldActive || false;
+            player.isRageActive = movementData.isRageActive || false;
+            player.state = movementData.state || 'idle';
+            if (movementData.health !== undefined) {
+                player.health = movementData.health;
+            }
+
+            // Broadcast movement over UDP to other players in the room (excluding sender)
+            channel.broadcast.emit('playerMoved', player);
+        });
+
+        channel.onDisconnect(() => {
+            console.log(`❌ Geckos UDP disconnected: ${channel.id}`);
+        });
+    });
+}).catch(err => {
+    console.error('❌ Failed to load Geckos.io server:', err);
+});
+
 let rooms = {};
 
 const SPAWN_POINTS = [
@@ -748,7 +802,7 @@ function broadcastServerList() {
     io.emit('serverList', list);
 }
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 9208;
 server.listen(PORT, () => {
     console.log(`🚀 Listening on port ${PORT}`);
 });

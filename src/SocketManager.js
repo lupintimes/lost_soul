@@ -1,11 +1,14 @@
+import geckos from '@geckos.io/client';
+
 const SocketManager = {
     socket: null,
+    geckosChannel: null,
     roomId: null,
 
     connect(url) {
         if (!url) {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-            url = 'https://lost-soul-server.onrender.com';
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
+            url = 'http://192.168.1.4:9208';
         }
 
         if (this.socket && this.socket.connected) {
@@ -24,6 +27,10 @@ const SocketManager = {
 
         this.socket.on('connect', () => {
             console.log('✅ SocketManager connected:', this.socket.id);
+            // If Geckos connects later/earlier, sync room
+            if (this.geckosChannel && this.roomId) {
+                this.geckosChannel.emit('joinRoom', { roomId: this.roomId, playerId: this.socket.id });
+            }
         });
 
         this.socket.on('disconnect', () => {
@@ -33,11 +40,58 @@ const SocketManager = {
         return this.socket;
     },
 
+    connectGeckos(url) {
+        if (this.geckosChannel) {
+            // Already connected/connecting, just return it
+            return this.geckosChannel;
+        }
+
+        let host = 'http://192.168.1.4';
+        if (url) {
+            try {
+                const parsed = new URL(url);
+                host = `${parsed.protocol}//${parsed.hostname}`;
+            } catch (e) {
+                host = url;
+            }
+        } else {
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
+            host = isLocal ? 'http://192.168.1.4' : 'https://lost-soul-server.onrender.com';
+        }
+
+        console.log('🔌 Connecting Geckos WebRTC UDP to:', host, 'on port 9208');
+        this.geckosChannel = geckos({
+            url: host,
+            port: 9208
+        });
+
+        this.geckosChannel.onConnect(error => {
+            if (error) {
+                console.error('❌ Geckos connection error:', error.message);
+                return;
+            }
+            console.log('✅ Geckos connected:', this.geckosChannel.id);
+            if (this.roomId && this.socket) {
+                this.geckosChannel.emit('joinRoom', { roomId: this.roomId, playerId: this.socket.id });
+            }
+        });
+
+        this.geckosChannel.onDisconnect(() => {
+            console.log('❌ Geckos disconnected');
+        });
+
+        return this.geckosChannel;
+    },
+
     disconnect() {
         if (this.socket) {
             this.socket.removeAllListeners();
             this.socket.disconnect();
             this.socket = null;
+        }
+        if (this.geckosChannel) {
+            this.geckosChannel.close();
+            this.geckosChannel = null;
         }
         this.roomId = null;
     },
@@ -46,8 +100,15 @@ const SocketManager = {
         return this.socket;
     },
 
+    getGeckos() {
+        return this.geckosChannel;
+    },
+
     setRoom(roomId) {
         this.roomId = roomId;
+        if (this.geckosChannel && this.socket && this.socket.connected) {
+            this.geckosChannel.emit('joinRoom', { roomId, playerId: this.socket.id });
+        }
     },
 
     getRoom() {

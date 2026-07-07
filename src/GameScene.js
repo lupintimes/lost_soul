@@ -654,6 +654,12 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
 
+        // Initialize Geckos UDP movement channel
+        this.geckosChannel = SocketManager.connectGeckos(this.socket.io.uri);
+        if (this.geckosChannel && this.geckosChannel.bridge) {
+            this.geckosChannel.bridge.removeAllListeners('playerMoved');
+        }
+
         // ✅ Remove ONLY game-specific listeners (not all)
         this.socket.off('currentPlayers');
         this.socket.off('newPlayer');
@@ -726,9 +732,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         // 4. Player moved — ✅ THIS IS THE CRITICAL ONE
-        this.socket.on('playerMoved', (playerInfo) => {
-
-
+        const handlePlayerMoved = (playerInfo) => {
             const remote = this.otherPlayerMap[playerInfo.playerId];
             if (!remote) {
                 console.log('❌ Remote player not found in map!'); // 🔍 DEBUG
@@ -753,7 +757,12 @@ export default class GameScene extends Phaser.Scene {
                     remote.sprite.anims.play(playerInfo.anim, true);
                 }
             }
-        });
+        };
+
+        this.socket.on('playerMoved', handlePlayerMoved);
+        if (this.geckosChannel) {
+            this.geckosChannel.on('playerMoved', handlePlayerMoved);
+        }
 
         // 5. Player damaged
         this.socket.on('playerDamaged', (data) => {
@@ -1448,7 +1457,7 @@ export default class GameScene extends Phaser.Scene {
                     this.localPlayer.lastState !== this.localPlayer.state;
 
                 if (hasChanged && (now - this.lastEmitTime) > 50) {
-                    this.socket.emit('playerMovement', {
+                    const movementPayload = {
                         x,
                         y,
                         flipX,
@@ -1457,7 +1466,12 @@ export default class GameScene extends Phaser.Scene {
                         isRageActive: this.localPlayer.isRageActive,
                         health: this.localPlayer.health.current,
                         state: this.localPlayer.state
-                    });
+                    };
+                    if (this.geckosChannel) {
+                        this.geckosChannel.emit('playerMovement', movementPayload);
+                    } else {
+                        this.socket.emit('playerMovement', movementPayload);
+                    }
                     this.localPlayer.lastX = x;
                     this.localPlayer.lastY = y;
                     this.localPlayer.lastFlip = flipX;
