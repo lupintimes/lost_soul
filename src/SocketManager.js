@@ -7,8 +7,7 @@ const SocketManager = {
 
     connect(url) {
         if (!url) {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
-            url = 'localhost:9208';
+            url = 'https://lost-soul-server.onrender.com';
         }
 
         if (this.socket && this.socket.connected) {
@@ -64,13 +63,20 @@ const SocketManager = {
             url: host,
             port: 9208
         });
+        this.geckosChannel.isConnected = false;
 
         this.geckosChannel.onConnect(error => {
             if (error) {
                 console.error('❌ Geckos connection error:', error.message);
+                if (this.geckosChannel) {
+                    this.geckosChannel.isConnected = false;
+                }
                 return;
             }
             console.log('✅ Geckos connected:', this.geckosChannel.id);
+            if (this.geckosChannel) {
+                this.geckosChannel.isConnected = true;
+            }
             if (this.roomId && this.socket) {
                 this.geckosChannel.emit('joinRoom', { roomId: this.roomId, playerId: this.socket.id });
             }
@@ -78,6 +84,9 @@ const SocketManager = {
 
         this.geckosChannel.onDisconnect(() => {
             console.log('❌ Geckos disconnected');
+            if (this.geckosChannel) {
+                this.geckosChannel.isConnected = false;
+            }
         });
 
         return this.geckosChannel;
@@ -90,6 +99,7 @@ const SocketManager = {
             this.socket = null;
         }
         if (this.geckosChannel) {
+            this.geckosChannel.isConnected = false;
             this.geckosChannel.close();
             this.geckosChannel = null;
         }

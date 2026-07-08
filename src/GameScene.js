@@ -1467,7 +1467,7 @@ export default class GameScene extends Phaser.Scene {
                         health: this.localPlayer.health.current,
                         state: this.localPlayer.state
                     };
-                    if (this.geckosChannel) {
+                    if (this.geckosChannel && this.geckosChannel.isConnected) {
                         this.geckosChannel.emit('playerMovement', movementPayload);
                     } else {
                         this.socket.emit('playerMovement', movementPayload);
