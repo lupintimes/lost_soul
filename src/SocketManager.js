@@ -55,7 +55,7 @@ const SocketManager = {
             }
         } else {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
-            host = isLocal ? 'http://192.168.1.4' : 'https://lost-soul-server.onrender.com';
+            host = 'https://lost-soul-server.onrender.com';
         }
 
         console.log('🔌 Connecting Geckos WebRTC UDP to:', host, 'on port 9208');
@@ -100,7 +100,13 @@ const SocketManager = {
         }
         if (this.geckosChannel) {
             this.geckosChannel.isConnected = false;
-            this.geckosChannel.close();
+            try {
+                if (this.geckosChannel.peerConnection && this.geckosChannel.peerConnection.localPeerConnection) {
+                    this.geckosChannel.close();
+                }
+            } catch (err) {
+                console.warn('⚠️ Error closing Geckos channel:', err);
+            }
             this.geckosChannel = null;
         }
         this.roomId = null;
