@@ -8,7 +8,7 @@ const SocketManager = {
     connect(url) {
         if (!url) {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
-            url = 'http://192.168.1.4:9208';
+            url = 'localhost:9208';
         }
 
         if (this.socket && this.socket.connected) {

@@ -109,7 +109,7 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.binary('sfx_bubble_jump_bin', 'assets/audio/bubble_jump.ogg_');
         this.load.binary('sfx_bubble_break_bin', 'assets/audio/buble_break.ogg_');
         this.load.binary('sfx_ice_break_bin', 'assets/audio/ice_break.ogg_');
-        
+
         // Additional generic SFX placeholders
         this.load.binary('sfx_jump_bin', 'assets/audio/jump.mp3_');
         this.load.binary('sfx_walk_bin', 'assets/audio/walk.mp3_');
@@ -229,10 +229,10 @@ export default class PreloadScene extends Phaser.Scene {
         const audioKeys = [
             'sfx_click', 'sfx_attack1', 'sfx_attack2', 'sfx_hurt', 'sfx_death', 'sfx_dash', 'sfx_spell', 'sfx_highjump',
             'sfx_bubble_jump', 'sfx_bubble_break', 'sfx_ice_break',
-            'sfx_jump', 'sfx_walk', 'sfx_land', 'sfx_teleport', 'sfx_shield_block', 
+            'sfx_jump', 'sfx_walk', 'sfx_land', 'sfx_teleport', 'sfx_shield_block',
             'sfx_shield_break', 'sfx_block_place', 'sfx_ui_hover', 'sfx_ui_select'
         ];
-        
+
         // Count how many keys we expect to decode
         let decodedCount = 0;
         const totalToDecode = audioKeys.length;

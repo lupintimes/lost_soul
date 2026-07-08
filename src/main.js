@@ -34,6 +34,54 @@ const config = {
 document.fonts.ready.then(() => {
     const game = new Phaser.Game(config);
     window.game = game;
+
+    // 🚀 Web Worker to keep the game loop ticking at 30 FPS when the tab is running in the background
+    try {
+        const workerCode = `
+            let timer = null;
+            self.onmessage = function(e) {
+                if (e.data === 'start') {
+                    if (!timer) {
+                        timer = setInterval(() => {
+                            self.postMessage('tick');
+                        }, 33.33); // 30 FPS tick
+                    }
+                } else if (e.data === 'stop') {
+                    if (timer) {
+                        clearInterval(timer);
+                        timer = null;
+                    }
+                }
+            };
+        `;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+
+        worker.onmessage = function(e) {
+            if (e.data === 'tick') {
+                if (document.hidden && game && game.isRunning) {
+                    const time = performance.now();
+                    // Call step manually to update physics and network logic in background tab
+                    game.step(time, 33.33);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                worker.postMessage('start');
+            } else {
+                worker.postMessage('stop');
+            }
+        });
+
+        if (document.hidden) {
+            worker.postMessage('start');
+        }
+    } catch (err) {
+        console.warn('⚠️ Failed to initialize background execution worker:', err);
+    }
+
     // Set initial graphics quality rendering
     if (PlayerData.graphicsQuality === 'low') {
         game.canvas.style.imageRendering = 'pixelated';
