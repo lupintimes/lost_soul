@@ -58,6 +58,12 @@ const SocketManager = {
             host = 'https://lost-soul-server.onrender.com';
         }
 
+        // If hosting on Render, skip WebRTC initialization to avoid console fetch errors
+        if (host.includes('onrender.com')) {
+            console.log('ℹ️ Render production host detected. Skipping WebRTC UDP setup (using Socket.IO TCP fallback).');
+            return null;
+        }
+
         console.log('🔌 Connecting Geckos WebRTC UDP to:', host, 'on port 9208');
         this.geckosChannel = geckos({
             url: host,
