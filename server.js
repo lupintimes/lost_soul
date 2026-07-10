@@ -4,6 +4,9 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 
+// Serve static files from the repository root directory
+app.use(express.static(__dirname));
+
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -158,7 +161,8 @@ io.on('connection', (socket) => {
             roomId: room.roomId,
             name: room.name,
             players: Object.keys(room.players).length,
-            maxPlayers: room.maxPlayers
+            maxPlayers: room.maxPlayers,
+            pickedColors: Object.values(room.players).map(p => p.color)
         }));
         socket.emit('serverList', list);
     });
@@ -244,6 +248,19 @@ io.on('connection', (socket) => {
         const pChar = data.character || 'p1';
         const startHealth = pChar === 'p1' ? 130 : 100;
 
+        const pickedColors = Object.values(room.players).map(p => p.color);
+        let playerColor = data.color || 'slate';
+        if (pickedColors.includes(playerColor)) {
+            const allColors = [
+                'rose', 'sage', 'sand', 'lavender', 'slate', 'sky', 'peach', 'mint', 'lilac', 'cream',
+                'crimson', 'amber', 'emerald', 'teal', 'indigo', 'violet', 'fuchsia', 'mustard', 'lime', 'coral'
+            ];
+            const freeColor = allColors.find(c => !pickedColors.includes(c));
+            if (freeColor) {
+                playerColor = freeColor;
+            }
+        }
+
         const playerObj = {
             playerId: socket.id,
             x: spawn.x,
@@ -254,7 +271,7 @@ io.on('connection', (socket) => {
             kills: 0,
             deaths: 0,
             character: pChar,
-            color: data.color || 'slate',
+            color: playerColor,
             alias: data.alias || 'Guest_' + socket.id.substring(0, 4),
             state: 'idle',
             isInvincible: true
@@ -797,7 +814,8 @@ function broadcastServerList() {
         roomId: room.roomId,
         name: room.name,
         players: Object.keys(room.players).length,
-        maxPlayers: room.maxPlayers
+        maxPlayers: room.maxPlayers,
+        pickedColors: Object.values(room.players).map(p => p.color)
     }));
     io.emit('serverList', list);
 }
