@@ -7,7 +7,13 @@ const SocketManager = {
 
     connect(url) {
         if (!url) {
-            url = 'https://lost-soul-server.onrender.com';
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
+            if (isLocal) {
+                const hostname = window.location.hostname === 'file:' || !window.location.hostname ? 'localhost' : window.location.hostname;
+                url = `http://${hostname}:9208`;
+            } else {
+                url = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'https://lost-soul-server.onrender.com';
+            }
         }
 
         if (this.socket && this.socket.connected) {
@@ -55,7 +61,12 @@ const SocketManager = {
             }
         } else {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
-            host = 'https://lost-soul-server.onrender.com';
+            if (isLocal) {
+                const hostname = window.location.hostname === 'file:' || !window.location.hostname ? 'localhost' : window.location.hostname;
+                host = `http://${hostname}:9208`;
+            } else {
+                host = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'https://lost-soul-server.onrender.com';
+            }
         }
 
         // If hosting on Render, skip WebRTC initialization to avoid console fetch errors
