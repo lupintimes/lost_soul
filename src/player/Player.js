@@ -594,10 +594,26 @@ export default class Player {
         const verticalDist = Math.abs(player.sprite.y - this.sprite.y);
 
         // Heuristic: If enemy is right below the player (within 400px vertically), push them to the side so they don't get stuck under platform ceilings
-        const isRightBelow = (this.sprite.y > player.sprite.y) && (Math.abs(player.sprite.x - this.sprite.x) < 80) && (verticalDist <= 400);
+        // We use hysteresis to prevent rapid left/right oscillation
+        if (this.isAvoidingBelow === undefined) this.isAvoidingBelow = false;
+        if (this.avoidBelowSide === undefined) this.avoidBelowSide = -1;
+
+        const isRightBelow = (this.sprite.y > player.sprite.y) && (verticalDist <= 400);
+        const horizontalDist = Math.abs(player.sprite.x - this.sprite.x);
+
         if (isRightBelow) {
-            const side = this.sprite.x < player.sprite.x ? -1 : 1;
-            targetX = player.sprite.x + side * 180;
+            if (!this.isAvoidingBelow && horizontalDist < 80) {
+                this.isAvoidingBelow = true;
+                this.avoidBelowSide = this.sprite.x < player.sprite.x ? -1 : 1;
+            } else if (this.isAvoidingBelow && horizontalDist > 180) {
+                this.isAvoidingBelow = false;
+            }
+        } else {
+            this.isAvoidingBelow = false;
+        }
+
+        if (this.isAvoidingBelow) {
+            targetX = player.sprite.x + this.avoidBelowSide * 200;
         }
 
         // Heuristic: If player is on a different vertical level, target the nearest teleporter on our level
