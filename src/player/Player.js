@@ -552,18 +552,65 @@ export default class Player {
         const player = this.scene.players.find(p => p && p.state !== 'dead');
         if (!player || !player.sprite) return;
 
+        const time = this.scene.time.now;
+
+        // Enemy Teleport execution if touching a teleporter
+        if (this.isEnemy && this.scene.teleports) {
+            if (this.lastTeleportTime === undefined) this.lastTeleportTime = 0;
+            if (time - this.lastTeleportTime > 2000) {
+                const len = this.scene.teleports.length;
+                for (let i = 0; i < len; i++) {
+                    const tp = this.scene.teleports[i];
+                    const tpDist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, tp.x, tp.y);
+                    if (tpDist < 70) {
+                        this.sprite.setPosition(tp.tx, tp.ty);
+                        this.sprite.setVelocity(0, 0);
+                        this.lastTeleportTime = time;
+                        this.scene.safePlaySound('sfx_teleport', 0.25);
+                        break;
+                    }
+                }
+            }
+        }
+
         const dist = Phaser.Math.Distance.Between(
             this.sprite.x, this.sprite.y,
             player.sprite.x, player.sprite.y
         );
 
         // Group flanking / chase offset X position
-        const targetX = player.sprite.x + (this.chaseOffset || 0);
+        let targetX = player.sprite.x + (this.chaseOffset || 0);
+
+        // Heuristic: If player is on a different vertical level, target the nearest teleporter on our level
+        const verticalDist = Math.abs(player.sprite.y - this.sprite.y);
+        if (verticalDist > 400 && this.scene.teleports) {
+            let closestTp = null;
+            let minTpDist = Infinity;
+            
+            const len = this.scene.teleports.length;
+            for (let i = 0; i < len; i++) {
+                const tp = this.scene.teleports[i];
+                if (Math.abs(tp.y - this.sprite.y) < 300) {
+                    const distToTp = Math.abs(tp.x - this.sprite.x);
+                    if (distToTp < minTpDist) {
+                        minTpDist = distToTp;
+                        closestTp = tp;
+                    }
+                }
+            }
+
+            if (closestTp) {
+                targetX = closestTp.x;
+            }
+        }
+
         const dir = targetX < this.sprite.x ? -1 : 1;
 
-        const DETECT_RANGE = 400;
+        // In solo wave mode, enemies always chase the player
+        const alwaysChase = this.scene.mode === 'solo';
+        const DETECT_RANGE = alwaysChase ? 999999 : 400;
         const ATTACK_RANGE = 130;
-        const LOSE_RANGE = 650;
+        const LOSE_RANGE = alwaysChase ? 999999 : 650;
 
         if (!this.aiState) this.aiState = 'patrol';
         if (!this.attackCooldown) this.attackCooldown = false;
