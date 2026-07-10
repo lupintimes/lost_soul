@@ -606,8 +606,8 @@ export default class Player {
 
         const dir = targetX < this.sprite.x ? -1 : 1;
 
-        // In solo wave mode, enemies always chase the player
-        const alwaysChase = this.scene.mode === 'solo';
+        // In solo wave mode, enemies (except static guards) always chase the player
+        const alwaysChase = this.scene.mode === 'solo' && !this.isGuard;
         const DETECT_RANGE = alwaysChase ? 999999 : 400;
         const ATTACK_RANGE = 130;
         const LOSE_RANGE = alwaysChase ? 999999 : 650;
