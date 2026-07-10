@@ -76,7 +76,12 @@ export default class Player {
         // Setup collision categories (category 2 for players/enemies, category 1 for map)
         if (this.sprite && this.sprite.body) {
             this.sprite.body.collisionFilter.category = 0x0002;
-            this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002;
+            if (this.scene && this.scene.mode === 'multiplayer') {
+                // In multiplayer, players do not collide with other players/enemies (only map/platforms)
+                this.sprite.body.collisionFilter.mask = 0x0001;
+            } else {
+                this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002;
+            }
         }
 
         if (this.isControlled) {
@@ -2013,7 +2018,11 @@ export default class Player {
                     this.createDashGhost();
                 }
             } else {
-                this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002; // collide with map/ground and other players/enemies
+                if (this.scene && this.scene.mode === 'multiplayer') {
+                    this.sprite.body.collisionFilter.mask = 0x0001; // only collide with map/ground
+                } else {
+                    this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002; // collide with map/ground and other players/enemies
+                }
                 
                 // Restore alpha if we were dashing/invincible/chilled
                 const targetAlpha = isChilled ? 0.75 : 1.0;
