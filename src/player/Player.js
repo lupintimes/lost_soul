@@ -436,10 +436,15 @@ export default class Player {
             const climbSpeed = speed * 2.5;
             
             // Gently push horizontal velocity to keep player locked against the block
-            if (isTouchingLeftSide) {
-                this.sprite.setVelocityX(1.5);
+            // If forcing down, don't push into the wall so we don't catch on corners/friction
+            if (this.controls.down && this.controls.down.isDown && !(this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown))) {
+                this.sprite.setVelocityX(0);
             } else {
-                this.sprite.setVelocityX(-1.5);
+                if (isTouchingLeftSide) {
+                    this.sprite.setVelocityX(1.5);
+                } else {
+                    this.sprite.setVelocityX(-1.5);
+                }
             }
             
             if (this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown)) {
@@ -448,7 +453,7 @@ export default class Player {
                     this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 }
             } else if (this.controls.down && this.controls.down.isDown) {
-                this.sprite.setVelocityY(speed * 1.5); // Move DOWN (controlled)
+                this.sprite.setVelocityY(speed * 2.2); // Move DOWN (fast/smooth slide)
                 if (this.state !== 'attack') {
                     this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 }
