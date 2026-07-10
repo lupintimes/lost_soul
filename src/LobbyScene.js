@@ -606,6 +606,37 @@ export default class LobbyScene extends Phaser.Scene {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     createServer() {
+        this.pickedColorsInRoom = [];
+        this.tempAlias = PlayerData.alias;
+        this.selectedColorId = PlayerData.color;
+        this.pendingCreate = true;
+        this.pendingJoinRoomId = null;
+        this.showIdentityModal();
+    }
+
+    joinServer(roomId) {
+        const server = this.serverList.find(s => s.roomId === roomId);
+        this.pickedColorsInRoom = server ? (server.pickedColors || []) : [];
+        
+        this.tempAlias = PlayerData.alias;
+        
+        // Auto-select a color that is not already picked in this room
+        let availColorId = PlayerData.color;
+        const colors = PlayerData.colors;
+        if (this.pickedColorsInRoom.includes(availColorId)) {
+            const found = colors.find(c => !this.pickedColorsInRoom.includes(c.id));
+            if (found) {
+                availColorId = found.id;
+            }
+        }
+        this.selectedColorId = availColorId;
+
+        this.pendingCreate = false;
+        this.pendingJoinRoomId = roomId;
+        this.showIdentityModal();
+    }
+
+    executeCreateServer() {
         const socket = SocketManager.get();
 
         if (!socket || !socket.connected) {
@@ -622,7 +653,7 @@ export default class LobbyScene extends Phaser.Scene {
         });
     }
 
-    joinServer(roomId) {
+    executeJoinServer(roomId) {
         const socket = SocketManager.get();
 
         if (!socket || !socket.connected) {
@@ -636,6 +667,273 @@ export default class LobbyScene extends Phaser.Scene {
             alias: PlayerData.alias,
             color: PlayerData.color
         });
+    }
+
+    showIdentityModal() {
+        if (!this.identityModalContainer) {
+            this.identityModalContainer = this.add.container(0, 0);
+        }
+        this.identityModalContainer.removeAll(true);
+        this.identityModalContainer.setVisible(true);
+
+        const { width, height } = this.scale;
+
+        // Semi-transparent overlay blocker
+        const blocker = this.add.rectangle(0, 0, width, height, 0x000000, 0.6)
+            .setOrigin(0)
+            .setInteractive();
+        this.identityModalContainer.add(blocker);
+
+        const modalW = 500;
+        const modalH = 420;
+        const modalX = width / 2 - modalW / 2;
+        const modalY = height / 2 - modalH / 2;
+
+        const modalBg = this.add.graphics();
+        modalBg.fillStyle(0x0d121d, 0.95);
+        modalBg.fillRoundedRect(modalX, modalY, modalW, modalH, 12);
+        modalBg.lineStyle(2, 0x1f2b3e, 1);
+        modalBg.strokeRoundedRect(modalX, modalY, modalW, modalH, 12);
+        this.identityModalContainer.add(modalBg);
+
+        // Title
+        const titleText = this.add.text(width / 2, modalY + 30, 'CHOOSE YOUR IDENTITY', {
+            fontFamily: 'Rajdhani',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        this.identityModalContainer.add(titleText);
+
+        // Alias Label
+        const aliasLabel = this.add.text(width / 2, modalY + 75, 'ALIAS', {
+            fontFamily: 'Rajdhani',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#7fa3c7'
+        }).setOrigin(0.5);
+        this.identityModalContainer.add(aliasLabel);
+
+        // Alias Input Button Field
+        const aliasBtnW = 340;
+        const aliasBtnH = 40;
+        const aliasBtnContainer = this.add.container(width / 2 - aliasBtnW / 2, modalY + 95);
+        const aliasBtnBg = this.add.graphics();
+        const drawAliasBg = (color, alpha, borderColor) => {
+            aliasBtnBg.clear();
+            aliasBtnBg.fillStyle(color, alpha);
+            aliasBtnBg.fillRoundedRect(0, 0, aliasBtnW, aliasBtnH, 6);
+            aliasBtnBg.lineStyle(1.5, borderColor, 0.8);
+            aliasBtnBg.strokeRoundedRect(0, 0, aliasBtnW, aliasBtnH, 6);
+        };
+        drawAliasBg(0x0d121d, 0.7, 0x1f2b3e);
+        aliasBtnContainer.add(aliasBtnBg);
+
+        const aliasText = this.add.text(aliasBtnW / 2, aliasBtnH / 2, this.tempAlias, {
+            fontFamily: 'Rajdhani',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        aliasBtnContainer.add(aliasText);
+
+        aliasBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, aliasBtnW, aliasBtnH), Phaser.Geom.Rectangle.Contains);
+        aliasBtnContainer.on('pointerover', () => drawAliasBg(0x17212e, 0.85, 0x5f7793));
+        aliasBtnContainer.on('pointerout', () => drawAliasBg(0x0d121d, 0.7, 0x1f2b3e));
+        aliasBtnContainer.on('pointerdown', () => {
+            this.playClick();
+            const name = prompt('Enter your alias:', this.tempAlias);
+            if (name && name.trim().length > 0) {
+                this.tempAlias = name.trim().substring(0, 15);
+                aliasText.setText(this.tempAlias);
+            }
+        });
+        this.identityModalContainer.add(aliasBtnContainer);
+
+        // Color Label
+        const colorLabel = this.add.text(width / 2, modalY + 160, 'PLAYER COLOR', {
+            fontFamily: 'Rajdhani',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: '#7fa3c7'
+        }).setOrigin(0.5);
+        this.identityModalContainer.add(colorLabel);
+
+        // Color Grid (8 columns x 3 rows)
+        const colors = PlayerData.colors;
+        const circleRadius = 16; // 32px diameter
+        const gap = 10;
+        const swatchW = circleRadius * 2;
+        const swatchH = circleRadius * 2;
+        
+        // Total grid width for 8 columns
+        const totalGridW = 8 * swatchW + 7 * gap;
+        const startX = width / 2 - totalGridW / 2 + circleRadius;
+        const swatchStartY = modalY + 185;
+
+        const swatchGraphicsList = [];
+
+        const drawSwatches = () => {
+            swatchGraphicsList.forEach(g => g.destroy());
+            swatchGraphicsList.length = 0;
+
+            colors.forEach((c, idx) => {
+                const col = idx % 8;
+                const row = Math.floor(idx / 8);
+                const cx = startX + col * (swatchW + gap);
+                const cy = swatchStartY + row * (swatchH + gap);
+                
+                const isSelected = this.selectedColorId === c.id;
+                const isPicked = this.pickedColorsInRoom && this.pickedColorsInRoom.includes(c.id);
+
+                const swatchContainer = this.add.container(cx, cy);
+                const swatchBg = this.add.graphics();
+                const tintColor = c.tint !== null ? c.tint : 0x78899a;
+                
+                swatchBg.fillStyle(tintColor, isPicked ? 0.25 : 1);
+                swatchBg.fillCircle(0, 0, circleRadius);
+
+                // Thick dark stroke around the circle (Among Us style)
+                swatchBg.lineStyle(2.5, 0x090a0b, isPicked ? 0.3 : 1);
+                swatchBg.strokeCircle(0, 0, circleRadius);
+
+                if (isPicked) {
+                    // Draw a red diagonal cross / "X" over the color swatch
+                    const lineG = this.add.graphics();
+                    lineG.lineStyle(2.5, 0xef4444, 0.85);
+                    const size = circleRadius - 4;
+                    lineG.lineBetween(-size, -size, size, size);
+                    lineG.lineBetween(size, -size, -size, size);
+                    swatchContainer.add(lineG);
+                } else if (isSelected) {
+                    // Inner white border
+                    swatchBg.lineStyle(3, 0xffffff, 1);
+                    swatchBg.strokeCircle(0, 0, circleRadius + 4);
+                    // Glowing outer circle
+                    swatchBg.lineStyle(1.5, 0x00ffff, 0.85);
+                    swatchBg.strokeCircle(0, 0, circleRadius + 7);
+                }
+
+                swatchContainer.add(swatchBg);
+                
+                // Touch/click detection (only if color is not already picked)
+                if (!isPicked) {
+                    swatchContainer.setInteractive(new Phaser.Geom.Circle(0, 0, circleRadius + 6), Phaser.Geom.Circle.Contains);
+                    swatchContainer.on('pointerover', () => {
+                        if (!isSelected) {
+                            swatchBg.lineStyle(1.5, 0xffffff, 0.6);
+                            swatchBg.strokeCircle(0, 0, circleRadius + 4);
+                        }
+                    });
+                    swatchContainer.on('pointerout', () => {
+                        if (!isSelected) {
+                            swatchBg.clear();
+                            swatchBg.fillStyle(tintColor, 1);
+                            swatchBg.fillCircle(0, 0, circleRadius);
+                            swatchBg.lineStyle(2.5, 0x090a0b, 1);
+                            swatchBg.strokeCircle(0, 0, circleRadius);
+                        }
+                    });
+                    swatchContainer.on('pointerdown', () => {
+                        this.playClick();
+                        this.selectedColorId = c.id;
+                        drawSwatches();
+                    });
+                }
+
+                this.identityModalContainer.add(swatchContainer);
+                swatchGraphicsList.push(swatchContainer);
+            });
+        };
+
+        drawSwatches();
+
+        // Buttons (Cancel & Join/Launch)
+        const btnW = 140;
+        const btnH = 40;
+        
+        // Cancel Button
+        const cancelBtnContainer = this.add.container(width / 2 - 90 - btnW / 2, modalY + 345);
+        const cancelBg = this.add.graphics();
+        const drawCancelBg = (color, alpha, borderColor) => {
+            cancelBg.clear();
+            cancelBg.fillStyle(color, alpha);
+            cancelBg.fillRoundedRect(0, 0, btnW, btnH, 6);
+            cancelBg.lineStyle(1.5, borderColor, 0.8);
+            cancelBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+        };
+        drawCancelBg(0x3f1a1a, 0.7, 0x882222);
+        cancelBtnContainer.add(cancelBg);
+
+        const cancelText = this.add.text(btnW / 2, btnH / 2, 'CANCEL', {
+            fontFamily: 'Rajdhani',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#ff8888'
+        }).setOrigin(0.5);
+        cancelBtnContainer.add(cancelText);
+
+        cancelBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+        cancelBtnContainer.on('pointerover', () => {
+            drawCancelBg(0x5a1f1f, 0.9, 0xff4444);
+            cancelText.setColor('#ffffff');
+        });
+        cancelBtnContainer.on('pointerout', () => {
+            drawCancelBg(0x3f1a1a, 0.7, 0x882222);
+            cancelText.setColor('#ff8888');
+        });
+        cancelBtnContainer.on('pointerdown', () => {
+            this.playClick();
+            this.identityModalContainer.setVisible(false);
+        });
+        this.identityModalContainer.add(cancelBtnContainer);
+
+        // Join / Launch Button
+        const joinBtnContainer = this.add.container(width / 2 + 90 - btnW / 2, modalY + 345);
+        const joinBg = this.add.graphics();
+        const drawJoinBg = (color, alpha, borderColor) => {
+            joinBg.clear();
+            joinBg.fillStyle(color, alpha);
+            joinBg.fillRoundedRect(0, 0, btnW, btnH, 6);
+            joinBg.lineStyle(1.5, borderColor, 0.8);
+            joinBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
+        };
+        drawJoinBg(0x161f1a, 0.8, 0x2e5c35);
+        joinBtnContainer.add(joinBg);
+
+        const actionTextStr = this.pendingCreate ? 'LAUNCH' : 'JOIN';
+        const joinText = this.add.text(btnW / 2, btnH / 2, actionTextStr, {
+            fontFamily: 'Rajdhani',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        joinBtnContainer.add(joinText);
+
+        joinBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, btnW, btnH), Phaser.Geom.Rectangle.Contains);
+        joinBtnContainer.on('pointerover', () => {
+            drawJoinBg(0x1e3624, 0.9, 0x44ff44);
+        });
+        joinBtnContainer.on('pointerout', () => {
+            drawJoinBg(0x161f1a, 0.8, 0x2e5c35);
+        });
+        joinBtnContainer.on('pointerdown', () => {
+            this.playClick();
+            
+            // Save to PlayerData so it persists
+            PlayerData.setAlias(this.tempAlias);
+            PlayerData.setColor(this.selectedColorId);
+
+            // Execute the action
+            if (this.pendingCreate) {
+                this.executeCreateServer();
+            } else {
+                this.executeJoinServer(this.pendingJoinRoomId);
+            }
+
+            this.identityModalContainer.setVisible(false);
+        });
+        this.identityModalContainer.add(joinBtnContainer);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -653,5 +951,10 @@ export default class LobbyScene extends Phaser.Scene {
 
         this.serverList = [];
         this.serverListElements = [];
+
+        if (this.identityModalContainer) {
+            this.identityModalContainer.destroy();
+            this.identityModalContainer = null;
+        }
     }
 }
