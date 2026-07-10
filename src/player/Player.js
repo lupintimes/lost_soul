@@ -592,6 +592,13 @@ export default class Player {
         // Group flanking / chase offset X position
         let targetX = player.sprite.x + (this.chaseOffset || 0);
 
+        // Heuristic: If enemy is right below the player (within 400px vertically), push them to the side so they don't get stuck under platform ceilings
+        const isRightBelow = (this.sprite.y > player.sprite.y) && (Math.abs(player.sprite.x - this.sprite.x) < 80) && (verticalDist <= 400);
+        if (isRightBelow) {
+            const side = this.sprite.x < player.sprite.x ? -1 : 1;
+            targetX = player.sprite.x + side * 180;
+        }
+
         // Heuristic: If player is on a different vertical level, target the nearest teleporter on our level
         const verticalDist = Math.abs(player.sprite.y - this.sprite.y);
         if (verticalDist > 400 && this.scene.teleports) {
@@ -632,7 +639,7 @@ export default class Player {
         // Jump if player is on a platform above and we are horizontally close, OR if we are moving but stuck horizontally against a wall/obstacle
         if (this.aiState === 'chase' || this.aiState === 'retreat') {
             const isStuck = this.isOnGround() && Math.abs(this.sprite.body.velocity.x) < 0.5;
-            const playerAbove = player.sprite.y < this.sprite.y - 80 && Math.abs(player.sprite.x - this.sprite.x) < 150;
+            const playerAbove = player.sprite.y < this.sprite.y - 80 && Math.abs(player.sprite.x - this.sprite.x) < 220;
             
             if ((isStuck || playerAbove) && this.isOnGround() && (time - this.lastJumpTime > 1500)) {
                 this.sprite.setVelocityY(this.jumpForce || -16);
