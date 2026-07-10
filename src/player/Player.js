@@ -617,8 +617,6 @@ export default class Player {
         if (this.lastJumpTime === undefined) this.lastJumpTime = 0;
         if (this.lastSpellTime === undefined) this.lastSpellTime = 0;
 
-        const time = this.scene.time.now;
-
         // 🦘 PATHFINDING / JUMPING
         // Jump if player is on a platform above and we are horizontally close, OR if we are moving but stuck horizontally against a wall/obstacle
         if (this.aiState === 'chase' || this.aiState === 'retreat') {
