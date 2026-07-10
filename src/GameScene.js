@@ -1,6 +1,7 @@
 import Player from './player/Player.js';
 import SocketManager from './SocketManager.js';
 import PlayerData from './PlayerData.js';
+import WaveSystem from './systems/WaveSystem.js';
 
 const SPELL_COLORS = {
     'p1': 0x00ffff,
@@ -304,8 +305,22 @@ export default class GameScene extends Phaser.Scene {
             this.anims.resumeAll();
         });
         // Clean up DOM chat elements on scene shutdown or destroy
-        this.events.on('shutdown', () => { this.cleanupChat(); this.cleanupDOMUI(); });
-        this.events.on('destroy', () => { this.cleanupChat(); this.cleanupDOMUI(); });
+        this.events.on('shutdown', () => {
+            this.cleanupChat();
+            this.cleanupDOMUI();
+            if (this.waveSystem) {
+                this.waveSystem.destroy();
+                this.waveSystem = null;
+            }
+        });
+        this.events.on('destroy', () => {
+            this.cleanupChat();
+            this.cleanupDOMUI();
+            if (this.waveSystem) {
+                this.waveSystem.destroy();
+                this.waveSystem = null;
+            }
+        });
 
         const data = this.scene.settings.data || {};
         this.mode = data.mode || 'solo';
@@ -574,13 +589,24 @@ export default class GameScene extends Phaser.Scene {
         if (this.mode === 'solo') {
             this.maxEnemies = 6;
             const playerSpawn = this.spawnPlayer();
-            this.spawnInitialEnemies(playerSpawn);
             this.cameras.main.startFollow(this.players[0].sprite, true, 0.1, 0.1);
 
+            // Initialize Wave System
+            this.waveSystem = new WaveSystem(this);
         }
 
         this.initDOMUI();
         this.createHUD();
+
+        if (this.mode === 'solo') {
+            const wavePanel = document.getElementById('ui-wave-panel');
+            if (wavePanel) {
+                wavePanel.style.display = 'flex';
+            }
+            if (this.waveSystem) {
+                this.waveSystem.start();
+            }
+        }
 
         if (this.mode === 'multiplayer') {
             if (!this.socket || !this.socket.connected) {
@@ -1406,6 +1432,11 @@ export default class GameScene extends Phaser.Scene {
                     this.killCount++;
                     e.countedAsKill = true;
 
+                    // Notify WaveSystem if active
+                    if (this.waveSystem) {
+                        this.waveSystem.onEnemyDefeated();
+                    }
+
                     const localP = this.localPlayer || this.players[0];
                     if (localP && localP.character === 'p3' && localP.hasTriggeredUndyingRage) {
                         localP.recoverFromUndyingRage();
@@ -1424,7 +1455,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.maxEnemies = 6;
 
-        if (this.enemies.length < this.maxEnemies && !this.isSpawningEnemies) {
+        if (!this.waveSystem && this.enemies.length < this.maxEnemies && !this.isSpawningEnemies) {
             this.isSpawningEnemies = true;
             const needed = this.maxEnemies - this.enemies.length;
 
@@ -1696,6 +1727,167 @@ export default class GameScene extends Phaser.Scene {
             }
 
             this.enemies.push(enemy);
+        }
+    }
+
+    spawnWaveEnemies(count, hpMultiplier, speedMultiplier) {
+        let playerX = 0;
+        let playerY = 0;
+        let hasPlayer = false;
+        if (this.players && this.players[0] && this.players[0].sprite) {
+            playerX = this.players[0].sprite.x;
+            playerY = this.players[0].sprite.y;
+            hasPlayer = true;
+        }
+
+        let candidates = this.spawnPoints.filter(sp => {
+            if (this.cameras && this.cameras.main && this.cameras.main.worldView) {
+                const view = this.cameras.main.worldView;
+                if (sp.x >= view.x && sp.x <= view.x + view.width &&
+                    sp.y >= view.y && sp.y <= view.y + view.height) {
+                    return false;
+                }
+            }
+
+            if (hasPlayer) {
+                const distToPlayer = Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY);
+                if (distToPlayer < 500) return false;
+            }
+            return true;
+        });
+
+        if (candidates.length < count) {
+            candidates = this.spawnPoints.filter(sp => {
+                if (hasPlayer) {
+                    const distToPlayer = Phaser.Math.Distance.Between(sp.x, sp.y, playerX, playerY);
+                    return distToPlayer > 300;
+                }
+                return true;
+            });
+        }
+
+        if (candidates.length === 0) {
+            candidates = [...this.spawnPoints];
+        }
+
+        const shuffled = Phaser.Utils.Array.Shuffle(candidates);
+        const spawnCount = Math.min(count, shuffled.length);
+
+        for (let i = 0; i < spawnCount; i++) {
+            const spawn = shuffled[i];
+            const randomChar = Phaser.Utils.Array.GetRandom(['p1', 'p2', 'p3']);
+
+            const enemy = new Player(this, spawn.x, spawn.y, null, false, randomChar);
+
+            enemy.isEnemy = true;
+            enemy.state = 'idle';
+            enemy.countedAsKill = false;
+            enemy.chaseOffset = Phaser.Math.Between(-40, 40);
+
+            const maxHp = (randomChar === 'p1' ? 130 : 100) * hpMultiplier;
+            enemy.health.max = Math.round(maxHp);
+            enemy.health.current = Math.round(maxHp);
+
+            if (randomChar === 'p1') {
+                enemy.speed = 3 * speedMultiplier;
+                enemy.jumpForce = -16;
+                enemy.sprite.setTint(0xaaaaaa);
+                enemy.originalTint = 0xaaaaaa;
+            } else if (randomChar === 'p2') {
+                enemy.speed = 3.8 * speedMultiplier;
+                enemy.jumpForce = -18;
+                enemy.sprite.setTint(0x8844ff);
+                enemy.originalTint = 0x8844ff;
+            } else {
+                enemy.speed = 2.6 * speedMultiplier;
+                enemy.jumpForce = -14;
+                enemy.sprite.setTint(0xff4444);
+                enemy.originalTint = 0xff4444;
+            }
+
+            this.enemies.push(enemy);
+        }
+    }
+
+    announceWave(waveNum) {
+        this.safePlaySound('sfx_rage_start', 0.5);
+
+        const { width, height } = this.scale;
+        
+        const splashText = this.add.text(width / 2, height / 2 - 100, `WAVE ${waveNum}`, {
+            fontFamily: 'Rajdhani',
+            fontSize: '64px',
+            fontWeight: 'bold',
+            color: '#ff4444',
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+
+        const subText = this.add.text(width / 2, height / 2 - 40, `DEFEND YOURSELF!`, {
+            fontFamily: 'Rajdhani',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+
+        this.tweens.add({
+            targets: [splashText, subText],
+            alpha: { start: 1, to: 0 },
+            scale: { start: 1, to: 1.15 },
+            delay: 1500,
+            duration: 800,
+            onComplete: () => {
+                splashText.destroy();
+                subText.destroy();
+            }
+        });
+    }
+
+    announceWaveComplete(waveNum) {
+        this.safePlaySound('sfx_block_place', 0.6);
+
+        const { width, height } = this.scale;
+        
+        const splashText = this.add.text(width / 2, height / 2 - 100, `WAVE ${waveNum} CLEAR`, {
+            fontFamily: 'Rajdhani',
+            fontSize: '48px',
+            fontWeight: 'bold',
+            color: '#44ff44',
+            stroke: '#000000',
+            strokeThickness: 5
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+
+        this.tweens.add({
+            targets: splashText,
+            alpha: { start: 1, to: 0 },
+            scale: { start: 1, to: 1.1 },
+            delay: 1500,
+            duration: 800,
+            onComplete: () => {
+                splashText.destroy();
+            }
+        });
+    }
+
+    updateWaveHUD() {
+        if (!this.waveSystem) return;
+
+        const waveTitle = document.getElementById('ui-wave-title');
+        const waveStats = document.getElementById('ui-wave-stats');
+        
+        if (!waveTitle || !waveStats) return;
+
+        if (this.waveSystem.state === 'waiting') {
+            waveTitle.innerText = `PREPARING WAVE ${this.waveSystem.currentWave + 1}`;
+            waveStats.innerText = `NEXT WAVE IN ${this.waveSystem.countdown}s`;
+            waveStats.style.color = '#ef4444';
+        } else {
+            waveTitle.innerText = `WAVE ${this.waveSystem.currentWave}`;
+            const remaining = this.waveSystem.totalEnemiesInWave - this.waveSystem.enemiesDefeatedInWave;
+            waveStats.innerText = `ENEMIES LEFT: ${remaining}`;
+            waveStats.style.color = '#7fa3c7';
         }
     }
 
@@ -2789,6 +2981,38 @@ export default class GameScene extends Phaser.Scene {
             #ui-settings-btn:active {
                 transform: scale(0.95);
             }
+
+            /* --- Top Center: Wave HUD --- */
+            #ui-wave-panel {
+                position: absolute;
+                top: 15px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                background: rgba(13, 18, 29, 0.85);
+                border: 2.5px solid #1f2b3e;
+                border-radius: 8px;
+                padding: 8px 24px;
+                font-family: 'Rajdhani', sans-serif;
+                min-width: 180px;
+                pointer-events: none;
+                z-index: 100;
+            }
+            .wave-title {
+                font-size: 20px;
+                font-weight: 800;
+                color: #ffffff;
+                letter-spacing: 1.5px;
+            }
+            .wave-stats {
+                font-size: 13px;
+                font-weight: 700;
+                color: #7fa3c7;
+                letter-spacing: 0.5px;
+            }
         `;
         document.head.appendChild(style);
 
@@ -2796,6 +3020,11 @@ export default class GameScene extends Phaser.Scene {
         container.id = 'game-ui-container';
 
         container.innerHTML = `
+            <div id="ui-wave-panel" class="pixel-panel" style="display: none;">
+                <div class="wave-title" id="ui-wave-title">WAVE 1</div>
+                <div class="wave-stats" id="ui-wave-stats">ENEMIES: 3 / 3</div>
+            </div>
+
             <div id="ui-settings-btn" class="pixel-panel" onclick="window.game.scene.getScene('GameScene').openSettings();">
                 ⚙️
             </div>
