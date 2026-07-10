@@ -436,28 +436,34 @@ export default class Player {
             const climbSpeed = speed * 2.5;
             
             // Gently push horizontal velocity to keep player locked against the block
-            // If forcing down, don't push into the wall so we don't catch on corners/friction
-            if (this.controls.down && this.controls.down.isDown && !(this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown))) {
-                this.sprite.setVelocityX(0);
+            // If forcing down, push away to drop off the wall. Otherwise lock against it.
+            if (this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown)) {
+                if (isTouchingLeftSide) {
+                    this.sprite.setVelocityX(1.5);
+                } else {
+                    this.sprite.setVelocityX(-1.5);
+                }
+                this.sprite.setVelocityY(-climbSpeed); // Move UP
+                if (this.state !== 'attack') {
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
+                }
+            } else if (this.controls.down && this.controls.down.isDown) {
+                // Push away horizontally to release from sticky wall
+                if (isTouchingLeftSide) {
+                    this.sprite.setVelocityX(-4);
+                } else {
+                    this.sprite.setVelocityX(4);
+                }
+                this.sprite.setVelocityY(12); // Move DOWN / Drop
+                if (this.state !== 'attack') {
+                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
+                }
             } else {
                 if (isTouchingLeftSide) {
                     this.sprite.setVelocityX(1.5);
                 } else {
                     this.sprite.setVelocityX(-1.5);
                 }
-            }
-            
-            if (this.controls.jump.isDown || (this.controls.highJump && this.controls.highJump.isDown)) {
-                this.sprite.setVelocityY(-climbSpeed); // Move UP
-                if (this.state !== 'attack') {
-                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
-                }
-            } else if (this.controls.down && this.controls.down.isDown) {
-                this.sprite.setVelocityY(speed * 2.2); // Move DOWN (fast/smooth slide)
-                if (this.state !== 'attack') {
-                    this.sprite.anims.play(`${this.character}_walk_anim`, true);
-                }
-            } else {
                 this.sprite.setVelocityY(0); // Cling still
                 if (this.state !== 'attack') {
                     this.sprite.anims.play(`${this.character}_idle_anim`, true);
