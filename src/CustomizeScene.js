@@ -627,14 +627,23 @@ export default class CustomizeScene extends Phaser.Scene {
         };
 
         // ── CONTROLS ───────────────────────────────────────────
+        const leftKey = PlayerData.getKeyLabel(PlayerData.controls.left);
+        const rightKey = PlayerData.getKeyLabel(PlayerData.controls.right);
+        const jumpKey = PlayerData.getKeyLabel(PlayerData.controls.jump);
+        const highJumpKey = PlayerData.getKeyLabel(PlayerData.controls.highJump);
+        const dashKey = PlayerData.getKeyLabel(PlayerData.controls.dash);
+        const attackKey = PlayerData.getKeyLabel(PlayerData.controls.attack);
+        const spellKey = PlayerData.getKeyLabel(PlayerData.controls.spell);
+        const tauntKey = PlayerData.getKeyLabel(PlayerData.controls.taunt);
+
         addSection('CONTROLS', 0x44aaff, [
-            '• Move:        A / D',
-            '• Jump:        W',
-            '• High Jump:   Q  (also mid-air after normal jump)',
-            '• Dash:        SHIFT',
-            '• Attack:      SPACE',
-            '• Spell / Ability:  R',
-            '• Taunt:       T',
+            `• Move:        ${leftKey} / ${rightKey}`,
+            `• Jump:        ${jumpKey}`,
+            `• High Jump:   ${highJumpKey}  (also mid-air after normal jump)`,
+            `• Dash:        ${dashKey}`,
+            `• Attack:      ${attackKey}`,
+            `• Spell / Ability:  ${spellKey}`,
+            `• Taunt:       ${tauntKey}`,
             '• Build Block: Left Click + Drag',
             '• Delete Block: X + Click  or  Right Click',
             '• Block Type:  1 = Normal  2 = Bounce  3 = Slide',
