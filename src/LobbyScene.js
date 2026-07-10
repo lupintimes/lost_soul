@@ -447,13 +447,11 @@ export default class LobbyScene extends Phaser.Scene {
         socket.off('lobbyError');
 
         socket.on('serverList', (servers) => {
-            console.log('📋 Server list received:', servers);
             this.serverList = servers;
             this.renderServerList();
         });
 
         socket.on('serverCreated', (serverData) => {
-            console.log('🎮 Server created:', serverData);
             SocketManager.setRoom(serverData.roomId);
 
             // ✅ Clean lobby listeners before switching scene
@@ -467,7 +465,6 @@ export default class LobbyScene extends Phaser.Scene {
         });
 
         socket.on('joinedServer', (serverData) => {
-            console.log('🎮 Joined server:', serverData);
             SocketManager.setRoom(serverData.roomId);
 
             // ✅ Clean lobby listeners before switching scene

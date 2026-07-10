@@ -1,3 +1,10 @@
+// Disable console logs in production hosts
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    console.log = () => {};
+    console.debug = () => {};
+    console.info = () => {};
+}
+
 import PreloadScene from './PreloadScene.js';
 import MenuScene from './MenuScene.js';
 import CustomizeScene from './CustomizeScene.js';

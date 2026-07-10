@@ -400,8 +400,6 @@ export default class CustomizeScene extends Phaser.Scene {
                         break;
                 }
 
-                console.log(`✅ ${this.activeTab} set to: ${item.id}`);
-
                 this.updatePreview();
                 this.renderOptions();
             });

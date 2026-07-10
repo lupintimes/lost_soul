@@ -17,7 +17,6 @@ const SocketManager = {
         }
 
         if (this.socket && this.socket.connected) {
-            console.log('♻️ Reusing existing socket:', this.socket.id);
             return this.socket;
         }
 
@@ -27,11 +26,9 @@ const SocketManager = {
             this.socket = null;
         }
 
-        console.log('🔌 Connecting to socket server at:', url);
         this.socket = io(url);
 
         this.socket.on('connect', () => {
-            console.log('✅ SocketManager connected:', this.socket.id);
             // If Geckos connects later/earlier, sync room
             if (this.geckosChannel && this.roomId) {
                 this.geckosChannel.emit('joinRoom', { roomId: this.roomId, playerId: this.socket.id });
@@ -39,7 +36,6 @@ const SocketManager = {
         });
 
         this.socket.on('disconnect', () => {
-            console.log('❌ SocketManager disconnected');
         });
 
         return this.socket;
@@ -71,11 +67,9 @@ const SocketManager = {
 
         // If hosting on Render, skip WebRTC initialization to avoid console fetch errors
         if (host.includes('onrender.com')) {
-            console.log('ℹ️ Render production host detected. Skipping WebRTC UDP setup (using Socket.IO TCP fallback).');
             return null;
         }
 
-        console.log('🔌 Connecting Geckos WebRTC UDP to:', host, 'on port 9208');
         this.geckosChannel = geckos({
             url: host,
             port: 9208
@@ -90,7 +84,6 @@ const SocketManager = {
                 }
                 return;
             }
-            console.log('✅ Geckos connected:', this.geckosChannel.id);
             if (this.geckosChannel) {
                 this.geckosChannel.isConnected = true;
             }
@@ -100,7 +93,6 @@ const SocketManager = {
         });
 
         this.geckosChannel.onDisconnect(() => {
-            console.log('❌ Geckos disconnected');
             if (this.geckosChannel) {
                 this.geckosChannel.isConnected = false;
             }
