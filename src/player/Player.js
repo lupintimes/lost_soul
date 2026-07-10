@@ -155,8 +155,6 @@ export default class Player {
                     anim.key === `${this.character}_attack_3`) &&
                 frame.index === 2
             ) {
-                console.log(`⚔️ HIT TRIGGERED! anim: ${anim.key}`);
-
                 this.combat.attack();
 
                 if (this.isControlled && this.scene.mode === 'multiplayer') {
