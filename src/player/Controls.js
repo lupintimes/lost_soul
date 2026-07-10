@@ -1,15 +1,17 @@
+import PlayerData from '../PlayerData.js';
+
 export default class Controls {
     constructor(scene) {
         this.keys = scene.input.keyboard.addKeys({
-            left: 'A',
-            right: 'D',
-            jump: 'W',
-            down: 'S',
-            attack: 'SPACE',
-            highJump: 'Q',
-            dash: 'SHIFT',
-            spell: 'R',
-            taunt: 'T'
+            left: PlayerData.controls.left,
+            right: PlayerData.controls.right,
+            jump: PlayerData.controls.jump,
+            down: PlayerData.controls.down,
+            attack: PlayerData.controls.attack,
+            highJump: PlayerData.controls.highJump,
+            dash: PlayerData.controls.dash,
+            spell: PlayerData.controls.spell,
+            taunt: PlayerData.controls.taunt
         });
 
         Object.assign(this, this.keys);
