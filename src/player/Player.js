@@ -448,7 +448,7 @@ export default class Player {
                     this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 }
             } else if (this.controls.down && this.controls.down.isDown) {
-                this.sprite.setVelocityY(climbSpeed); // Move DOWN
+                this.sprite.setVelocityY(speed * 1.5); // Move DOWN (controlled)
                 if (this.state !== 'attack') {
                     this.sprite.anims.play(`${this.character}_walk_anim`, true);
                 }
