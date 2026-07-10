@@ -591,6 +591,7 @@ export default class Player {
 
         // Group flanking / chase offset X position
         let targetX = player.sprite.x + (this.chaseOffset || 0);
+        const verticalDist = Math.abs(player.sprite.y - this.sprite.y);
 
         // Heuristic: If enemy is right below the player (within 400px vertically), push them to the side so they don't get stuck under platform ceilings
         const isRightBelow = (this.sprite.y > player.sprite.y) && (Math.abs(player.sprite.x - this.sprite.x) < 80) && (verticalDist <= 400);
@@ -600,7 +601,6 @@ export default class Player {
         }
 
         // Heuristic: If player is on a different vertical level, target the nearest teleporter on our level
-        const verticalDist = Math.abs(player.sprite.y - this.sprite.y);
         if (verticalDist > 400 && this.scene.teleports) {
             let closestTp = null;
             let minTpDist = Infinity;
