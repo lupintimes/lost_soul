@@ -994,6 +994,19 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.localPlayer = player;
+
+        let localTint = null;
+        if (playerInfo.color) {
+            const colorObj = PlayerData.colors.find(c => c.id === playerInfo.color);
+            if (colorObj && colorObj.tint !== null) {
+                localTint = colorObj.tint;
+            }
+        }
+        if (localTint !== null) {
+            player.sprite.setTint(localTint);
+            player.originalTint = localTint;
+        }
+
         this.players.push(player);
 
         player.sprite.setDepth(10);
@@ -1040,8 +1053,10 @@ export default class GameScene extends Phaser.Scene {
         }
         if (remoteTint !== null) {
             remotePlayer.sprite.setTint(remoteTint);
+            remotePlayer.originalTint = remoteTint;
         } else {
             remotePlayer.sprite.setTint(0xff6666); // Fallback red
+            remotePlayer.originalTint = 0xff6666;
         }
 
         // Play idle animation immediately upon spawning
@@ -1554,6 +1569,12 @@ export default class GameScene extends Phaser.Scene {
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
 
+        const tint = PlayerData.getColorTint();
+        if (tint !== null) {
+            player.sprite.setTint(tint);
+            player.originalTint = tint;
+        }
+
         this.players.push(player);
         this.applySpawnProtection(player);
         return spawn;
@@ -1692,6 +1713,12 @@ export default class GameScene extends Phaser.Scene {
 
         const spawn = Phaser.Utils.Array.GetRandom(this.spawnPoints);
         const player = new Player(this, spawn.x, spawn.y, null, true, this.selectedCharacter);
+
+        const tint = PlayerData.getColorTint();
+        if (tint !== null) {
+            player.sprite.setTint(tint);
+            player.originalTint = tint;
+        }
 
         if (this.mode === 'solo') {
             this.localPlayer = player;
@@ -3373,6 +3400,7 @@ export default class GameScene extends Phaser.Scene {
                     }
                     if (remoteTint !== null) {
                         remote.sprite.setTint(remoteTint);
+                        remote.originalTint = remoteTint;
                     }
                 }
                 
