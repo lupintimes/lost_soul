@@ -86,25 +86,25 @@ export default class SettingsScene extends Phaser.Scene {
             backBg.lineStyle(1.5, borderColor, 0.8);
             backBg.strokeRoundedRect(0, 0, backW, backH, 6);
         };
-        drawBackBg(0x101626, 0.7, 0x223147);
+        drawBackBg(0x121419, 0.7, 0x2b2e35);
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#83a1c1'
+            color: '#9aa5b0'
         }).setOrigin(0.5);
         backBtnContainer.add(backText);
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x1c2b42, 0.85, 0x9cbdf2);
+            drawBackBg(0x1d212b, 0.85, 0xb8c0cc);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
-            drawBackBg(0x101626, 0.7, 0x223147);
-            backText.setColor('#83a1c1');
+            drawBackBg(0x121419, 0.7, 0x2b2e35);
+            backText.setColor('#9aa5b0');
         });
         backBtnContainer.on('pointerdown', () => {
             this.playClick();
@@ -124,9 +124,9 @@ export default class SettingsScene extends Phaser.Scene {
         const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 35 : 55);
 
         const panelG = this.add.graphics();
-        panelG.fillStyle(0x101626, 0.85);
+        panelG.fillStyle(0x121419, 0.85);
         panelG.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
-        panelG.lineStyle(1.5, 0x223147, 1);
+        panelG.lineStyle(1.5, 0x2b2e35, 1);
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ─── Tabs ─────────────────────────────────────────
@@ -163,19 +163,19 @@ export default class SettingsScene extends Phaser.Scene {
             
             // Draw Audio tab
             this.tabAudioBg.clear();
-            this.tabAudioBg.fillStyle(isAudioActive ? 0x1c2b42 : 0x101626, 0.85);
+            this.tabAudioBg.fillStyle(isAudioActive ? 0x1d212b : 0x121419, 0.85);
             this.tabAudioBg.fillRoundedRect(0, 0, tabW, tabH, 6);
-            this.tabAudioBg.lineStyle(1.5, isAudioActive ? 0x9cbdf2 : 0x223147, 0.9);
+            this.tabAudioBg.lineStyle(1.5, isAudioActive ? 0xb8c0cc : 0x2b2e35, 0.9);
             this.tabAudioBg.strokeRoundedRect(0, 0, tabW, tabH, 6);
-            this.tabAudioText.setColor(isAudioActive ? '#ffffff' : '#83a1c1');
+            this.tabAudioText.setColor(isAudioActive ? '#ffffff' : '#9aa5b0');
 
             // Draw Controls tab
             this.tabControlsBg.clear();
-            this.tabControlsBg.fillStyle(!isAudioActive ? 0x1c2b42 : 0x101626, 0.85);
+            this.tabControlsBg.fillStyle(!isAudioActive ? 0x1d212b : 0x121419, 0.85);
             this.tabControlsBg.fillRoundedRect(0, 0, tabW, tabH, 6);
-            this.tabControlsBg.lineStyle(1.5, !isAudioActive ? 0x9cbdf2 : 0x223147, 0.9);
+            this.tabControlsBg.lineStyle(1.5, !isAudioActive ? 0xb8c0cc : 0x2b2e35, 0.9);
             this.tabControlsBg.strokeRoundedRect(0, 0, tabW, tabH, 6);
-            this.tabControlsText.setColor(!isAudioActive ? '#ffffff' : '#83a1c1');
+            this.tabControlsText.setColor(!isAudioActive ? '#ffffff' : '#9aa5b0');
 
             // Toggle container visibilities
             this.audioVideoContainer.setVisible(isAudioActive);
@@ -246,7 +246,7 @@ export default class SettingsScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#83a1c1'
+            color: '#9aa5b0'
         }).setOrigin(0.5);
         this.audioVideoContainer.add(graphicsTitle);
 
@@ -284,19 +284,19 @@ export default class SettingsScene extends Phaser.Scene {
             
             // Draw Low
             lowBg.clear();
-            lowBg.fillStyle(isLow ? 0x1c2b42 : 0x101626, 0.85);
+            lowBg.fillStyle(isLow ? 0x1d212b : 0x121419, 0.85);
             lowBg.fillRoundedRect(0, 0, btnW, btnH, 6);
-            lowBg.lineStyle(1.5, isLow ? 0x9cbdf2 : 0x223147, 0.9);
+            lowBg.lineStyle(1.5, isLow ? 0xb8c0cc : 0x2b2e35, 0.9);
             lowBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
-            lowText.setColor(isLow ? '#ffffff' : '#83a1c1');
+            lowText.setColor(isLow ? '#ffffff' : '#9aa5b0');
 
             // Draw High
             highBg.clear();
-            highBg.fillStyle(!isLow ? 0x1c2b42 : 0x101626, 0.85);
+            highBg.fillStyle(!isLow ? 0x1d212b : 0x121419, 0.85);
             highBg.fillRoundedRect(0, 0, btnW, btnH, 6);
-            highBg.lineStyle(1.5, !isLow ? 0x9cbdf2 : 0x223147, 0.9);
+            highBg.lineStyle(1.5, !isLow ? 0xb8c0cc : 0x2b2e35, 0.9);
             highBg.strokeRoundedRect(0, 0, btnW, btnH, 6);
-            highText.setColor(!isLow ? '#ffffff' : '#83a1c1');
+            highText.setColor(!isLow ? '#ffffff' : '#9aa5b0');
         };
 
         drawQualityButtons();
@@ -520,7 +520,7 @@ export default class SettingsScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '15px',
             fontWeight: 'bold',
-            color: '#83a1c1'
+            color: '#9aa5b0'
         }).setOrigin(0, 0.5);
         this.controlsContainer.add(lbl);
 
@@ -545,7 +545,7 @@ export default class SettingsScene extends Phaser.Scene {
         if (isRebinding) {
             drawBtnBg(0x3b2311, 0.85, 0xf59e0b);
         } else {
-            drawBtnBg(0x101626, 0.85, 0x223147);
+            drawBtnBg(0x121419, 0.85, 0x2b2e35);
         }
         btnContainer.add(btnBg);
 
@@ -561,12 +561,12 @@ export default class SettingsScene extends Phaser.Scene {
         
         btnContainer.on('pointerover', () => {
             if (!isRebinding) {
-                drawBtnBg(0x1c2b42, 0.85, 0xffffff);
+                drawBtnBg(0x1d212b, 0.85, 0xffffff);
             }
         });
         btnContainer.on('pointerout', () => {
             if (!isRebinding) {
-                drawBtnBg(0x101626, 0.85, 0x223147);
+                drawBtnBg(0x121419, 0.85, 0x2b2e35);
             } else {
                 drawBtnBg(0x3b2311, 0.85, 0xf59e0b);
             }
@@ -629,7 +629,7 @@ export default class SettingsScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#83a1c1'
+            color: '#9aa5b0'
         }).setOrigin(0.5);
         targetContainer.add(titleText);
 
@@ -639,11 +639,11 @@ export default class SettingsScene extends Phaser.Scene {
         const track = this.add.graphics();
         const drawTrack = () => {
             track.clear();
-            track.fillStyle(0x223147, 0.7);
+            track.fillStyle(0x2b2e35, 0.7);
             track.fillRoundedRect(-trackW / 2, -trackH / 2, trackW, trackH, 3);
             
             const val = getVal();
-            track.fillStyle(0x9cbdf2, 0.9);
+            track.fillStyle(0xb8c0cc, 0.9);
             track.fillRoundedRect(-trackW / 2, -trackH / 2, trackW * val, trackH, 3);
         };
         
@@ -653,7 +653,7 @@ export default class SettingsScene extends Phaser.Scene {
         targetContainer.add(sliderContainer);
 
         const handle = this.add.circle(-trackW / 2 + trackW * getVal(), 0, 9, 0xffffff);
-        handle.setStrokeStyle(1.5, 0x9cbdf2);
+        handle.setStrokeStyle(1.5, 0xb8c0cc);
         handle.setInteractive({ useHandCursor: true });
         this.input.setDraggable(handle);
         
