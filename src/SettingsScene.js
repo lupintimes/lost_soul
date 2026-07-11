@@ -121,7 +121,7 @@ export default class SettingsScene extends Phaser.Scene {
         const hasLeaveBtn = this.fromScene === 'GameScene';
         const panelH = hasLeaveBtn ? 430 : 350;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 10 : 30);
+        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 35 : 55);
 
         const panelG = this.add.graphics();
         panelG.fillStyle(0x0d121d, 0.85);
@@ -457,7 +457,7 @@ export default class SettingsScene extends Phaser.Scene {
         const hasLeaveBtn = this.fromScene === 'GameScene';
         const panelH = hasLeaveBtn ? 430 : 350;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 10 : 30);
+        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 35 : 55);
 
         const leftColX = width / 2 - 110;
         const rightColX = width / 2 + 110;
