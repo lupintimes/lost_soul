@@ -50,25 +50,25 @@ export default class CustomizeScene extends Phaser.Scene {
             backBg.lineStyle(1.5, borderColor, 0.8);
             backBg.strokeRoundedRect(0, 0, backW, backH, 6);
         };
-        drawBackBg(0x121620, 0.7, 0x283141);
+        drawBackBg(0x101626, 0.7, 0x223147);
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#8fa4b3'
+            color: '#83a1c1'
         }).setOrigin(0.5);
         backBtnContainer.add(backText);
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x1b2234, 0.85, 0xa2b6df);
+            drawBackBg(0x1c2b42, 0.85, 0x9cbdf2);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
-            drawBackBg(0x121620, 0.7, 0x283141);
-            backText.setColor('#8fa4b3');
+            drawBackBg(0x101626, 0.7, 0x223147);
+            backText.setColor('#83a1c1');
         });
         backBtnContainer.on('pointerdown', () => {
             this.playClick(); 
@@ -84,16 +84,16 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Preview panel with rounded corners and border
         const previewPanelG = this.add.graphics();
-        previewPanelG.fillStyle(0x121620, 0.85);
+        previewPanelG.fillStyle(0x101626, 0.85);
         previewPanelG.fillRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
-        previewPanelG.lineStyle(1.5, 0x283141, 1);
+        previewPanelG.lineStyle(1.5, 0x223147, 1);
         previewPanelG.strokeRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
 
         this.add.text(previewX, previewY - 130, 'PREVIEW', {
             fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
-            color: '#8fa4b3'
+            color: '#83a1c1'
         }).setOrigin(0.5);
 
         // Character preview sprite — plays idle + blink
@@ -133,7 +133,7 @@ export default class CustomizeScene extends Phaser.Scene {
         this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
-            color: '#8fa4b3'
+            color: '#83a1c1'
         }).setOrigin(0.5);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -146,9 +146,9 @@ export default class CustomizeScene extends Phaser.Scene {
         const panelH = height - 120;
 
         const panelG = this.add.graphics();
-        panelG.fillStyle(0x121620, 0.85);
+        panelG.fillStyle(0x101626, 0.85);
         panelG.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
-        panelG.lineStyle(1.5, 0x283141, 1);
+        panelG.lineStyle(1.5, 0x223147, 1);
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -178,14 +178,14 @@ export default class CustomizeScene extends Phaser.Scene {
                 tbBg.lineStyle(1.5, borderColor, 0.8);
                 tbBg.strokeRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
             };
-            drawTabBg(isActive ? 0x1b2234 : 0x121620, isActive ? 0.85 : 0.6, isActive ? 0xa2b6df : 0x283141);
+            drawTabBg(isActive ? 0x1c2b42 : 0x101626, isActive ? 0.85 : 0.6, isActive ? 0x9cbdf2 : 0x223147);
             tabContainer.add(tbBg);
 
             const tabText = this.add.text(0, 0, tabName, {
                 fontFamily: 'Rajdhani',
                 fontSize: '15px',
                 fontWeight: 'bold',
-                color: isActive ? '#ffffff' : '#8fa4b3'
+                color: isActive ? '#ffffff' : '#83a1c1'
             }).setOrigin(0.5);
             tabContainer.add(tabText);
 
@@ -197,15 +197,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             tabContainer.on('pointerover', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x1b2234, 0.7, 0xa2b6df);
+                    drawTabBg(0x1c2b42, 0.7, 0x9cbdf2);
                     tabText.setColor('#ffffff');
                 }
             });
             
             tabContainer.on('pointerout', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x121620, 0.6, 0x283141);
-                    tabText.setColor('#8fa4b3');
+                    drawTabBg(0x101626, 0.6, 0x223147);
+                    tabText.setColor('#83a1c1');
                 }
             });
 
@@ -216,8 +216,8 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 this.tabButtons.forEach(tb => {
                     const isNowActive = tb.tabKey === this.activeTab;
-                    tb.drawTabBg(isNowActive ? 0x1b2234 : 0x121620, isNowActive ? 0.85 : 0.6, isNowActive ? 0xa2b6df : 0x283141);
-                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#8fa4b3');
+                    tb.drawTabBg(isNowActive ? 0x1c2b42 : 0x101626, isNowActive ? 0.85 : 0.6, isNowActive ? 0x9cbdf2 : 0x223147);
+                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#83a1c1');
                 });
             });
 
@@ -312,7 +312,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 rowBg.lineStyle(1.5, borderColor, 0.8);
                 rowBg.strokeRoundedRect(x, iy, w, itemH - 10, 6);
             };
-            drawRow(isSelected ? 0x1b2234 : 0x121620, isSelected ? 0.85 : 0.5, isSelected ? 0xa2b6df : 0x283141);
+            drawRow(isSelected ? 0x1c2b42 : 0x101626, isSelected ? 0.85 : 0.5, isSelected ? 0x9cbdf2 : 0x223147);
             scrollContainer.add(rowBg);
 
             // Color indicator dot
@@ -325,7 +325,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 fontFamily: 'Rajdhani',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                color: isSelected ? '#ffffff' : '#8fa4b3'
+                color: isSelected ? '#ffffff' : '#83a1c1'
             });
             scrollContainer.add(nameText);
 
@@ -345,7 +345,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontFamily: 'Rajdhani',
                     fontSize: '18px',
                     fontWeight: 'bold',
-                    color: '#8fa4b3'
+                    color: '#83a1c1'
                 }).setOrigin(0.5);
                 scrollContainer.add(check);
             }
@@ -365,7 +365,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     iy + (itemH - 10) / 2,
                     30, 30,
                     item.tint || 0xffffff
-                ).setStrokeStyle(1.5, 0x283141);
+                ).setStrokeStyle(1.5, 0x223147);
                 scrollContainer.add(previewBox);
             }
 
@@ -377,15 +377,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             hitArea.on('pointerover', () => {
                 if (!isSelected) {
-                    drawRow(0x1b2234, 0.8, 0xa2b6df);
+                    drawRow(0x1c2b42, 0.8, 0x9cbdf2);
                     nameText.setColor('#ffffff');
                 }
             });
 
             hitArea.on('pointerout', () => {
                 if (!isSelected) {
-                    drawRow(0x121620, 0.5, 0x283141);
-                    nameText.setColor('#8fa4b3');
+                    drawRow(0x101626, 0.5, 0x223147);
+                    nameText.setColor('#83a1c1');
                 }
             });
 
@@ -503,7 +503,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
                         fontFamily: 'Rajdhani',
                         fontSize: '14px',
-                        color: isKey ? '#ffffff' : '#8fa4b3'
+                        color: isKey ? '#ffffff' : '#83a1c1'
                     });
                     scrollContainer.add(lt);
                 });
@@ -518,9 +518,9 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x121620, 0.6);
+            track.fillStyle(0x101626, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x283141, 1);
+            track.lineStyle(1.5, 0x223147, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
@@ -639,7 +639,7 @@ export default class CustomizeScene extends Phaser.Scene {
         const spellKey = PlayerData.getKeyLabel(PlayerData.controls.spell);
         const tauntKey = PlayerData.getKeyLabel(PlayerData.controls.taunt);
 
-        addSection('CONTROLS', 0x8fa4b3, [
+        addSection('CONTROLS', 0x83a1c1, [
             `• Move:        ${leftKey} / ${rightKey}`,
             `• Jump:        ${jumpKey}`,
             `• High Jump:   ${highJumpKey}  (also mid-air after normal jump)`,
@@ -654,7 +654,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── CHARACTER ABILITIES ────────────────────────────────
-        addSection('CHARACTER ABILITIES', 0x8fa4b3, [
+        addSection('CHARACTER ABILITIES', 0x83a1c1, [
             '[ KNIGHT  P1 ] — HP: 130',
             `• Spell (${spellKey}): Shield Block — 2s full immunity, repels foes`,
             `• Taunt (${tauntKey}): FORTRESS — 5s  50% damage reduction`,
@@ -674,7 +674,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── BLOCK TYPES ────────────────────────────────────────
-        addSection('BLOCK TYPES  (1 / 2 / 3)', 0x8fa4b3, [
+        addSection('BLOCK TYPES  (1 / 2 / 3)', 0x83a1c1, [
             '[ 1 ] NORMAL  — grey border, standard platform.',
             '[ 2 ] BOUNCE  — gold border, launches you high on contact.',
             '[ 3 ] SLIDE   — cyan border, ice friction, high speed boost.',
@@ -686,7 +686,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── COMBAT TIPS ────────────────────────────────────────
-        addSection('COMBAT TIPS', 0x8fa4b3, [
+        addSection('COMBAT TIPS', 0x83a1c1, [
             '• Spawn Protection: 2s invincibility on respawn (cyan blink).',
             '• Portals: step into glowing portals to teleport.',
             '• Enemies retreat at low HP (Shadow retreats most).',
@@ -697,7 +697,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── MULTIPLAYER & NETWORK ──────────────────────────────
-        addSection('MULTIPLAYER & NETWORK', 0x8fa4b3, [
+        addSection('MULTIPLAYER & NETWORK', 0x83a1c1, [
             '• Transport: WebRTC UDP (Geckos.io) for ultra-low latency.',
             '• Fallback: Automatically uses Socket.IO TCP if UDP is blocked.',
             '• Background Play: The game continues ticking at 30 FPS in',
@@ -713,9 +713,9 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x121620, 0.6);
+            track.fillStyle(0x101626, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x283141, 1);
+            track.lineStyle(1.5, 0x223147, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
