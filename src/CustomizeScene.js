@@ -50,25 +50,25 @@ export default class CustomizeScene extends Phaser.Scene {
             backBg.lineStyle(1.5, borderColor, 0.8);
             backBg.strokeRoundedRect(0, 0, backW, backH, 6);
         };
-        drawBackBg(0x0d121d, 0.7, 0x1f2b3e);
+        drawBackBg(0x141416, 0.7, 0x333336);
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#7fa3c7'
+            color: '#a1a1aa'
         }).setOrigin(0.5);
         backBtnContainer.add(backText);
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x17212e, 0.85, 0xff4444);
+            drawBackBg(0x27272a, 0.85, 0xd4d4d8);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
-            drawBackBg(0x0d121d, 0.7, 0x1f2b3e);
-            backText.setColor('#7fa3c7');
+            drawBackBg(0x141416, 0.7, 0x333336);
+            backText.setColor('#a1a1aa');
         });
         backBtnContainer.on('pointerdown', () => {
             this.playClick(); 
@@ -84,16 +84,16 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // Preview panel with rounded corners and border
         const previewPanelG = this.add.graphics();
-        previewPanelG.fillStyle(0x0d121d, 0.85);
+        previewPanelG.fillStyle(0x141416, 0.85);
         previewPanelG.fillRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
-        previewPanelG.lineStyle(1.5, 0x1f2b3e, 1);
+        previewPanelG.lineStyle(1.5, 0x333336, 1);
         previewPanelG.strokeRoundedRect(previewX - 90, previewY - 150, 180, 300, 10);
 
         this.add.text(previewX, previewY - 130, 'PREVIEW', {
             fontFamily: 'Rajdhani',
             fontSize: '18px',
             fontWeight: 'bold',
-            color: '#7fa3c7'
+            color: '#a1a1aa'
         }).setOrigin(0.5);
 
         // Character preview sprite — plays idle + blink
@@ -133,7 +133,7 @@ export default class CustomizeScene extends Phaser.Scene {
         this.colorLabel = this.add.text(previewX, previewY + 105, `COLOR: ${PlayerData.color.toUpperCase()}`, {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
-            color: '#7fa3c7'
+            color: '#a1a1aa'
         }).setOrigin(0.5);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -146,9 +146,9 @@ export default class CustomizeScene extends Phaser.Scene {
         const panelH = height - 120;
 
         const panelG = this.add.graphics();
-        panelG.fillStyle(0x0d121d, 0.85);
+        panelG.fillStyle(0x141416, 0.85);
         panelG.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
-        panelG.lineStyle(1.5, 0x1f2b3e, 1);
+        panelG.lineStyle(1.5, 0x333336, 1);
         panelG.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -178,14 +178,14 @@ export default class CustomizeScene extends Phaser.Scene {
                 tbBg.lineStyle(1.5, borderColor, 0.8);
                 tbBg.strokeRoundedRect(-tbW / 2, -tbH / 2, tbW, tbH, 6);
             };
-            drawTabBg(isActive ? 0x17212e : 0x0d121d, isActive ? 0.85 : 0.6, isActive ? 0x5f7793 : 0x1f2b3e);
+            drawTabBg(isActive ? 0x27272a : 0x141416, isActive ? 0.85 : 0.6, isActive ? 0xd4d4d8 : 0x333336);
             tabContainer.add(tbBg);
 
             const tabText = this.add.text(0, 0, tabName, {
                 fontFamily: 'Rajdhani',
                 fontSize: '15px',
                 fontWeight: 'bold',
-                color: isActive ? '#ffffff' : '#7fa3c7'
+                color: isActive ? '#ffffff' : '#a1a1aa'
             }).setOrigin(0.5);
             tabContainer.add(tabText);
 
@@ -197,15 +197,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             tabContainer.on('pointerover', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x17212e, 0.7, 0x5f7793);
+                    drawTabBg(0x27272a, 0.7, 0xd4d4d8);
                     tabText.setColor('#ffffff');
                 }
             });
             
             tabContainer.on('pointerout', () => {
                 if (this.activeTab !== tabContainer.tabKey) {
-                    drawTabBg(0x0d121d, 0.6, 0x1f2b3e);
-                    tabText.setColor('#7fa3c7');
+                    drawTabBg(0x141416, 0.6, 0x333336);
+                    tabText.setColor('#a1a1aa');
                 }
             });
 
@@ -216,8 +216,8 @@ export default class CustomizeScene extends Phaser.Scene {
 
                 this.tabButtons.forEach(tb => {
                     const isNowActive = tb.tabKey === this.activeTab;
-                    tb.drawTabBg(isNowActive ? 0x17212e : 0x0d121d, isNowActive ? 0.85 : 0.6, isNowActive ? 0x5f7793 : 0x1f2b3e);
-                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#7fa3c7');
+                    tb.drawTabBg(isNowActive ? 0x27272a : 0x141416, isNowActive ? 0.85 : 0.6, isNowActive ? 0xd4d4d8 : 0x333336);
+                    tb.tabText.setColor(isNowActive ? '#ffffff' : '#a1a1aa');
                 });
             });
 
@@ -312,7 +312,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 rowBg.lineStyle(1.5, borderColor, 0.8);
                 rowBg.strokeRoundedRect(x, iy, w, itemH - 10, 6);
             };
-            drawRow(isSelected ? 0x17212e : 0x0d121d, isSelected ? 0.85 : 0.5, isSelected ? 0x5f7793 : 0x1f2b3e);
+            drawRow(isSelected ? 0x27272a : 0x141416, isSelected ? 0.85 : 0.5, isSelected ? 0xd4d4d8 : 0x333336);
             scrollContainer.add(rowBg);
 
             // Color indicator dot
@@ -325,7 +325,7 @@ export default class CustomizeScene extends Phaser.Scene {
                 fontFamily: 'Rajdhani',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                color: isSelected ? '#ffffff' : '#7fa3c7'
+                color: isSelected ? '#ffffff' : '#a1a1aa'
             });
             scrollContainer.add(nameText);
 
@@ -345,7 +345,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     fontFamily: 'Rajdhani',
                     fontSize: '18px',
                     fontWeight: 'bold',
-                    color: '#7fa3c7'
+                    color: '#a1a1aa'
                 }).setOrigin(0.5);
                 scrollContainer.add(check);
             }
@@ -365,7 +365,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     iy + (itemH - 10) / 2,
                     30, 30,
                     item.tint || 0xffffff
-                ).setStrokeStyle(1.5, 0x1f2b3e);
+                ).setStrokeStyle(1.5, 0x333336);
                 scrollContainer.add(previewBox);
             }
 
@@ -377,15 +377,15 @@ export default class CustomizeScene extends Phaser.Scene {
 
             hitArea.on('pointerover', () => {
                 if (!isSelected) {
-                    drawRow(0x17212e, 0.8, 0x5f7793);
+                    drawRow(0x27272a, 0.8, 0xd4d4d8);
                     nameText.setColor('#ffffff');
                 }
             });
 
             hitArea.on('pointerout', () => {
                 if (!isSelected) {
-                    drawRow(0x0d121d, 0.5, 0x1f2b3e);
-                    nameText.setColor('#7fa3c7');
+                    drawRow(0x141416, 0.5, 0x333336);
+                    nameText.setColor('#a1a1aa');
                 }
             });
 
@@ -503,7 +503,7 @@ export default class CustomizeScene extends Phaser.Scene {
                     const lt = this.add.text(x + 12, cardY + 28 + li * lineH, line, {
                         fontFamily: 'Rajdhani',
                         fontSize: '14px',
-                        color: isKey ? '#ffffff' : '#7fa3c7'
+                        color: isKey ? '#ffffff' : '#a1a1aa'
                     });
                     scrollContainer.add(lt);
                 });
@@ -518,16 +518,16 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x0d121d, 0.6);
+            track.fillStyle(0x141416, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x1f2b3e, 1);
+            track.lineStyle(1.5, 0x333336, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / listTotalH) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x5f7793).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x5e5e6e).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
@@ -639,7 +639,7 @@ export default class CustomizeScene extends Phaser.Scene {
         const spellKey = PlayerData.getKeyLabel(PlayerData.controls.spell);
         const tauntKey = PlayerData.getKeyLabel(PlayerData.controls.taunt);
 
-        addSection('CONTROLS', 0x44aaff, [
+        addSection('CONTROLS', 0xa1a1aa, [
             `• Move:        ${leftKey} / ${rightKey}`,
             `• Jump:        ${jumpKey}`,
             `• High Jump:   ${highJumpKey}  (also mid-air after normal jump)`,
@@ -654,7 +654,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── CHARACTER ABILITIES ────────────────────────────────
-        addSection('CHARACTER ABILITIES', 0xffaa00, [
+        addSection('CHARACTER ABILITIES', 0xa1a1aa, [
             '[ KNIGHT  P1 ] — HP: 130',
             `• Spell (${spellKey}): Shield Block — 2s full immunity, repels foes`,
             `• Taunt (${tauntKey}): FORTRESS — 5s  50% damage reduction`,
@@ -674,7 +674,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── BLOCK TYPES ────────────────────────────────────────
-        addSection('BLOCK TYPES  (1 / 2 / 3)', 0x00e5ff, [
+        addSection('BLOCK TYPES  (1 / 2 / 3)', 0xa1a1aa, [
             '[ 1 ] NORMAL  — grey border, standard platform.',
             '[ 2 ] BOUNCE  — gold border, launches you high on contact.',
             '[ 3 ] SLIDE   — cyan border, ice friction, high speed boost.',
@@ -686,7 +686,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── COMBAT TIPS ────────────────────────────────────────
-        addSection('COMBAT TIPS', 0xff6688, [
+        addSection('COMBAT TIPS', 0xa1a1aa, [
             '• Spawn Protection: 2s invincibility on respawn (cyan blink).',
             '• Portals: step into glowing portals to teleport.',
             '• Enemies retreat at low HP (Shadow retreats most).',
@@ -697,7 +697,7 @@ export default class CustomizeScene extends Phaser.Scene {
         ]);
 
         // ── MULTIPLAYER & NETWORK ──────────────────────────────
-        addSection('MULTIPLAYER & NETWORK', 0xff33bb, [
+        addSection('MULTIPLAYER & NETWORK', 0xa1a1aa, [
             '• Transport: WebRTC UDP (Geckos.io) for ultra-low latency.',
             '• Fallback: Automatically uses Socket.IO TCP if UDP is blocked.',
             '• Background Play: The game continues ticking at 30 FPS in',
@@ -713,16 +713,16 @@ export default class CustomizeScene extends Phaser.Scene {
             // Draw Scrollbar Track
             const trackX = panelX + panelW - 12;
             const track = this.add.graphics();
-            track.fillStyle(0x0d121d, 0.6);
+            track.fillStyle(0x141416, 0.6);
             track.fillRoundedRect(trackX, maskY, 6, maskH, 3);
-            track.lineStyle(1.5, 0x1f2b3e, 1);
+            track.lineStyle(1.5, 0x333336, 1);
             track.strokeRoundedRect(trackX, maskY, 6, maskH, 3);
             this.optionElements.push(track);
 
             // Draw Scrollbar Handle
             const handleH = Math.max(30, (maskH / totalHeight) * maskH);
             const maxHandleY = maskH - handleH;
-            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x5f7793).setOrigin(0);
+            const handle = this.add.rectangle(trackX, maskY, 6, handleH, 0x5e5e6e).setOrigin(0);
             this.optionElements.push(handle);
 
             // Wheel scroll handler
