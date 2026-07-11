@@ -232,7 +232,7 @@ export default class CustomizeScene extends Phaser.Scene {
             x: panelX + 15,
             y: panelY + 60,
             w: panelW - 30,
-            itemH: 50
+            itemH: 65
         };
 
         this.optionElements = [];
@@ -308,20 +308,20 @@ export default class CustomizeScene extends Phaser.Scene {
             const drawRow = (color, alpha, borderColor) => {
                 rowBg.clear();
                 rowBg.fillStyle(color, alpha);
-                rowBg.fillRoundedRect(x, iy, w, itemH - 5, 6);
+                rowBg.fillRoundedRect(x, iy, w, itemH - 10, 6);
                 rowBg.lineStyle(1.5, borderColor, 0.8);
-                rowBg.strokeRoundedRect(x, iy, w, itemH - 5, 6);
+                rowBg.strokeRoundedRect(x, iy, w, itemH - 10, 6);
             };
             drawRow(isSelected ? 0x17212e : 0x0d121d, isSelected ? 0.85 : 0.5, isSelected ? 0x5f7793 : 0x1f2b3e);
             scrollContainer.add(rowBg);
 
             // Color indicator dot
             const dotColor = item.color || item.tint || 0x888888;
-            const dot = this.add.circle(x + 20, iy + (itemH - 5) / 2, 8, dotColor);
+            const dot = this.add.circle(x + 20, iy + (itemH - 10) / 2, 8, dotColor);
             scrollContainer.add(dot);
 
             // Item name
-            const nameText = this.add.text(x + 40, iy + 6, item.name, {
+            const nameText = this.add.text(x + 40, iy + 9, item.name, {
                 fontFamily: 'Rajdhani',
                 fontSize: '16px',
                 fontWeight: 'bold',
@@ -331,7 +331,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Description (for characters)
             if (item.desc) {
-                const descText = this.add.text(x + 40, iy + 25, item.desc, {
+                const descText = this.add.text(x + 40, iy + 31, item.desc, {
                     fontFamily: 'Rajdhani',
                     fontSize: '13px',
                     color: '#666666'
@@ -341,7 +341,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Selected checkmark
             if (isSelected) {
-                const check = this.add.text(x + w - 30, iy + (itemH - 5) / 2, '✓', {
+                const check = this.add.text(x + w - 30, iy + (itemH - 10) / 2, '✓', {
                     fontFamily: 'Rajdhani',
                     fontSize: '18px',
                     fontWeight: 'bold',
@@ -352,7 +352,7 @@ export default class CustomizeScene extends Phaser.Scene {
 
             // Character preview sprite (only for character tab)
             if (this.activeTab === 'character') {
-                const miniSprite = this.add.sprite(x + w - 70, iy + (itemH - 5) / 2, `${item.id}_idle`);
+                const miniSprite = this.add.sprite(x + w - 70, iy + (itemH - 10) / 2, `${item.id}_idle`);
                 miniSprite.setScale(0.15);
                 miniSprite.anims.play(`${item.id}_preview`, true);
                 scrollContainer.add(miniSprite);
@@ -362,7 +362,7 @@ export default class CustomizeScene extends Phaser.Scene {
             if (this.activeTab === 'color') {
                 const previewBox = this.add.rectangle(
                     x + w - 70,
-                    iy + (itemH - 5) / 2,
+                    iy + (itemH - 10) / 2,
                     30, 30,
                     item.tint || 0xffffff
                 ).setStrokeStyle(1.5, 0x1f2b3e);
@@ -370,7 +370,7 @@ export default class CustomizeScene extends Phaser.Scene {
             }
 
             // Invisible interactive area
-            const hitArea = this.add.rectangle(x + w / 2, iy + (itemH - 5) / 2, w, itemH - 5, 0x000000, 0)
+            const hitArea = this.add.rectangle(x + w / 2, iy + (itemH - 10) / 2, w, itemH - 10, 0x000000, 0)
                 .setOrigin(0.5)
                 .setInteractive({ useHandCursor: true });
             scrollContainer.add(hitArea);
@@ -599,12 +599,12 @@ export default class CustomizeScene extends Phaser.Scene {
             // Section header using rounded rect
             const headerBg = this.add.graphics();
             headerBg.fillStyle(0x0d121d, 0.95);
-            headerBg.fillRoundedRect(x, curY, w, 24, 6);
+            headerBg.fillRoundedRect(x, curY, w, 26, 6);
             headerBg.lineStyle(1.5, color, 0.7);
-            headerBg.strokeRoundedRect(x, curY, w, 24, 6);
+            headerBg.strokeRoundedRect(x, curY, w, 26, 6);
             this.instrContainer.add(headerBg);
 
-            const headerText = this.add.text(x + 10, curY + 3, title, {
+            const headerText = this.add.text(x + 10, curY + 4, title, {
                 fontFamily: 'Rajdhani',
                 fontSize: '15px',
                 fontWeight: 'bold',
@@ -612,7 +612,7 @@ export default class CustomizeScene extends Phaser.Scene {
             });
             this.instrContainer.add(headerText);
 
-            curY += 32;
+            curY += 36;
 
             lines.forEach(line => {
                 const isBullet = line.startsWith('•');
@@ -623,10 +623,10 @@ export default class CustomizeScene extends Phaser.Scene {
                     wordWrap: { width: w - 24 }
                 });
                 this.instrContainer.add(lineText);
-                curY += lineText.height + 6;
+                curY += lineText.height + 8;
             });
 
-            curY += 10; // gap between sections
+            curY += 24; // gap between sections
         };
 
         // ── CONTROLS ───────────────────────────────────────────
