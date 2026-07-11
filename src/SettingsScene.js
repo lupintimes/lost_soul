@@ -119,7 +119,7 @@ export default class SettingsScene extends Phaser.Scene {
         // ─── Settings Panel ──────────────────────────────
         const panelW = 500;
         const hasLeaveBtn = this.fromScene === 'GameScene';
-        const panelH = hasLeaveBtn ? 430 : 350;
+        const panelH = hasLeaveBtn ? 450 : 365;
         const panelX = width / 2 - panelW / 2;
         const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 35 : 55);
 
@@ -226,7 +226,7 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Music Control Slider ─────────────────────────
         // ─── Music Control Slider ─────────────────────────
-        const musicY = panelY + 115;
+        const musicY = panelY + 135;
         this.createSlider(width / 2, musicY, 'MUSIC VOLUME', 
             () => PlayerData.musicVolume, 
             (val) => PlayerData.setMusicVolume(val),
@@ -234,7 +234,7 @@ export default class SettingsScene extends Phaser.Scene {
         );
 
         // ─── SFX Control Slider ───────────────────────────
-        const sfxY = panelY + 205;
+        const sfxY = panelY + 220;
         this.createSlider(width / 2, sfxY, 'SFX VOLUME', 
             () => PlayerData.sfxVolume, 
             (val) => PlayerData.setSfxVolume(val),
@@ -242,7 +242,7 @@ export default class SettingsScene extends Phaser.Scene {
         );
 
         // ─── Graphics Quality Control ─────────────────────
-        const graphicsY = panelY + 295;
+        const graphicsY = panelY + 305;
         const graphicsTitle = this.add.text(width / 2, graphicsY - 32, 'GRAPHICS QUALITY', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
@@ -334,7 +334,7 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Leave Game Button ─────────────────────────────
         if (hasLeaveBtn) {
-            const leaveY = panelY + 375;
+            const leaveY = panelY + 390;
             const leaveBtn = this.add.container(width / 2 - 100, leaveY - btnH / 2);
             const lW = 200;
             const lH = 35;
@@ -455,13 +455,13 @@ export default class SettingsScene extends Phaser.Scene {
         const { width, height } = this.scale;
         const panelW = 500;
         const hasLeaveBtn = this.fromScene === 'GameScene';
-        const panelH = hasLeaveBtn ? 430 : 350;
+        const panelH = hasLeaveBtn ? 450 : 365;
         const panelX = width / 2 - panelW / 2;
         const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 35 : 55);
 
         const leftColX = width / 2 - 110;
         const rightColX = width / 2 + 110;
-        const startY = panelY + 95;
+        const startY = panelY + 110;
         const rowSpacing = 48;
 
         const leftActions = [
