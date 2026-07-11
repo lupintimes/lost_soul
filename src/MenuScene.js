@@ -279,11 +279,11 @@ export default class MenuScene extends Phaser.Scene {
         const boxW = width * 0.5;
         const boxH = height * 0.4;
         
-        // Rounded slate box with border
+        // Rounded neutral box with border
         const boxG = this.add.graphics().setDepth(11);
-        boxG.fillStyle(0x0d121d, 0.95);
+        boxG.fillStyle(0x141416, 0.95);
         boxG.fillRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
-        boxG.lineStyle(1.5, 0x5f7793, 0.9);
+        boxG.lineStyle(1.5, 0x333336, 0.9);
         boxG.strokeRoundedRect(width / 2 - boxW / 2, height / 2 - boxH / 2, boxW, boxH, 12);
         elements.push(boxG);
 
@@ -295,7 +295,7 @@ export default class MenuScene extends Phaser.Scene {
                 fontFamily: 'Rajdhani',
                 fontSize: '24px',
                 fontWeight: 'bold',
-                color: '#7fa3c7'
+                color: '#a1a1aa'
             }
         )
             .setOrigin(0.5)
@@ -315,7 +315,7 @@ export default class MenuScene extends Phaser.Scene {
         });
         closeHitbox.on('pointerout', () => {
             closeText.setScale(1);
-            closeText.setColor('#7fa3c7');
+            closeText.setColor('#a1a1aa');
         });
 
         const aboutText = this.add.text(
