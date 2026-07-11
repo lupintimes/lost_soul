@@ -409,16 +409,21 @@ export default class CustomizeScene extends Phaser.Scene {
 
         // ── Character Ability Card (only in character tab) ───────
         if (this.activeTab === 'character') {
+            const spellKey = PlayerData.getKeyLabel(PlayerData.controls.spell);
+            const tauntKey = PlayerData.getKeyLabel(PlayerData.controls.taunt);
+            const dashKey = PlayerData.getKeyLabel(PlayerData.controls.dash);
+            const jumpKey = PlayerData.getKeyLabel(PlayerData.controls.jump);
+
             const abilityData = {
                 p1: {
                     label: 'KNIGHT',
                     color: 0x4488ff,
                     hp: 130,
                     lines: [
-                        'R  — SHIELD BLOCK',
+                        `${spellKey}  — SHIELD BLOCK`,
                         '       2s full immunity, repels nearby foes.',
                         '       4s cooldown.',
-                        'T  — FORTRESS TAUNT',
+                        `${tauntKey}  — FORTRESS TAUNT`,
                         '       5s / 50% damage reduction.',
                         '       Pulsing gold tint. 15s cooldown.',
                     ]
@@ -428,9 +433,9 @@ export default class CustomizeScene extends Phaser.Scene {
                     color: 0x9944ff,
                     hp: 100,
                     lines: [
-                        'SHIFT  — DOUBLE DASH  (2 charges, 0.7s regen)',
-                        'W x2   — DOUBLE JUMP  (mid-air)',
-                        'R      — PHANTOM ORB',
+                        `${dashKey}  — DOUBLE DASH  (2 charges, 0.7s regen)`,
+                        `${jumpKey} x2   — DOUBLE JUMP  (mid-air)`,
+                        `${spellKey}      — PHANTOM ORB`,
                         '         Large (r=22), 1.8× speed orange orb.',
                         '         Orange trail particles follow it.',
                     ]
@@ -651,14 +656,14 @@ export default class CustomizeScene extends Phaser.Scene {
         // ── CHARACTER ABILITIES ────────────────────────────────
         addSection('CHARACTER ABILITIES', 0xffaa00, [
             '[ KNIGHT  P1 ] — HP: 130',
-            '• Spell (R): Shield Block — 2s full immunity, repels foes',
-            '• Taunt (T): FORTRESS — 5s  50% damage reduction',
+            `• Spell (${spellKey}): Shield Block — 2s full immunity, repels foes`,
+            `• Taunt (${tauntKey}): FORTRESS — 5s  50% damage reduction`,
             '               15s cooldown. Gold tint + particles.',
             '',
             '[ SHADOW  P2 ] — HP: 100',
-            '• Dash (SHIFT): 2 charges, fast blink dash',
-            '• Double Jump: press W again mid-air',
-            '• Spell (R): Fast orange orb (r=22, speed x1.8)',
+            `• Dash (${dashKey}): 2 charges, fast blink dash`,
+            `• Double Jump: press ${jumpKey} again mid-air`,
+            `• Spell (${spellKey}): Fast orange orb (r=22, speed x1.8)`,
             '               Orange trail particles follow it.',
             '',
             '[ BERSERKER  P3 ] — HP: 100',
@@ -686,9 +691,18 @@ export default class CustomizeScene extends Phaser.Scene {
             '• Portals: step into glowing portals to teleport.',
             '• Enemies retreat at low HP (Shadow retreats most).',
             '• Berserker AI has shorter attack cooldown than others.',
-            '• High Jump (Q) can be chained once per airtime.',
-            '• Shield (Knight R) blocks 100% — but you cannot attack.',
+            `• High Jump (${highJumpKey}) can be chained once per airtime.`,
+            `• Shield (Knight ${spellKey}) blocks 100% — but you cannot attack.`,
             '• Kill enemies to rack up your kill count. Stay alive!',
+        ]);
+
+        // ── MULTIPLAYER & NETWORK ──────────────────────────────
+        addSection('MULTIPLAYER & NETWORK', 0xff33bb, [
+            '• Transport: WebRTC UDP (Geckos.io) for ultra-low latency.',
+            '• Fallback: Automatically uses Socket.IO TCP if UDP is blocked.',
+            '• Background Play: The game continues ticking at 30 FPS in',
+            '  inactive background tabs (prevents freezing/disconnection).',
+            '• Quick-Play: Host or join games with custom room codes.',
         ]);
 
         // 3. Set up scrolling limits and scrollbar UI
