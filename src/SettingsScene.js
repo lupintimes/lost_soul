@@ -44,8 +44,8 @@ export default class SettingsScene extends Phaser.Scene {
         this.warningMsg = '';
         this.warningTimer = null;
 
-        this.audioVideoContainer = this.add.container(0, 0);
-        this.controlsContainer = this.add.container(0, 0);
+        this.audioVideoContainer = this.add.container(0, 0).setDepth(1);
+        this.controlsContainer = this.add.container(0, 0).setDepth(1);
 
         this.events.once('shutdown', () => {
             this.cancelRebinding();
