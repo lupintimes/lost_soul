@@ -59,25 +59,25 @@ export default class LobbyScene extends Phaser.Scene {
             backBg.lineStyle(1.5, borderColor, 0.8);
             backBg.strokeRoundedRect(0, 0, backW, backH, 6);
         };
-        drawBackBg(0x141416, 0.7, 0x333336);
+        drawBackBg(0x121620, 0.7, 0x283141);
         backBtnContainer.add(backBg);
 
         const backText = this.add.text(backW / 2, backH / 2, '← BACK', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         }).setOrigin(0.5);
         backBtnContainer.add(backText);
 
         backBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, backW, backH), Phaser.Geom.Rectangle.Contains);
         backBtnContainer.on('pointerover', () => {
-            drawBackBg(0x27272a, 0.85, 0xd4d4d8);
+            drawBackBg(0x1b2234, 0.85, 0xa2b6df);
             backText.setColor('#ffffff');
         });
         backBtnContainer.on('pointerout', () => {
-            drawBackBg(0x141416, 0.7, 0x333336);
-            backText.setColor('#a1a1aa');
+            drawBackBg(0x121620, 0.7, 0x283141);
+            backText.setColor('#8fa4b3');
         });
         backBtnContainer.on('pointerdown', () => {
             this.cleanup();
@@ -94,9 +94,9 @@ export default class LobbyScene extends Phaser.Scene {
         };
 
         const panelLeftG = this.add.graphics();
-        panelLeftG.fillStyle(0x141416, 0.85);
+        panelLeftG.fillStyle(0x121620, 0.85);
         panelLeftG.fillRoundedRect(panelLeft.x, panelLeft.y, panelLeft.w, panelLeft.h, 10);
-        panelLeftG.lineStyle(1.5, 0x333336, 1);
+        panelLeftG.lineStyle(1.5, 0x283141, 1);
         panelLeftG.strokeRoundedRect(panelLeft.x, panelLeft.y, panelLeft.w, panelLeft.h, 10);
 
         this.add.text(panelLeft.x + 20, panelLeft.y + 15, 'AVAILABLE SERVERS', {
@@ -112,25 +112,25 @@ export default class LobbyScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.5, headerY, 'PLAYERS', {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         });
         this.add.text(panelLeft.x + panelLeft.w * 0.75, headerY, 'STATUS', {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         });
 
         this.add.rectangle(
             panelLeft.x + 15, headerY + 18,
             panelLeft.w - 30, 1,
-            0x333336
+            0x283141
         ).setOrigin(0);
 
         this.listConfig = {
@@ -160,9 +160,9 @@ export default class LobbyScene extends Phaser.Scene {
         };
 
         const panelRightG = this.add.graphics();
-        panelRightG.fillStyle(0x141416, 0.85);
+        panelRightG.fillStyle(0x121620, 0.85);
         panelRightG.fillRoundedRect(panelRight.x, panelRight.y, panelRight.w, panelRight.h, 10);
-        panelRightG.lineStyle(1.5, 0x333336, 1);
+        panelRightG.lineStyle(1.5, 0x283141, 1);
         panelRightG.strokeRoundedRect(panelRight.x, panelRight.y, panelRight.w, panelRight.h, 10);
 
         this.add.text(
@@ -183,7 +183,7 @@ export default class LobbyScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         });
 
         // Input background (designed like a button field)
@@ -198,7 +198,7 @@ export default class LobbyScene extends Phaser.Scene {
             inputBg.lineStyle(1.5, borderColor, 0.8);
             inputBg.strokeRoundedRect(0, 0, inputW, inputH, 6);
         };
-        drawInputBg(0x141416, 0.6, 0x333336);
+        drawInputBg(0x121620, 0.6, 0x283141);
         inputContainer.add(inputBg);
 
         this.serverNameValue = 'My Server';
@@ -217,10 +217,10 @@ export default class LobbyScene extends Phaser.Scene {
 
         inputContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, inputW, inputH), Phaser.Geom.Rectangle.Contains);
         inputContainer.on('pointerover', () => {
-            drawInputBg(0x27272a, 0.8, 0xd4d4d8);
+            drawInputBg(0x1b2234, 0.8, 0xa2b6df);
         });
         inputContainer.on('pointerout', () => {
-            drawInputBg(0x141416, 0.6, 0x333336);
+            drawInputBg(0x121620, 0.6, 0x283141);
         });
         inputContainer.on('pointerdown', () => {
             const name = prompt('Enter server name:', this.serverNameValue);
@@ -235,7 +235,7 @@ export default class LobbyScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         });
 
         this.maxPlayers = 4;
@@ -252,7 +252,7 @@ export default class LobbyScene extends Phaser.Scene {
             minusBg.lineStyle(1.5, borderColor, 0.8);
             minusBg.strokeRoundedRect(0, 0, selW, selH, 6);
         };
-        drawMinusBg(0x141416, 0.7, 0x333336);
+        drawMinusBg(0x121620, 0.7, 0x283141);
         minusContainer.add(minusBg);
 
         const minusText = this.add.text(selW / 2, selH / 2, '−', {
@@ -286,7 +286,7 @@ export default class LobbyScene extends Phaser.Scene {
             plusBg.lineStyle(1.5, borderColor, 0.8);
             plusBg.strokeRoundedRect(0, 0, selW, selH, 6);
         };
-        drawPlusBg(0x141416, 0.7, 0x333336);
+        drawPlusBg(0x121620, 0.7, 0x283141);
         plusContainer.add(plusBg);
 
         const plusText = this.add.text(selW / 2, selH / 2, '+', {
@@ -301,8 +301,8 @@ export default class LobbyScene extends Phaser.Scene {
         minusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
         plusContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, selW, selH), Phaser.Geom.Rectangle.Contains);
 
-        minusContainer.on('pointerover', () => drawMinusBg(0x27272a, 0.85, 0xd4d4d8));
-        minusContainer.on('pointerout', () => drawMinusBg(0x141416, 0.7, 0x333336));
+        minusContainer.on('pointerover', () => drawMinusBg(0x1b2234, 0.85, 0xa2b6df));
+        minusContainer.on('pointerout', () => drawMinusBg(0x121620, 0.7, 0x283141));
         minusContainer.on('pointerdown', () => {
             this.playClick();
             if (this.maxPlayers > 1) {
@@ -311,8 +311,8 @@ export default class LobbyScene extends Phaser.Scene {
             }
         });
 
-        plusContainer.on('pointerover', () => drawPlusBg(0x27272a, 0.85, 0xd4d4d8));
-        plusContainer.on('pointerout', () => drawPlusBg(0x141416, 0.7, 0x333336));
+        plusContainer.on('pointerover', () => drawPlusBg(0x1b2234, 0.85, 0xa2b6df));
+        plusContainer.on('pointerout', () => drawPlusBg(0x121620, 0.7, 0x283141));
         plusContainer.on('pointerdown', () => {
             this.playClick();
             if (this.maxPlayers < 10) {
@@ -386,14 +386,14 @@ export default class LobbyScene extends Phaser.Scene {
             refreshBg.lineStyle(1.5, borderColor, 0.8);
             refreshBg.strokeRoundedRect(0, 0, refW, refH, 6);
         };
-        drawRefreshBg(0x141416, 0.7, 0x333336);
+        drawRefreshBg(0x121620, 0.7, 0x283141);
         refreshContainer.add(refreshBg);
 
         const refreshText = this.add.text(refW / 2, refH / 2, '↻ REFRESH', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         }).setOrigin(0.5);
         refreshContainer.add(refreshText);
 
@@ -406,7 +406,7 @@ export default class LobbyScene extends Phaser.Scene {
                 alpha: 1,
                 duration: 120,
                 ease: 'Quad.easeOut',
-                onStart: () => drawRefreshBg(0x27272a, 0.85, 0xd4d4d8)
+                onStart: () => drawRefreshBg(0x1b2234, 0.85, 0xa2b6df)
             });
             refreshText.setColor('#ffffff');
         });
@@ -418,9 +418,9 @@ export default class LobbyScene extends Phaser.Scene {
                 alpha: 0.7,
                 duration: 200,
                 ease: 'Quad.easeOut',
-                onStart: () => drawRefreshBg(0x141416, 0.7, 0x333336)
+                onStart: () => drawRefreshBg(0x121620, 0.7, 0x283141)
             });
-            refreshText.setColor('#a1a1aa');
+            refreshText.setColor('#8fa4b3');
         });
         
         refreshContainer.on('pointerdown', () => {
@@ -518,7 +518,7 @@ export default class LobbyScene extends Phaser.Scene {
                 {
                     fontFamily: 'Rajdhani',
                     fontSize: '18px',
-                    color: '#a1a1aa',
+                    color: '#8fa4b3',
                     align: 'center'
                 }
             ).setOrigin(0.5);
@@ -538,7 +538,7 @@ export default class LobbyScene extends Phaser.Scene {
                 rowBg.lineStyle(1.5, borderColor, 0.8);
                 rowBg.strokeRoundedRect(x + 10, rowY, w - 20, rowH - 4, 6);
             };
-            drawRow(0x141416, 0.5, 0x333336);
+            drawRow(0x121620, 0.5, 0x283141);
 
             const nameText = this.add.text(
                 x + 25, rowY + 12,
@@ -558,7 +558,7 @@ export default class LobbyScene extends Phaser.Scene {
                 {
                     fontFamily: 'Rajdhani',
                     fontSize: '16px',
-                    color: isFull ? '#ff4444' : '#a1a1aa'
+                    color: isFull ? '#ff4444' : '#8fa4b3'
                 }
             );
 
@@ -568,7 +568,7 @@ export default class LobbyScene extends Phaser.Scene {
                 {
                     fontFamily: 'Rajdhani',
                     fontSize: '16px',
-                    color: isFull ? '#ff4444' : '#a1a1aa'
+                    color: isFull ? '#ff4444' : '#8fa4b3'
                 }
             );
 
@@ -578,11 +578,11 @@ export default class LobbyScene extends Phaser.Scene {
                 .setInteractive({ useHandCursor: true });
 
             hitArea.on('pointerover', () => {
-                drawRow(0x27272a, 0.8, 0xd4d4d8);
+                drawRow(0x1b2234, 0.8, 0xa2b6df);
             });
 
             hitArea.on('pointerout', () => {
-                drawRow(0x141416, 0.5, 0x333336);
+                drawRow(0x121620, 0.5, 0x283141);
             });
 
             hitArea.on('pointerdown', () => {
@@ -687,9 +687,9 @@ export default class LobbyScene extends Phaser.Scene {
         const modalY = height / 2 - modalH / 2;
 
         const modalBg = this.add.graphics();
-        modalBg.fillStyle(0x141416, 0.95);
+        modalBg.fillStyle(0x121620, 0.95);
         modalBg.fillRoundedRect(modalX, modalY, modalW, modalH, 12);
-        modalBg.lineStyle(2, 0x333336, 1);
+        modalBg.lineStyle(2, 0x283141, 1);
         modalBg.strokeRoundedRect(modalX, modalY, modalW, modalH, 12);
         this.identityModalContainer.add(modalBg);
 
@@ -707,7 +707,7 @@ export default class LobbyScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         }).setOrigin(0.5);
         this.identityModalContainer.add(aliasLabel);
 
@@ -723,7 +723,7 @@ export default class LobbyScene extends Phaser.Scene {
             aliasBtnBg.lineStyle(1.5, borderColor, 0.8);
             aliasBtnBg.strokeRoundedRect(0, 0, aliasBtnW, aliasBtnH, 6);
         };
-        drawAliasBg(0x141416, 0.7, 0x333336);
+        drawAliasBg(0x121620, 0.7, 0x283141);
         aliasBtnContainer.add(aliasBtnBg);
 
         const aliasText = this.add.text(aliasBtnW / 2, aliasBtnH / 2, this.tempAlias, {
@@ -735,8 +735,8 @@ export default class LobbyScene extends Phaser.Scene {
         aliasBtnContainer.add(aliasText);
 
         aliasBtnContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, aliasBtnW, aliasBtnH), Phaser.Geom.Rectangle.Contains);
-        aliasBtnContainer.on('pointerover', () => drawAliasBg(0x27272a, 0.85, 0xd4d4d8));
-        aliasBtnContainer.on('pointerout', () => drawAliasBg(0x141416, 0.7, 0x333336));
+        aliasBtnContainer.on('pointerover', () => drawAliasBg(0x1b2234, 0.85, 0xa2b6df));
+        aliasBtnContainer.on('pointerout', () => drawAliasBg(0x121620, 0.7, 0x283141));
         aliasBtnContainer.on('pointerdown', () => {
             this.playClick();
             const name = prompt('Enter your alias:', this.tempAlias);
@@ -752,7 +752,7 @@ export default class LobbyScene extends Phaser.Scene {
             fontFamily: 'Rajdhani',
             fontSize: '14px',
             fontWeight: 'bold',
-            color: '#a1a1aa'
+            color: '#8fa4b3'
         }).setOrigin(0.5);
         this.identityModalContainer.add(colorLabel);
 
@@ -807,7 +807,7 @@ export default class LobbyScene extends Phaser.Scene {
                     swatchBg.lineStyle(3, 0xffffff, 1);
                     swatchBg.strokeCircle(0, 0, circleRadius + 4);
                     // Glowing outer circle
-                    swatchBg.lineStyle(1.5, 0xd4d4d8, 0.85);
+                    swatchBg.lineStyle(1.5, 0xa2b6df, 0.85);
                     swatchBg.strokeCircle(0, 0, circleRadius + 7);
                 }
 
