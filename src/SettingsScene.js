@@ -119,9 +119,9 @@ export default class SettingsScene extends Phaser.Scene {
         // ─── Settings Panel ──────────────────────────────
         const panelW = 500;
         const hasLeaveBtn = this.fromScene === 'GameScene';
-        const panelH = hasLeaveBtn ? 410 : 360;
+        const panelH = hasLeaveBtn ? 430 : 350;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 20 : 40);
+        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 10 : 30);
 
         const panelG = this.add.graphics();
         panelG.fillStyle(0x0d121d, 0.85);
@@ -227,35 +227,35 @@ export default class SettingsScene extends Phaser.Scene {
         // ─── Music Control Slider ─────────────────────────
         // ─── Music Control Slider ─────────────────────────
         const musicY = panelY + 115;
-        this.createSlider(panelX, musicY, 'MUSIC VOLUME', 
+        this.createSlider(width / 2, musicY, 'MUSIC VOLUME', 
             () => PlayerData.musicVolume, 
             (val) => PlayerData.setMusicVolume(val),
             this.audioVideoContainer
         );
 
         // ─── SFX Control Slider ───────────────────────────
-        const sfxY = panelY + 190;
-        this.createSlider(panelX, sfxY, 'SFX VOLUME', 
+        const sfxY = panelY + 205;
+        this.createSlider(width / 2, sfxY, 'SFX VOLUME', 
             () => PlayerData.sfxVolume, 
             (val) => PlayerData.setSfxVolume(val),
             this.audioVideoContainer
         );
 
         // ─── Graphics Quality Control ─────────────────────
-        const graphicsY = panelY + 265;
-        const graphicsTitle = this.add.text(panelX + 40, graphicsY, 'GRAPHICS QUALITY', {
+        const graphicsY = panelY + 295;
+        const graphicsTitle = this.add.text(width / 2, graphicsY - 32, 'GRAPHICS QUALITY', {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
-        }).setOrigin(0, 0.5);
+        }).setOrigin(0.5);
         this.audioVideoContainer.add(graphicsTitle);
 
         const btnW = 100;
         const btnH = 32;
 
         // Low Quality Button
-        const lowContainer = this.add.container(panelX + 230, graphicsY - btnH / 2);
+        const lowContainer = this.add.container(width / 2 - 60 - btnW / 2, graphicsY - btnH / 2);
         const lowBg = this.add.graphics();
         const lowText = this.add.text(btnW / 2, btnH / 2, 'LOW', {
             fontFamily: 'Rajdhani',
@@ -268,7 +268,7 @@ export default class SettingsScene extends Phaser.Scene {
         this.audioVideoContainer.add(lowContainer);
 
         // High Quality Button
-        const highContainer = this.add.container(panelX + 340, graphicsY - btnH / 2);
+        const highContainer = this.add.container(width / 2 + 60 - btnW / 2, graphicsY - btnH / 2);
         const highBg = this.add.graphics();
         const highText = this.add.text(btnW / 2, btnH / 2, 'HIGH', {
             fontFamily: 'Rajdhani',
@@ -334,7 +334,7 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ─── Leave Game Button ─────────────────────────────
         if (hasLeaveBtn) {
-            const leaveY = panelY + 345;
+            const leaveY = panelY + 375;
             const leaveBtn = this.add.container(width / 2 - 100, leaveY - btnH / 2);
             const lW = 200;
             const lH = 35;
@@ -455,13 +455,13 @@ export default class SettingsScene extends Phaser.Scene {
         const { width, height } = this.scale;
         const panelW = 500;
         const hasLeaveBtn = this.fromScene === 'GameScene';
-        const panelH = hasLeaveBtn ? 410 : 360;
+        const panelH = hasLeaveBtn ? 430 : 350;
         const panelX = width / 2 - panelW / 2;
-        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 20 : 40);
+        const panelY = height / 2 - panelH / 2 + (hasLeaveBtn ? 10 : 30);
 
         const leftColX = width / 2 - 110;
         const rightColX = width / 2 + 110;
-        const startY = panelY + 100;
+        const startY = panelY + 95;
         const rowSpacing = 48;
 
         const leftActions = [
@@ -624,20 +624,18 @@ export default class SettingsScene extends Phaser.Scene {
         this.controlsContainer.add(btnContainer);
     }
 
-    createSlider(panelX, y, label, getVal, setVal, targetContainer) {
-        // Label on the left
-        const titleText = this.add.text(panelX + 40, y, label, {
+    createSlider(x, y, label, getVal, setVal, targetContainer) {
+        // Center-aligned label above the slider
+        const titleText = this.add.text(x, y - 26, label, {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
             color: '#7fa3c7'
-        }).setOrigin(0, 0.5);
+        }).setOrigin(0.5);
         targetContainer.add(titleText);
 
         const trackW = 200;
         const trackH = 6;
-        const sliderStartX = panelX + 190;
-        const sliderCenterX = sliderStartX + trackW / 2;
         
         const track = this.add.graphics();
         const drawTrack = () => {
@@ -650,7 +648,7 @@ export default class SettingsScene extends Phaser.Scene {
             track.fillRoundedRect(-trackW / 2, -trackH / 2, trackW * val, trackH, 3);
         };
         
-        const sliderContainer = this.add.container(sliderCenterX, y);
+        const sliderContainer = this.add.container(x, y);
         sliderContainer.add(track);
         drawTrack();
         targetContainer.add(sliderContainer);
@@ -662,8 +660,8 @@ export default class SettingsScene extends Phaser.Scene {
         
         sliderContainer.add(handle);
 
-        // Percentage text on the right
-        const percentText = this.add.text(panelX + 440, y, `${Math.round(getVal() * 100)}%`, {
+        // Percentage text on the right side of the slider
+        const percentText = this.add.text(x + trackW / 2 + 35, y, `${Math.round(getVal() * 100)}%`, {
             fontFamily: 'Rajdhani',
             fontSize: '16px',
             fontWeight: 'bold',
