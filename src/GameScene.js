@@ -1095,6 +1095,10 @@ export default class GameScene extends Phaser.Scene {
         remotePlayer.sprite.setSensor(true);
         remotePlayer.sprite.setIgnoreGravity(true);
         remotePlayer.sprite.setDepth(10);
+        if (remotePlayer.sprite.body) {
+            remotePlayer.sprite.body.collisionFilter.category = 0x0002;
+            remotePlayer.sprite.body.collisionFilter.mask = 0x0001;
+        }
 
         // Interpolation targets
         remotePlayer.targetX = playerInfo.x;

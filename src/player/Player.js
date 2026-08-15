@@ -76,7 +76,7 @@ export default class Player {
         // Setup collision categories (category 2 for players/enemies, category 1 for map)
         if (this.sprite && this.sprite.body) {
             this.sprite.body.collisionFilter.category = 0x0002;
-            if (this.scene && this.scene.mode === 'multiplayer') {
+            if (this.scene && (this.scene.mode === 'multiplayer' || !this.isControlled)) {
                 // In multiplayer, players do not collide with other players/enemies (only map/platforms)
                 this.sprite.body.collisionFilter.mask = 0x0001;
             } else {
@@ -1702,22 +1702,9 @@ export default class Player {
             if (this.isEnemy) {
                 opponents = this.scene.players || [];
             } else {
-                if (this.scene.mode === 'multiplayer') {
-                    const allPlayers = [];
-                    if (this.scene.localPlayer && this.scene.localPlayer !== this) {
-                        allPlayers.push(this.scene.localPlayer);
-                    }
-                    if (this.scene.otherPlayerMap) {
-                        for (const id in this.scene.otherPlayerMap) {
-                            if (Object.prototype.hasOwnProperty.call(this.scene.otherPlayerMap, id)) {
-                                const p = this.scene.otherPlayerMap[id];
-                                if (p && p !== this) {
-                                    allPlayers.push(p);
-                                }
-                            }
-                        }
-                    }
-                    opponents = allPlayers;
+                if (this.scene && this.scene.mode === 'multiplayer') {
+                    // In multiplayer, players do not physically push each other with shield
+                    opponents = [];
                 } else {
                     opponents = this.scene.enemies || [];
                 }
@@ -2016,7 +2003,7 @@ export default class Player {
                     this.createDashGhost();
                 }
             } else {
-                if (this.scene && this.scene.mode === 'multiplayer') {
+                if (this.scene && (this.scene.mode === 'multiplayer' || !this.isControlled)) {
                     this.sprite.body.collisionFilter.mask = 0x0001; // only collide with map/ground
                 } else {
                     this.sprite.body.collisionFilter.mask = 0x0001 | 0x0002; // collide with map/ground and other players/enemies
