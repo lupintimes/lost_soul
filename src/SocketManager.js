@@ -6,15 +6,8 @@ const SocketManager = {
     roomId: null,
 
     connect(url) {
-        if (!url) {
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '192.168.1.4' || window.location.protocol === 'file:';
-            if (isLocal) {
-                const hostname = window.location.hostname === 'file:' || !window.location.hostname ? 'localhost' : window.location.hostname;
-                url = `http://${hostname}:9208`;
-            } else {
-                url = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'https://lost-soul-server.onrender.com';
-            }
-        }
+
+        url = 'https://lost-soul-server.onrender.com';
 
         if (this.socket && this.socket.connected) {
             return this.socket;
