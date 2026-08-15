@@ -29,14 +29,11 @@ import('@geckos.io/server').then(({ geckos }) => {
     console.log('🚀 Geckos.io UDP Server integrated with HTTP Server');
 
     geckosServer.onConnection(channel => {
-        console.log(`🔌 Geckos UDP connection: ${channel.id}`);
-
         channel.on('joinRoom', (data) => {
             const { roomId, playerId } = data;
             channel.roomId = roomId;
             channel.playerId = playerId;
             channel.join(roomId);
-            console.log(`🚪 Geckos channel ${channel.id} joined room ${roomId} for player ${playerId}`);
         });
 
         channel.on('playerMovement', (movementData) => {
@@ -60,9 +57,7 @@ import('@geckos.io/server').then(({ geckos }) => {
             channel.broadcast.emit('playerMoved', player);
         });
 
-        channel.onDisconnect(() => {
-            console.log(`❌ Geckos UDP disconnected: ${channel.id}`);
-        });
+        channel.onDisconnect(() => {});
     });
 }).catch(err => {
     console.error('❌ Failed to load Geckos.io server:', err);
@@ -219,7 +214,6 @@ io.on('connection', (socket) => {
         setTimeout(() => {
             if (rooms[createdRoomId] && rooms[createdRoomId].players[createdSocketId]) {
                 rooms[createdRoomId].players[createdSocketId].isInvincible = false;
-                console.log(`🛡️ Invincibility ended for ${createdSocketId}`);
             }
         }, 5000);
 
@@ -293,7 +287,6 @@ io.on('connection', (socket) => {
         setTimeout(() => {
             if (rooms[joinedRoomId] && rooms[joinedRoomId].players[joinedSocketId]) {
                 rooms[joinedRoomId].players[joinedSocketId].isInvincible = false;
-                console.log(`🛡️ Invincibility ended for ${joinedSocketId}`);
             }
         }, 5000);
 
@@ -311,10 +304,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // ✅ Log exactly what we're sending
         const playersData = rooms[roomId].players;
-        console.log(`📋 Sending players to ${socket.id}:`, Object.keys(playersData));
-        console.log(`📋 Full data:`, JSON.stringify(playersData));
 
         // ✅ Send the FULL object with all player data
         socket.emit('currentPlayers', playersData);
@@ -373,7 +363,6 @@ io.on('connection', (socket) => {
             if (rooms[roomId] && rooms[roomId].obstacles && rooms[roomId].obstacles[obstacleId]) {
                 delete rooms[roomId].obstacles[obstacleId];
                 io.to(roomId).emit('obstacleRemoved', { id: obstacleId });
-                console.log(`🗑️ Server decay: authoritatively removed obstacle ${obstacleId} in room ${roomId}`);
             }
         }, decayTime);
     });
@@ -434,8 +423,6 @@ io.on('connection', (socket) => {
         }
         target.health = Math.max(0, target.health - damage);
 
-        console.log(`⚔️ ${socket.id} hit ${attackData.targetId} for ${damage} dmg (HP: ${target.health})`);
-
         io.to(roomId).emit('playerDamaged', {
             attackerId: socket.id,
             targetId: attackData.targetId,
@@ -446,8 +433,6 @@ io.on('connection', (socket) => {
         if (target.health <= 0) {
             attacker.kills++;
             target.deaths++;
-
-            console.log(`💀 ${attackData.targetId} killed by ${socket.id}`);
 
             io.to(roomId).emit('playerKilled', {
                 killerId: socket.id,
@@ -473,7 +458,6 @@ io.on('connection', (socket) => {
                     setTimeout(() => {
                         if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
                             rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
-                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
                         }
                     }, 5000);
 
@@ -532,7 +516,6 @@ io.on('connection', (socket) => {
 
                 player.shieldTimeout = setTimeout(() => {
                     if (rooms[roomId] && rooms[roomId].players[socket.id] && player.isShieldActive) {
-                        console.log(`🛡️ Server fallback: releasing shield blast for ${socket.id}`);
                         player.isShieldActive = false;
                         
                         io.to(roomId).emit('shieldBlastReleased', {
@@ -598,8 +581,6 @@ io.on('connection', (socket) => {
         }
         target.health = Math.max(0, target.health - damage);
 
-        console.log(`🔮 Spell Hit: ${casterId} hit ${data.targetId} with spell ${spellId} for ${damage} dmg (HP: ${target.health})`);
-
         io.to(roomId).emit('playerDamaged', {
             attackerId: casterId,
             targetId: data.targetId,
@@ -612,8 +593,6 @@ io.on('connection', (socket) => {
                 caster.kills++;
             }
             target.deaths++;
-
-            console.log(`💀 ${data.targetId} killed by ${casterId} via spell`);
 
             io.to(roomId).emit('playerKilled', {
                 killerId: casterId,
@@ -638,7 +617,6 @@ io.on('connection', (socket) => {
                     setTimeout(() => {
                         if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
                             rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
-                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
                         }
                     }, 5000);
 
@@ -682,8 +660,6 @@ io.on('connection', (socket) => {
         }
         target.health = Math.max(0, target.health - damage);
 
-        console.log(`💥 Shield Blast Hit: ${casterId} hit ${data.targetId} with blast ${blastId} for ${damage} dmg (HP: ${target.health})`);
-
         io.to(roomId).emit('playerDamaged', {
             attackerId: casterId,
             targetId: data.targetId,
@@ -696,8 +672,6 @@ io.on('connection', (socket) => {
                 caster.kills++;
             }
             target.deaths++;
-
-            console.log(`💀 ${data.targetId} killed by ${casterId} via shield blast`);
 
             io.to(roomId).emit('playerKilled', {
                 killerId: casterId,
@@ -722,7 +696,6 @@ io.on('connection', (socket) => {
                     setTimeout(() => {
                         if (rooms[respawnRoomId] && rooms[respawnRoomId].players[respawnPlayerId]) {
                             rooms[respawnRoomId].players[respawnPlayerId].isInvincible = false;
-                            console.log(`🛡️ Invincibility ended for ${respawnPlayerId}`);
                         }
                     }, 5000);
 
